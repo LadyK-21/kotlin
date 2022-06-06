@@ -30,6 +30,7 @@ OBJ_GETTER(CreateStringFromCString, const char* cstring);
 OBJ_GETTER(CreateStringFromUtf8, const char* utf8, uint32_t lengthBytes);
 char* CreateCStringFromString(KConstRef kstring);
 void DisposeCString(char* cstring);
+ObjHeader* mallocString(const char* cstring);
 
 OBJ_GETTER(StringFromUtf8Buffer, const char* start, size_t size);
 

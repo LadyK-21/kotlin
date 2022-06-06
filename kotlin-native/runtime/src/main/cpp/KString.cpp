@@ -134,6 +134,21 @@ void DisposeCString(char* cstring) {
     if (cstring) std_support::free(cstring);
 }
 
+ObjHeader* mallocString(const char* cstring) {
+    size_t count = strlen(cstring);
+    size_t headerSize = alignUp(sizeof(ArrayHeader), alignof(char16_t));
+    size_t arraySize = headerSize + count * sizeof(char16_t);
+
+    ArrayHeader* header = (ArrayHeader*)malloc(arraySize);
+    header->obj()->typeInfoOrMeta_ = setPointerBits((TypeInfo *)theStringTypeInfo, OBJECT_TAG_PERMANENT_CONTAINER);
+    RuntimeAssert(header->obj()->permanent(), "Must be permanent");
+
+    header->count_ = count;
+    utf8::utf8to16(cstring, cstring + count, (char16_t*)((char*)header + headerSize));
+
+    return header->obj();
+}
+
 // String.kt
 OBJ_GETTER(Kotlin_String_replace, KString thiz, KChar oldChar, KChar newChar) {
   auto count = thiz->count_;

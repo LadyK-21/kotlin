@@ -50,7 +50,6 @@
 #include "std_support/String.hpp"
 #include "std_support/UnorderedSet.hpp"
 #include "std_support/Vector.hpp"
-#include "utf8.h"
 
 using namespace kotlin;
 
@@ -727,18 +726,6 @@ static void buildITable(TypeInfo* result, const std_support::map<ClassId, std_su
     itable_[i].vtable = interfaceVTable_;
     itable_[i].vtableSize = interfaceVTableSize;
   }
-}
-
-static ObjHeader* mallocString(const char* cstr) {
-  size_t count = strlen(cstr);
-  size_t headerSize = alignUp(sizeof(ArrayHeader), alignof(char16_t));
-  size_t arraySize = headerSize + count * sizeof(char16_t);
-
-  ArrayHeader* header = (ArrayHeader*)malloc(arraySize);
-  header->typeInfoOrMeta_ = (TypeInfo *)theStringTypeInfo;
-  header->count_ = count;
-  utf8::utf8to16(cstr, cstr + count, (char16_t*)((char*)header + headerSize));
-  return header->obj();
 }
 
 static const TypeInfo* createTypeInfo(
