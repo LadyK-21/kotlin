@@ -19,8 +19,8 @@ class F {
 
 // FILE: main.kt
 fun main(x: A) {
-    x.b().<!UNRESOLVED_REFERENCE!>bar<!>()
-    x.f().<!UNRESOLVED_REFERENCE!>foobaz<!>()
+    x.b().bar()
+    x.f().foobaz()
 
-    <!UNRESOLVED_REFERENCE!>D<!>().baz()
+    D().baz()
 }
