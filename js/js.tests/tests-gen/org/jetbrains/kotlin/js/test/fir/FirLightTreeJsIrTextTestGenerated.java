@@ -1017,6 +1017,12 @@ public class FirLightTreeJsIrTextTestGenerated extends AbstractFirLightTreeJsIrT
         }
 
         @Test
+        @TestMetadata("expectedFun.kt")
+        public void testExpectedFun() {
+          runTest("compiler/testData/ir/irText/declarations/multiplatform/k2/expectedFun.kt");
+        }
+
+        @Test
         @TestMetadata("expectedSealedClass.kt")
         public void testExpectedSealedClass() {
           runTest("compiler/testData/ir/irText/declarations/multiplatform/k2/expectedSealedClass.kt");
@@ -1710,6 +1716,12 @@ public class FirLightTreeJsIrTextTestGenerated extends AbstractFirLightTreeJsIrT
     @TestMetadata("lambdaInCAO.kt")
     public void testLambdaInCAO() {
       runTest("compiler/testData/ir/irText/expressions/lambdaInCAO.kt");
+    }
+
+    @Test
+    @TestMetadata("lambdaWithParameterName.kt")
+    public void testLambdaWithParameterName() {
+      runTest("compiler/testData/ir/irText/expressions/lambdaWithParameterName.kt");
     }
 
     @Test

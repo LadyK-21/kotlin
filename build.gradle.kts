@@ -133,7 +133,6 @@ val irCompilerModulesForIDE = arrayOf(
 val commonCompilerModules = arrayOf(
     ":compiler:psi",
     ":compiler:frontend.common-psi",
-    ":analysis:light-classes-base",
     ":compiler:frontend.common",
     ":compiler:util",
     ":compiler:config",
@@ -155,13 +154,13 @@ val commonCompilerModules = arrayOf(
     ":core:util.runtime",
     ":compiler:frontend.common.jvm",
     ":compiler:frontend.java", // TODO this is fe10 module but some utils used in fir ide now
+    ":analysis:light-classes-base",
     ":analysis:decompiled:decompiler-to-stubs",
     ":analysis:decompiled:decompiler-to-file-stubs",
     ":analysis:decompiled:decompiler-js",
     ":analysis:decompiled:decompiler-native",
     ":analysis:decompiled:decompiler-to-psi",
     ":analysis:decompiled:light-classes-for-decompiled",
-    ":analysis:project-structure",
     ":analysis:kt-references",
     ":kotlin-build-common",
     ":kotlin-util-io",
@@ -278,10 +277,8 @@ val projectsUsedInIntelliJKotlinPlugin =
                 ":analysis:analysis-test-framework",
                 ":analysis:decompiled",
                 ":analysis:kt-references",
-                ":analysis:kt-references:kt-references-fe10",
                 ":analysis:light-classes-base",
                 ":analysis:low-level-api-fir",
-                ":analysis:project-structure",
                 ":analysis:symbol-light-classes",
             ) +
             arrayOf(
@@ -301,6 +298,8 @@ val projectsUsedInIntelliJKotlinPlugin =
                 ":plugins:parcelize:parcelize-compiler:parcelize.k1",
                 ":plugins:parcelize:parcelize-compiler:parcelize.k2",
                 ":plugins:parcelize:parcelize-runtime",
+
+                ":plugins:compose-compiler-plugin:compiler-hosted",
 
                 ":kotlin-sam-with-receiver-compiler-plugin.cli",
                 ":kotlin-sam-with-receiver-compiler-plugin.common",
@@ -403,6 +402,7 @@ extra["kotlinJpsPluginMavenDependenciesNonTransitiveLibs"] = listOf(
 extra["compilerArtifactsForIde"] = listOfNotNull(
     ":prepare:ide-plugin-dependencies:android-extensions-compiler-plugin-for-ide",
     ":prepare:ide-plugin-dependencies:allopen-compiler-plugin-for-ide",
+    ":prepare:ide-plugin-dependencies:compose-compiler-plugin-for-ide",
     ":prepare:ide-plugin-dependencies:scripting-compiler-plugin-for-ide",
     ":prepare:ide-plugin-dependencies:incremental-compilation-impl-tests-for-ide",
     ":prepare:ide-plugin-dependencies:js-ir-runtime-for-ide",
@@ -437,9 +437,7 @@ extra["compilerArtifactsForIde"] = listOfNotNull(
     ":prepare:ide-plugin-dependencies:analysis-api-k2-tests-for-ide",
     ":prepare:ide-plugin-dependencies:analysis-api-fe10-for-ide",
     ":prepare:ide-plugin-dependencies:analysis-api-fe10-tests-for-ide",
-    ":prepare:ide-plugin-dependencies:kt-references-fe10-for-ide",
     ":prepare:ide-plugin-dependencies:analysis-api-platform-interface-for-ide",
-    ":prepare:ide-plugin-dependencies:analysis-project-structure-for-ide",
     ":prepare:ide-plugin-dependencies:symbol-light-classes-for-ide",
     ":prepare:ide-plugin-dependencies:analysis-api-standalone-for-ide",
     ":prepare:ide-plugin-dependencies:kotlin-compiler-ir-for-ide",
@@ -814,6 +812,7 @@ tasks {
         dependsOn(":kotlin-atomicfu-compiler-plugin:nativeTest")
         dependsOn(":native:analysis-api-klib-reader:check")
         dependsOn(":native:native.tests:test")
+        dependsOn(":native:native.tests:cli-tests:check")
         dependsOn(":native:native.tests:driver:check")
         dependsOn(":native:native.tests:stress:check")
         dependsOn(":native:native.tests:klib-compatibility:check")
@@ -828,6 +827,7 @@ tasks {
             dependsOn(":kotlin-native:Interop:Indexer:check")
             dependsOn(":kotlin-native:Interop:StubGenerator:check")
             dependsOn(":kotlin-native:backend.native:check")
+            dependsOn(":kotlin-native:tools:kdumputil:check")
         }
     }
 

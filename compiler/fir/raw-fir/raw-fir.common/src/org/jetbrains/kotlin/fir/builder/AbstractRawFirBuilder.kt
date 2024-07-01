@@ -548,8 +548,8 @@ abstract class AbstractRawFirBuilder<T>(val baseSession: FirSession, val context
                             val characterWithDiagnostic = escapedStringToCharacter(entry.asText)
                             arguments += buildConstOrErrorExpression(
                                 entry.toFirSourceElement(),
-                                ConstantValueKind.Char,
-                                characterWithDiagnostic.value,
+                                ConstantValueKind.String,
+                                characterWithDiagnostic.value?.toString(),
                                 ConeSimpleDiagnostic(
                                     "Incorrect character: ${entry.asText}",
                                     characterWithDiagnostic.getDiagnostic() ?: DiagnosticKind.IllegalConstExpression
@@ -564,7 +564,7 @@ abstract class AbstractRawFirBuilder<T>(val baseSession: FirSession, val context
                             } else {
                                 arguments += buildErrorExpression {
                                     source = entry.toFirSourceElement()
-                                    diagnostic = ConeSyntaxDiagnostic("Empty template entry")
+                                    diagnostic = ConeSyntaxDiagnostic("Incorrect template argument")
                                 }
                             }
                         }
@@ -582,7 +582,13 @@ abstract class AbstractRawFirBuilder<T>(val baseSession: FirSession, val context
             interpolationPrefix = prefix()
             // Fast-pass if there is no errors and non-const string expressions
             if (!hasExpressions && !argumentList.arguments.any { it is FirErrorExpression })
-                return buildLiteralExpression(source, ConstantValueKind.String, sb.toString(), setType = false)
+                return buildLiteralExpression(
+                    source,
+                    ConstantValueKind.String,
+                    sb.toString(),
+                    setType = false,
+                    prefix = interpolationPrefix.takeIf { it.isNotEmpty() }
+                )
         }
     }
 

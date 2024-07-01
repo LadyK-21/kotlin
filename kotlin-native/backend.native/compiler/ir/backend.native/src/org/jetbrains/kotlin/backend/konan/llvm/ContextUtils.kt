@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.descriptors.konan.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.util.*
+import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
 import org.jetbrains.kotlin.library.KotlinLibrary
 import kotlin.properties.ReadOnlyProperty
@@ -461,8 +462,16 @@ internal class CodegenLlvmHelpers(private val generationState: NativeGenerationS
     val getObjCKotlinTypeInfo by lazy { importRtFunction("GetObjCKotlinTypeInfo") }
     val missingInitImp by lazy { importRtFunction("MissingInitImp") }
 
-    val Kotlin_mm_switchThreadStateNative by lazy { importRtFunction("Kotlin_mm_switchThreadStateNative") }
-    val Kotlin_mm_switchThreadStateRunnable by lazy { importRtFunction("Kotlin_mm_switchThreadStateRunnable") }
+    val Kotlin_mm_switchThreadStateNative by lazy {
+        importRtFunction(
+                if (generationState.shouldOptimize()) "Kotlin_mm_switchThreadStateNative" else "Kotlin_mm_switchThreadStateNative_debug"
+        )
+    }
+    val Kotlin_mm_switchThreadStateRunnable by lazy {
+        importRtFunction(
+                if (generationState.shouldOptimize()) "Kotlin_mm_switchThreadStateRunnable" else "Kotlin_mm_switchThreadStateRunnable_debug"
+        )
+    }
 
     val Kotlin_Interop_DoesObjectConformToProtocol by lazyRtFunction
     val Kotlin_Interop_IsObjectKindOfClass by lazyRtFunction
@@ -575,7 +584,10 @@ internal class CodegenLlvmHelpers(private val generationState: NativeGenerationS
     val llvmEhTypeidFor = llvmIntrinsic(
             "llvm.eh.typeid.for",
             functionType(int32Type, false, int8PtrType),
-            "nounwind", "readnone"
+            *listOfNotNull(
+                    "nounwind",
+                    "readnone".takeIf { HostManager.hostIsMac } // See https://youtrack.jetbrains.com/issue/KT-69002
+            ).toTypedArray()
     )
 
     var tlsCount = 0

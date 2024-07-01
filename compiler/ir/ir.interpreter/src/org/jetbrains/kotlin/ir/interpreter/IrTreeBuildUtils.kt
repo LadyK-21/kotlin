@@ -122,7 +122,6 @@ internal fun IrFunctionAccessExpression.shallowCopy(copyTypeArguments: Boolean =
         is IrDelegatingConstructorCall -> IrDelegatingConstructorCallImpl.fromSymbolOwner(SYNTHETIC_OFFSET, SYNTHETIC_OFFSET, type, symbol)
         is IrEnumConstructorCall ->
             IrEnumConstructorCallImpl(SYNTHETIC_OFFSET, SYNTHETIC_OFFSET, type, symbol, typeArgumentsCount, valueArgumentsCount)
-        else -> TODO("Expression $this cannot be copied")
     }.apply {
         if (copyTypeArguments) {
             (0 until this@shallowCopy.typeArgumentsCount).forEach { this.putTypeArgument(it, this@shallowCopy.getTypeArgument(it)) }
@@ -152,7 +151,7 @@ internal fun IrBuiltIns.irIfNullThenElse(nullableArg: IrExpression, ifTrue: IrEx
     val trueBranch = IrBranchImpl(nullCondition, ifTrue) // use default
     val elseBranch = IrElseBranchImpl(IrConstImpl.constTrue(SYNTHETIC_OFFSET, SYNTHETIC_OFFSET, this.booleanType), ifFalse)
 
-    return IrIfThenElseImpl(SYNTHETIC_OFFSET, SYNTHETIC_OFFSET, ifTrue.type).apply { branches += listOf(trueBranch, elseBranch) }
+    return IrWhenImpl(SYNTHETIC_OFFSET, SYNTHETIC_OFFSET, ifTrue.type).apply { branches += listOf(trueBranch, elseBranch) }
 }
 
 internal fun IrBuiltIns.emptyArrayConstructor(arrayType: IrType): IrConstructorCall {
