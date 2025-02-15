@@ -16,10 +16,10 @@ import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.testbase.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
 import org.jetbrains.kotlin.gradle.uklibs.*
+import org.jetbrains.kotlin.gradle.testbase.useAsZipFile
+import org.junit.jupiter.api.Disabled
 import java.io.File
-import kotlin.test.assertContains
-import kotlin.test.assertEquals
-import kotlin.test.fail
+import kotlin.test.*
 
 @MppGradlePluginTests
 class BuildScriptInjectionIT : KGPBaseTest() {
@@ -27,7 +27,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
     @GradleTest
     fun publishAndConsumeKtsTemplate(version: GradleVersion) {
         publishAndConsumeProject(
-            "buildScriptInjection",
+            "emptyKts",
             version,
         )
     }
@@ -35,7 +35,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
     @GradleTest
     fun publishAndConsumeGroovyTemplate(version: GradleVersion) {
         publishAndConsumeProject(
-            "buildScriptInjectionGroovy",
+            "empty",
             version,
         )
     }
@@ -43,9 +43,9 @@ class BuildScriptInjectionIT : KGPBaseTest() {
     @GradleTest
     fun consumeProjectDependencyViaSettingsInjection(version: GradleVersion) {
         // Use Groovy because it loads faster
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             addKgpToBuildScriptCompilationClasspath()
-            val producer = project("buildScriptInjectionGroovy", version) {
+            val producer = project("empty", version) {
                 buildScriptInjection {
                     project.applyMultiplatform {
                         linuxArm64()
@@ -55,7 +55,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
                     }
                 }
             }
-            val consumer = project("buildScriptInjectionGroovy", version) {
+            val consumer = project("empty", version) {
                 buildScriptInjection {
                     project.applyMultiplatform {
                         linuxArm64()
@@ -117,7 +117,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
     @GradleTest
     fun buildScriptReturnIsCCFriendly(version: GradleVersion) {
         // Sanity check that enabling CC produces CC serialization errors with inappropriately constructed providers in providerBuildScriptReturn
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             val returnValue = providerBuildScriptReturn {
                 project.provider { project }
             }
@@ -130,7 +130,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
         }
 
         // Check that in the simple case we don't fail to return value with CC
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             buildScriptReturn {
                 project.layout.projectDirectory.file("foo").asFile
             }.buildAndReturn(
@@ -143,7 +143,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
             @get:OutputFile
             abstract val out: RegularFileProperty
         }
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             val taskName = "foo"
             val produceCCSerializationError = "produceCCSerializationError"
             val mappedTaskOutputProvider: GradleProjectBuildScriptInjectionContext.() -> Provider<File> = {
@@ -187,7 +187,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
         val a2 = A("2")
 
         // Catch exceptions emitted by tasks at execution
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             buildScriptInjection {
                 project.tasks.register("throwA1") {
                     it.doLast { throw a1 }
@@ -223,7 +223,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
         }
 
         // Build failures caused by configuration errors are also catchable
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             buildScriptInjection {
                 throw A()
             }
@@ -233,7 +233,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
             )
         }
 
-        project("buildScriptInjectionGroovy", version) {
+        project("empty", version) {
             buildScriptInjection {
                 throw B()
             }
@@ -248,7 +248,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
     @GradleTest
     fun buildscriptBlockInjection(version: GradleVersion) {
         testBuildscriptBlockInjection(
-            "buildScriptInjection",
+            "emptyKts",
             version,
         )
     }
@@ -256,8 +256,108 @@ class BuildScriptInjectionIT : KGPBaseTest() {
     @GradleTest
     fun buildscriptBlockInjectionGroovy(version: GradleVersion) {
         testBuildscriptBlockInjection(
-            "buildScriptInjectionGroovy",
+            "empty",
             version,
+        )
+    }
+
+    @GradleTest
+    fun publishGeneratedJavaSource(version: GradleVersion) {
+        project("empty", version) {
+            buildScriptInjection {
+                project.plugins.apply("java")
+                java.sourceSets.getByName("main").compileJavaSource(
+                    project,
+                    className = "Generated",
+                    """
+                        public class Generated { }
+                    """.trimIndent()
+                )
+            }
+
+            assertEquals(
+                setOf(
+                    "META-INF/MANIFEST.MF",
+                    "Generated.class",
+                ),
+                publishJava(PublisherConfiguration()).rootComponent.jar.useAsZipFile {
+                    it.entries().asSequence().filter { !it.isDirectory }.map { it.name }.toSet()
+                }
+            )
+        }
+    }
+
+    @Disabled("Yahor: Failing after merge")
+    @GradleTest
+    fun compositeBuild(version: GradleVersion) {
+        val parent = "Parent"
+        val child = "Child"
+        val parentGroup = "foo"
+        val parentId = "includeme"
+
+        // Declare a Parent class in a project
+        val parentClassProducer = project("empty", version) {
+            settingsBuildScriptInjection {
+                settings.rootProject.name = parentId
+            }
+            addKgpToBuildScriptCompilationClasspath()
+            buildScriptInjection {
+                project.group = parentGroup
+                project.applyMultiplatform {
+                    jvm()
+                    sourceSets.getByName("commonMain").compileSource("open class ${parent}")
+                }
+            }
+        }
+
+        // Inherit from Parent in Child and consumer the project above as a modular dependency
+        val consumer = project("empty", version) {
+            includeBuild(parentClassProducer)
+            addKgpToBuildScriptCompilationClasspath()
+            buildScriptInjection {
+                project.applyMultiplatform {
+                    jvm()
+                    sourceSets.getByName("commonMain").compileSource("class ${child} : ${parent}()")
+                    sourceSets.getByName("commonMain").dependencies {
+                        implementation("${parentGroup}:${parentId}:1.0")
+                    }
+                }
+            }
+        }
+
+        // Check we managed to compile the Child class
+        assertFileExists(
+            consumer.buildScriptReturn {
+                kotlinMultiplatform.jvm().compilations.getByName("main").output.classesDirs.singleFile.resolve("${child}.class")
+            }.buildAndReturn("compileKotlinJvm")
+        )
+    }
+
+    @Test
+    fun testPrependToOrCreateBuildscriptBlock() {
+        assertEquals(
+            """
+            buildscript {
+            foo
+            
+            }
+            
+            """.trimIndent(),
+            """
+            buildscript {
+            }
+            
+            """.trimIndent().prependToOrCreateBuildscriptBlock("foo")
+        )
+        assertEquals(
+            """
+            buildscript {
+            foo
+            }
+            
+            """.trimIndent(),
+            """
+            """.trimIndent().prependToOrCreateBuildscriptBlock("foo")
         )
     }
 
@@ -295,10 +395,14 @@ class BuildScriptInjectionIT : KGPBaseTest() {
         targetProject: String,
         version: GradleVersion,
     ) {
+        val producerName = "producer"
         val publishedProject = project(
             targetProject,
             version,
         ) {
+            settingsBuildScriptInjection {
+                settings.rootProject.name = producerName
+            }
             addKgpToBuildScriptCompilationClasspath()
             buildScriptInjection {
                 project.applyMultiplatform {
@@ -328,7 +432,7 @@ class BuildScriptInjectionIT : KGPBaseTest() {
                     }
 
                     sourceSets.commonMain.dependencies {
-                        implementation(publishedProject.coordinate)
+                        implementation(publishedProject.rootCoordinate)
                     }
                 }
             }
@@ -351,9 +455,9 @@ class BuildScriptInjectionIT : KGPBaseTest() {
 
             assertEquals(
                 listOf(
-                    listOf("foo", "producer", "1.0", "linuxMain"),
-                    listOf("foo", "producer", "1.0", "nativeMain"),
-                    listOf("foo", "producer", "1.0", "commonMain"),
+                    listOf("foo", producerName, "1.0", "linuxMain"),
+                    listOf("foo", producerName, "1.0", "nativeMain"),
+                    listOf("foo", producerName, "1.0", "commonMain"),
                 ),
                 transformedFiles.map { it.nameWithoutExtension.split("-").take(4) },
             )

@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.ir.backend.js.transformers.irToJs.TranslationMode
 import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImplForJsIC
 import org.jetbrains.kotlin.js.config.*
 import org.jetbrains.kotlin.serialization.js.ModuleKind
+import org.jetbrains.kotlin.util.PerformanceManager
 import java.io.File
 
 class Ir2JsTransformer private constructor(
@@ -124,7 +125,7 @@ internal class K2JsCompilerImpl(
     outputName: String,
     outputDir: File,
     messageCollector: MessageCollector,
-    performanceManager: CommonCompilerPerformanceManager?,
+    performanceManager: PerformanceManager?,
 ) : K2JsCompilerImplBase(
     arguments = arguments,
     configuration = configuration,
@@ -170,9 +171,11 @@ internal class K2JsCompilerImpl(
             return null
         }
 
-        performanceManager?.notifyCompilerInitialized(
-            sourcesFiles.size, environmentForJS.countLinesOfCode(sourcesFiles), "$moduleName-${configuration.moduleKind}"
-        )
+        performanceManager?.apply {
+            targetDescription = "$moduleName-${configuration.moduleKind}"
+            addSourcesStats(sourcesFiles.size, environmentForJS.countLinesOfCode(sourcesFiles))
+            notifyCompilerInitialized()
+        }
 
         return environmentForJS
     }
@@ -205,7 +208,7 @@ internal class K2JsCompilerImpl(
         JsConfigurationUpdater.checkWasmArgumentsUsage(arguments, messageCollector)
 
         configuration.phaseConfig = createPhaseConfig(arguments).also {
-            if (arguments.listPhases) it.list(getJsPhases(configuration))
+            if (arguments.listPhases) it.list(getJsLowerings(configuration))
         }
         val ir2JsTransformer = Ir2JsTransformer(arguments, module, messageCollector, mainCallArguments)
         val outputs = JsBackendPipelinePhase.compileNonIncrementally(

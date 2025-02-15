@@ -50,6 +50,9 @@ import org.jetbrains.kotlin.incremental.parsing.classesFqNames
 import org.jetbrains.kotlin.incremental.storage.FileLocations
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
+import org.jetbrains.kotlin.util.CodeAnalysisMeasurement
+import org.jetbrains.kotlin.util.CodeGenerationMeasurement
+import org.jetbrains.kotlin.util.CompilerInitializationMeasurement
 import java.io.File
 import java.rmi.NoSuchObjectException
 import java.rmi.registry.Registry
@@ -660,20 +663,36 @@ abstract class CompileServiceImplBase(
         }
 
         val verifiedPreciseJavaTracking = k2jvmArgs.disablePreciseJavaTrackingIfK2(
-            usePreciseJavaTrackingByDefault = incrementalCompilationOptions.usePreciseJavaTracking
+            usePreciseJavaTrackingByDefault = incrementalCompilationOptions.icFeatures.usePreciseJavaTracking
         )
 
-        val compiler = IncrementalJvmCompilerRunner(
-            workingDir,
-            reporter,
-            buildHistoryFile = incrementalCompilationOptions.multiModuleICSettings?.buildHistoryFile,
-            outputDirs = incrementalCompilationOptions.outputFiles,
-            usePreciseJavaTracking = verifiedPreciseJavaTracking,
-            modulesApiHistory = modulesApiHistory,
-            kotlinSourceFilesExtensions = allKotlinExtensions,
-            classpathChanges = incrementalCompilationOptions.classpathChanges,
-            icFeatures = incrementalCompilationOptions.icFeatures,
-        )
+        val compiler = if (incrementalCompilationOptions.useJvmFirRunner) {
+            IncrementalFirJvmCompilerRunner(
+                workingDir,
+                reporter,
+                buildHistoryFile = incrementalCompilationOptions.multiModuleICSettings?.buildHistoryFile,
+                modulesApiHistory = modulesApiHistory,
+                kotlinSourceFilesExtensions = allKotlinExtensions,
+                outputDirs = incrementalCompilationOptions.outputFiles,
+                classpathChanges = incrementalCompilationOptions.classpathChanges,
+                icFeatures = incrementalCompilationOptions.icFeatures.copy(
+                    usePreciseJavaTracking = verifiedPreciseJavaTracking
+                ),
+            )
+        } else {
+            IncrementalJvmCompilerRunner(
+                workingDir,
+                reporter,
+                buildHistoryFile = incrementalCompilationOptions.multiModuleICSettings?.buildHistoryFile,
+                outputDirs = incrementalCompilationOptions.outputFiles,
+                modulesApiHistory = modulesApiHistory,
+                kotlinSourceFilesExtensions = allKotlinExtensions,
+                classpathChanges = incrementalCompilationOptions.classpathChanges,
+                icFeatures = incrementalCompilationOptions.icFeatures.copy(
+                    usePreciseJavaTracking = verifiedPreciseJavaTracking
+                ),
+            )
+        }
         return try {
             compiler.compile(
                 allKotlinFiles, k2jvmArgs, compilerMessageCollector, incrementalCompilationOptions.sourceChanges.toChangedFiles(),

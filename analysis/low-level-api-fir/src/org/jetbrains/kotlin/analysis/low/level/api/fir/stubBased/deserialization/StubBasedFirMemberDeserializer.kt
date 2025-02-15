@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.fir.deserialization.toLazyEffectiveVisibility
 import org.jetbrains.kotlin.fir.expressions.builder.buildExpressionStub
 import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.transformers.setLazyPublishedVisibility
+import org.jetbrains.kotlin.fir.scopes.FirScopeProvider
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
@@ -181,13 +182,14 @@ internal class StubBasedFirMemberDeserializer(
     private val initialOrigin: FirDeclarationOrigin
 ) {
 
-    fun loadTypeAlias(typeAlias: KtTypeAlias, aliasSymbol: FirTypeAliasSymbol): FirTypeAlias {
+    fun loadTypeAlias(typeAlias: KtTypeAlias, aliasSymbol: FirTypeAliasSymbol, scopeProvider: FirScopeProvider): FirTypeAlias {
         val name = typeAlias.nameAsSafeName
         val local = c.childContext(typeAlias, containingDeclarationSymbol = aliasSymbol)
         return buildTypeAlias {
             source = KtRealPsiSourceElement(typeAlias)
             moduleData = c.moduleData
             origin = initialOrigin
+            this.scopeProvider = scopeProvider
             this.name = name
             val visibility = typeAlias.visibility
             status = FirResolvedDeclarationStatusWithLazyEffectiveVisibility(
@@ -425,6 +427,7 @@ internal class StubBasedFirMemberDeserializer(
 
     private fun loadContextReceiver(contextReceiver: KtContextReceiver, containingDeclarationSymbol: FirBasedSymbol<*>): FirValueParameter {
         return buildValueParameter {
+            this.source = KtRealPsiSourceElement(contextReceiver)
             this.moduleData = c.moduleData
             this.origin = initialOrigin
             this.name = SpecialNames.UNDERSCORE_FOR_UNUSED_VAR
@@ -441,6 +444,7 @@ internal class StubBasedFirMemberDeserializer(
 
     private fun loadContextReceiver(parameter: KtParameter, containingDeclarationSymbol: FirBasedSymbol<*>): FirValueParameter {
         return buildValueParameter {
+            this.source = KtRealPsiSourceElement(parameter)
             this.moduleData = c.moduleData
             this.origin = initialOrigin
             this.name = if (parameter.name == "_") SpecialNames.UNDERSCORE_FOR_UNUSED_VAR else parameter.nameAsSafeName
@@ -461,6 +465,7 @@ internal class StubBasedFirMemberDeserializer(
     ): List<FirValueParameter> {
         return classOrObject.contextReceivers.mapNotNull { it.typeReference() }.map {
             buildValueParameter {
+                this.source = KtRealPsiSourceElement(it)
                 this.moduleData = c.moduleData
                 this.origin = initialOrigin
                 this.name = SpecialNames.UNDERSCORE_FOR_UNUSED_VAR

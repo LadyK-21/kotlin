@@ -10,7 +10,6 @@ import com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.analyzer.CompilationErrorException
 import org.jetbrains.kotlin.cli.common.CLICompiler
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
-import org.jetbrains.kotlin.cli.common.CommonCompilerPerformanceManager
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.ExitCode.*
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
@@ -40,6 +39,7 @@ import org.jetbrains.kotlin.library.impl.BuiltInsPlatform
 import org.jetbrains.kotlin.library.metadata.KlibMetadataVersion
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
 import org.jetbrains.kotlin.platform.wasm.WasmTarget
+import org.jetbrains.kotlin.util.PerformanceManager
 import org.jetbrains.kotlin.utils.KotlinPaths
 import org.jetbrains.kotlin.utils.PathUtil
 import org.jetbrains.kotlin.wasm.config.WasmConfigurationKeys
@@ -47,9 +47,9 @@ import java.io.File
 
 
 class K2JSCompiler : CLICompiler<K2JSCompilerArguments>() {
-    class K2JSCompilerPerformanceManager : CommonCompilerPerformanceManager("Kotlin to JS Compiler")
+    class K2JSCompilerPerformanceManager : PerformanceManager("Kotlin to JS Compiler")
 
-    override val defaultPerformanceManager: CommonCompilerPerformanceManager = K2JSCompilerPerformanceManager()
+    override val defaultPerformanceManager: PerformanceManager = K2JSCompilerPerformanceManager()
 
     override fun createArguments(): K2JSCompilerArguments {
         return K2JSCompilerArguments()
@@ -112,7 +112,7 @@ class K2JSCompiler : CLICompiler<K2JSCompilerArguments>() {
 
         compilerImpl.checkTargetArguments()?.let { return it }
 
-        val pluginLoadResult = loadPlugins(paths, arguments, configuration)
+        val pluginLoadResult = loadPlugins(paths, arguments, configuration, rootDisposable)
         if (pluginLoadResult != OK) return pluginLoadResult
 
         CommonWebConfigurationUpdater.initializeCommonConfiguration(compilerImpl.configuration, arguments)
@@ -334,7 +334,7 @@ fun RuntimeDiagnostic.Companion.resolve(
     }
 }
 
-fun loadPluginsForTests(configuration: CompilerConfiguration): ExitCode {
+fun loadPluginsForTests(configuration: CompilerConfiguration, parentDisposable: Disposable): ExitCode {
     var pluginClasspath: Iterable<String> = emptyList()
     val kotlinPaths = PathUtil.kotlinPathsForCompiler
     val libPath = kotlinPaths.libPath.takeIf { it.exists() && it.isDirectory } ?: File(".")
@@ -342,6 +342,6 @@ fun loadPluginsForTests(configuration: CompilerConfiguration): ExitCode {
         PathUtil.KOTLIN_SCRIPTING_PLUGIN_CLASSPATH_JARS.map { File(libPath, it) }.partition { it.exists() }
     pluginClasspath = jars.map { it.canonicalPath } + pluginClasspath
 
-    return PluginCliParser.loadPluginsSafe(pluginClasspath, listOf(), listOf(), configuration)
+    return PluginCliParser.loadPluginsSafe(pluginClasspath, listOf(), listOf(), configuration, parentDisposable)
 }
 

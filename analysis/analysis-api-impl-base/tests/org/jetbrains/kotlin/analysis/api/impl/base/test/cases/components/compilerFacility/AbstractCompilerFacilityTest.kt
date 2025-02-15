@@ -196,9 +196,11 @@ abstract class AbstractCompilerFacilityTest : AbstractAnalysisApiBasedTest() {
     }
 
     private fun dumpClassFiles(outputFiles: List<KaCompiledFile>): String {
-        val classReaders =
-            outputFiles.filter { it.path.endsWith(".class", ignoreCase = true) }.also { check(it.isNotEmpty()) }.sortedBy { it.path }
-                .map { ClassReader(it.content) }
+        val classReaders = outputFiles.filter { it.path.endsWith(".class", ignoreCase = true) }
+            .also { check(it.isNotEmpty()) }
+            .sortedBy { it.path }
+            .map { ClassReader(it.content) }
+
         return dumpClassFromClassReaders(classReaders)
     }
 
@@ -284,7 +286,7 @@ internal fun createCodeFragment(ktFile: KtFile, module: TestModule, testServices
         return null
     }
 
-    val contextElement = testServices.expressionMarkerProvider.getElementOfTypeAtCaret<KtElement>(ktFile)
+    val contextElement = testServices.expressionMarkerProvider.getBottommostElementOfTypeAtCaret<KtElement>(ktFile)
 
     val fragmentText = ioFragmentFile.readText()
     val isBlockFragment = fragmentText.any { it == '\n' }

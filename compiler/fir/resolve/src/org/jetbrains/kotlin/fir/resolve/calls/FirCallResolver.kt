@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.FirAbstractBod
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.FirExpressionsResolveTransformer
 import org.jetbrains.kotlin.fir.resolve.transformers.body.resolve.resultType
 import org.jetbrains.kotlin.fir.resolve.transformers.doesResolutionResultOverrideOtherToPreserveCompatibility
-import org.jetbrains.kotlin.fir.scopes.impl.originalConstructorIfTypeAlias
+import org.jetbrains.kotlin.fir.scopes.impl.typeAliasConstructorInfo
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.symbols.lazyResolveToPhase
@@ -510,8 +510,8 @@ class FirCallResolver(
         val chosenCandidate = reducedCandidates.single()
         chosenCandidate.updateSourcesOfReceivers()
 
-        // Due to CandidateFactory.Companion.creteForCallableReferenceCandidate, it's guaranteed that
-        // all callable reference candidates' CS are effectively clones of the contain call ones.
+        // Due to CandidateFactory.Companion.createForCallableReferenceCandidate, it's guaranteed that
+        // all callable reference candidates' CS are effectively clones of the containing call's constraint systems.
         //
         // And after we processed the reference candidate, its CS becomes a superset of the original one.
         // Thus, we apply it back for the single successful chosen candidate
@@ -925,7 +925,7 @@ class AllCandidatesCollector(
 
     override fun consumeCandidate(group: TowerGroup, candidate: Candidate, context: ResolutionContext): CandidateApplicability {
         // Filter duplicate symbols. In the case of typealias constructor calls, we consider the original constructor for uniqueness.
-        val key = (candidate.symbol.fir as? FirConstructor)?.originalConstructorIfTypeAlias?.symbol
+        val key = (candidate.symbol.fir as? FirConstructor)?.typeAliasConstructorInfo?.originalConstructor?.symbol
             ?: candidate.symbol
 
         // To preserve the behavior of a HashSet which keeps the first added item, we use getOrPut instead of put.
