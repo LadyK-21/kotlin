@@ -46,6 +46,9 @@ import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.Applic
 import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.FirStandaloneServiceRegistrar
 import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.KotlinStaticProjectStructureProvider
 import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.StandaloneProjectFactory
+import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.registerProjectExtensionPoints
+import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.registerProjectModelServices
+import org.jetbrains.kotlin.analysis.api.standalone.base.projectStructure.registerProjectServices
 import org.jetbrains.kotlin.analysis.api.standalone.base.services.LLStandaloneFirElementByPsiElementChooser
 import org.jetbrains.kotlin.analysis.low.level.api.fir.api.services.LLFirElementByPsiElementChooser
 import org.jetbrains.kotlin.analysis.project.structure.builder.KtModuleProviderBuilder
@@ -99,7 +102,7 @@ public class StandaloneAnalysisAPISessionBuilder(
     private lateinit var projectStructureProvider: KotlinStaticProjectStructureProvider
 
     public fun buildKtModuleProvider(init: KtModuleProviderBuilder.() -> Unit) {
-        projectStructureProvider = buildProjectStructureProvider(kotlinCoreProjectEnvironment, init)
+        projectStructureProvider = buildProjectStructureProvider(kotlinCoreProjectEnvironment.environment, project, init)
     }
 
     @Deprecated(
@@ -110,7 +113,8 @@ public class StandaloneAnalysisAPISessionBuilder(
         compilerConfiguration: CompilerConfiguration,
     ) {
         projectStructureProvider = buildKtModuleProviderByCompilerConfiguration(
-            kotlinCoreProjectEnvironment,
+            kotlinCoreProjectEnvironment.environment,
+            project,
             compilerConfiguration,
             getPsiFilesFromPaths(kotlinCoreProjectEnvironment, getSourceFilePaths(compilerConfiguration)),
         )
@@ -138,9 +142,9 @@ public class StandaloneAnalysisAPISessionBuilder(
     ) {
         val project = kotlinCoreProjectEnvironment.project
         project.apply {
-            serviceRegistrars.forEach { it.registerProjectServices(project) }
-            serviceRegistrars.forEach { it.registerProjectExtensionPoints(project) }
-            serviceRegistrars.forEach { it.registerProjectModelServices(project, kotlinCoreProjectEnvironment.parentDisposable) }
+            serviceRegistrars.registerProjectExtensionPoints(project, data = Unit)
+            serviceRegistrars.registerProjectServices(project, data = Unit)
+            serviceRegistrars.registerProjectModelServices(project, kotlinCoreProjectEnvironment.parentDisposable, data = Unit)
 
             registerService(KotlinModificationTrackerFactory::class.java, KotlinStandaloneModificationTrackerFactory::class.java)
             registerService(KotlinGlobalModificationService::class.java, KotlinStandaloneGlobalModificationService::class.java)
@@ -203,7 +207,7 @@ public class StandaloneAnalysisAPISessionBuilder(
         val sourceKtFiles = projectStructureProvider.allSourceFiles.filterIsInstance<KtFile>()
         val libraryRoots = StandaloneProjectFactory.getAllBinaryRoots(
             projectStructureProvider.allModules,
-            kotlinCoreProjectEnvironment,
+            kotlinCoreProjectEnvironment.environment,
         )
 
         val createPackagePartProvider = StandaloneProjectFactory.createPackagePartsProvider(libraryRoots)

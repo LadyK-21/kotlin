@@ -8,14 +8,11 @@ package org.jetbrains.kotlin.fir.resolve.transformers.body.resolve
 import org.jetbrains.kotlin.*
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.fir.*
-import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.utils.isExternal
 import org.jetbrains.kotlin.fir.declarations.utils.isLocal
 import org.jetbrains.kotlin.fir.diagnostics.*
 import org.jetbrains.kotlin.fir.expressions.*
-import org.jetbrains.kotlin.fir.expressions.FirAnnotation
-import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirOperation.*
 import org.jetbrains.kotlin.fir.expressions.builder.*
 import org.jetbrains.kotlin.fir.expressions.impl.FirContractCallBlock
@@ -29,7 +26,6 @@ import org.jetbrains.kotlin.fir.references.builder.buildResolvedNamedReference
 import org.jetbrains.kotlin.fir.references.builder.buildSimpleNamedReference
 import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
 import org.jetbrains.kotlin.fir.resolve.*
-import org.jetbrains.kotlin.fir.resolve.ResolutionMode
 import org.jetbrains.kotlin.fir.resolve.ResolutionMode.ArrayLiteralPosition
 import org.jetbrains.kotlin.fir.resolve.ResolutionMode.ContextIndependent
 import org.jetbrains.kotlin.fir.resolve.calls.ConeResolutionAtom
@@ -54,8 +50,6 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.builder.buildErrorTypeRef
 import org.jetbrains.kotlin.fir.visitors.*
-import org.jetbrains.kotlin.fir.visitors.FirDefaultVisitorVoid
-import org.jetbrains.kotlin.fir.visitors.transformSingle
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.name.StandardClassIds
@@ -1234,7 +1228,7 @@ open class FirExpressionsResolveTransformer(transformer: FirAbstractBodyResolveT
             callableReferenceAccess
         } else {
             components.syntheticCallGenerator.resolveCallableReferenceWithSyntheticOuterCall(
-                callableReferenceAccess, data.expectedType, resolutionContext, data
+                callableReferenceAccess, data.expectedType, resolutionContext
             )
         }.also {
             dataFlowAnalyzer.exitCallableReference(it)
@@ -1739,6 +1733,7 @@ open class FirExpressionsResolveTransformer(transformer: FirAbstractBodyResolveT
             // If the get call arguments are SAM converted, unwrap the SAM conversion.
             // Otherwise, we might fail resolution if the get and set operator parameter types are different
             // (different SAM types or one is a SAM type and the other isn't).
+            // See testData/ir/irText/expressions/callableReferences/caoWithAdaptationForSam.kt
             val unwrappedSamIndex = (index as? FirSamConversionExpression)?.expression ?: index
             generateTemporaryVariable(
                 session.moduleData,
@@ -1746,7 +1741,10 @@ open class FirExpressionsResolveTransformer(transformer: FirAbstractBodyResolveT
                 name = SpecialNames.subscribeOperatorIndex(i),
                 initializer = unwrappedSamIndex,
                 typeRef = unwrappedSamIndex.resolvedType.toFirResolvedTypeRef(),
-            )
+            ).apply {
+                // See compiler/testData/codegen/boxInline/reified/kt28234.kt
+                replaceBodyResolveState(FirPropertyBodyResolveState.INITIALIZER_RESOLVED)
+            }
         }
 
         arrayVariable.transformSingle(transformer, ResolutionMode.ContextIndependent)
@@ -1903,13 +1901,13 @@ open class FirExpressionsResolveTransformer(transformer: FirAbstractBodyResolveT
             // Attempt to use the same TypeApproximatorConfiguration.IntermediateApproximationToSupertypeAfterCompletionInK2
             // in this branch provokes questionable red-to-green change in KT-51045 test (assignToStarProjectedType.kt)
             session.typeApproximator.approximateToSubType(
-                typeFromCallee.coneType, TypeApproximatorConfiguration.FinalApproximationAfterResolutionAndInference
+                typeFromCallee, TypeApproximatorConfiguration.FinalApproximationAfterResolutionAndInference
             )
         } else {
             session.typeApproximator.approximateToSuperType(
-                typeFromCallee.coneType, TypeApproximatorConfiguration.IntermediateApproximationToSupertypeAfterCompletionInK2
+                typeFromCallee, TypeApproximatorConfiguration.IntermediateApproximationToSupertypeAfterCompletionInK2
             )
-        } ?: typeFromCallee.coneType
+        } ?: typeFromCallee
     }
 
 }

@@ -126,6 +126,17 @@ public class FirLightTreeDiagnosticsWithoutAliasExpansionTestGenerated extends A
     @TestDataPath("$PROJECT_ROOT")
     public class ContextParameters {
       @Nested
+      @TestMetadata("compiler/fir/analysis-tests/testData/resolve/contextParameters/declarationAndUsages")
+      @TestDataPath("$PROJECT_ROOT")
+      public class DeclarationAndUsages {
+        @Test
+        @TestMetadata("onClassifierDeclaration.kt")
+        public void testOnClassifierDeclaration() {
+          runTest("compiler/fir/analysis-tests/testData/resolve/contextParameters/declarationAndUsages/onClassifierDeclaration.kt");
+        }
+      }
+
+      @Nested
       @TestMetadata("compiler/fir/analysis-tests/testData/resolve/contextParameters/diagnostics")
       @TestDataPath("$PROJECT_ROOT")
       public class Diagnostics {
@@ -186,12 +197,6 @@ public class FirLightTreeDiagnosticsWithoutAliasExpansionTestGenerated extends A
       @TestMetadata("typeAliasConstructor.kt")
       public void testTypeAliasConstructor() {
         runTest("compiler/fir/analysis-tests/testData/resolve/expresssions/typeAliasConstructor.kt");
-      }
-
-      @Nested
-      @TestMetadata("compiler/fir/analysis-tests/testData/resolve/expresssions/operators")
-      @TestDataPath("$PROJECT_ROOT")
-      public class Operators {
       }
     }
 
@@ -306,6 +311,12 @@ public class FirLightTreeDiagnosticsWithoutAliasExpansionTestGenerated extends A
       @TestMetadata("simple.kt")
       public void testSimple() {
         runTest("compiler/fir/analysis-tests/testData/resolve/nestedTypeAliases/simple.kt");
+      }
+
+      @Test
+      @TestMetadata("typeAliasExpansionCapturesOuterTypeParametersErrorMessage.kt")
+      public void testTypeAliasExpansionCapturesOuterTypeParametersErrorMessage() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/nestedTypeAliases/typeAliasExpansionCapturesOuterTypeParametersErrorMessage.kt");
       }
 
       @Test

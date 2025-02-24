@@ -114,9 +114,10 @@ public interface KaModule {
 /**
  * A [KaModule] representing a set of source declarations.
  *
- * The Analysis API distinguishes between production and test source sets. As such, the `src` and `test` source sets of a "module" are
- * actually different [KaSourceModule]s. To allow a test source module to use the declarations from the production source module, the test
- * source module generally defines a [friend dependency][directFriendDependencies] on the production source module.
+ * A [KaSourceModule] does not necessarily have to correspond directly to an Analysis API platform's concept of a "module." For example, the
+ * IntelliJ implementation distinguishes between production and test source sets. As such, the `src` and `test` source sets of an IntelliJ
+ * module are actually different [KaSourceModule]s. To allow a test source module to use the internal declarations from the production
+ * source module, the test source module defines a [friend dependency][directFriendDependencies] on the production source module.
  */
 public interface KaSourceModule : KaModule {
     /**
@@ -223,6 +224,12 @@ public interface KaLibrarySourceModule : KaModule {
 
 /**
  * A module which contains Kotlin [builtins](https://kotlinlang.org/spec/built-in-types-and-their-semantics.html) for a specific platform.
+ *
+ * [KaBuiltinsModule] is a *fallback module* which, as a dependency, provides builtins for modules that don't have an associated Kotlin
+ * stdlib. Usually, a stdlib [KaLibraryModule] will have a higher precedence in dependencies and builtins will be resolved from there.
+ *
+ * Modules normally don't depend explicitly on [KaBuiltinsModule]. Rather, this dependency is materialized internally by the Analysis API's
+ * resolution engine.
  */
 @KaPlatformInterface
 public interface KaBuiltinsModule : KaModule {
@@ -276,10 +283,20 @@ public interface KaDanglingFileModule : KaModule {
     /**
      * The dangling file.
      */
+    @Deprecated(
+        "Use 'files' instead.",
+        ReplaceWith("files.single()", imports = ["kotlin.collections.single"])
+    )
     public val file: KtFile
+        get() = files.first()
 
     /**
-     * The module against which the [file] is analyzed.
+     * All dangling files analyzed together, as a single module.
+     */
+    public val files: List<KtFile>
+
+    /**
+     * The module against which [files] are analyzed.
      */
     public val contextModule: KaModule
 
@@ -289,7 +306,7 @@ public interface KaDanglingFileModule : KaModule {
     public val resolutionMode: KaDanglingFileResolutionMode
 
     /**
-     * Whether the [file] is a code fragment.
+     * Whether at least one of the [files] is a code fragment.
      *
      * This is useful to recognize code fragments when their PSI was collected.
      */
@@ -305,7 +322,7 @@ public interface KaDanglingFileModule : KaModule {
  * longer time.
  */
 public val KaDanglingFileModule.isStable: Boolean
-    get() = file.isPhysical && file.viewProvider.isEventSystemEnabled
+    get() = files.all { it.isPhysical && it.viewProvider.isEventSystemEnabled }
 
 /**
  * A module which represents a source file living outside the project's content root. For example, test data files, or the source files of

@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.resolve.dfa.controlFlowGraph
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
+import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.scopes.impl.declaredMemberScope
 import org.jetbrains.kotlin.fir.scopes.impl.multipleDelegatesWithTheSameSignature
@@ -55,7 +56,6 @@ import org.jetbrains.kotlin.types.model.TypeCheckerProviderContext
 import org.jetbrains.kotlin.util.ImplementationStatus
 import org.jetbrains.kotlin.util.OperatorNameConventions
 import org.jetbrains.kotlin.util.getChildren
-import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -984,3 +984,20 @@ private fun ConeKotlinType.containsMalformedArgument(context: CheckerContext, al
     typeArguments.any {
         it.type?.fullyExpandedType(context.session)?.isMalformedExpandedType(context, allowNullableNothing) == true
     }
+
+fun reportAtomicToPrimitiveProblematicAccess(
+    type: ConeKotlinType,
+    source: KtSourceElement?,
+    atomicReferenceClassId: ClassId,
+    appropriateCandidatesForArgument: Map<ClassId, ClassId>,
+    context: CheckerContext,
+    reporter: DiagnosticReporter,
+) {
+    val expanded = type.fullyExpandedType(context.session)
+    val argument = expanded.typeArguments.firstOrNull()?.type ?: return
+
+    if (argument.isPrimitive || argument.isValueClass(context.session)) {
+        val candidate = appropriateCandidatesForArgument[argument.classId]
+        reporter.reportOn(source, FirErrors.ATOMIC_REF_WITHOUT_CONSISTENT_IDENTITY, atomicReferenceClassId, argument, candidate, context)
+    }
+}

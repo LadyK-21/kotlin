@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
 import org.jetbrains.kotlin.analysis.api.projectStructure.KaSourceModule
 import org.jetbrains.kotlin.analysis.api.symbols.*
-import org.jetbrains.kotlin.analysis.api.symbols.pointers.KaPsiSymbolPointerCreator
 import org.jetbrains.kotlin.analysis.api.symbols.pointers.KaSymbolPointer
 import org.jetbrains.kotlin.asJava.builder.LightMemberOriginForDeclaration
 import org.jetbrains.kotlin.asJava.classes.METHOD_INDEX_BASE
@@ -26,7 +25,8 @@ import org.jetbrains.kotlin.light.classes.symbol.cachedValue
 import org.jetbrains.kotlin.light.classes.symbol.fields.SymbolLightField
 import org.jetbrains.kotlin.light.classes.symbol.fields.SymbolLightFieldForEnumEntry
 import org.jetbrains.kotlin.light.classes.symbol.fields.SymbolLightFieldForObject
-import org.jetbrains.kotlin.light.classes.symbol.methods.SymbolLightSimpleMethod
+import org.jetbrains.kotlin.light.classes.symbol.methods.SymbolLightConstructor.Companion.createConstructors
+import org.jetbrains.kotlin.light.classes.symbol.methods.SymbolLightSimpleMethod.Companion.createSimpleMethods
 import org.jetbrains.kotlin.light.classes.symbol.modifierLists.GranularModifiersBox
 import org.jetbrains.kotlin.light.classes.symbol.modifierLists.SymbolLightClassModifierList
 import org.jetbrains.kotlin.load.java.JvmAbi
@@ -59,7 +59,7 @@ internal open class SymbolLightClassForClassOrObject : SymbolLightClassForNamedC
         ktModule: KaModule,
     ) : this(
         classOrObjectDeclaration = classOrObject,
-        classSymbolPointer = KaPsiSymbolPointerCreator.symbolPointerOfType(classOrObject),
+        classSymbolPointer = classOrObject.createSymbolPointer(ktModule),
         ktModule = ktModule,
         manager = classOrObject.manager,
     ) {
@@ -127,15 +127,10 @@ internal open class SymbolLightClassForClassOrObject : SymbolLightClassForNamedC
                         it is KaKotlinPropertySymbol && it.origin == KaSymbolOrigin.SOURCE_MEMBER_GENERATED && it.name == StandardNames.ENUM_ENTRIES
                     }
                 }
-                .filterNot {
-                    hasTypeForValueClassInSignature(it)
-                }
 
             val suppressStatic = classKind() == KaClassKind.COMPANION_OBJECT
             createMethods(this@SymbolLightClassForClassOrObject, visibleDeclarations, result, suppressStatic = suppressStatic)
-
             createConstructors(this@SymbolLightClassForClassOrObject, declaredMemberScope.constructors, result)
-
 
             addMethodsFromCompanionIfNeeded(result, classSymbol)
 
@@ -169,16 +164,13 @@ internal open class SymbolLightClassForClassOrObject : SymbolLightClassForNamedC
     private fun KaSession.createMethodFromAny(functionSymbol: KaNamedFunctionSymbol, result: MutableList<PsiMethod>) {
         // Similar to `copy`, synthetic members from `Any` should refer to `data` class as origin, not the function in `Any`.
         val lightMemberOrigin = classOrObjectDeclaration?.let { LightMemberOriginForDeclaration(it, JvmDeclarationOriginKind.OTHER) }
-        result.add(
-            SymbolLightSimpleMethod(
-                ktAnalysisSession = this,
-                functionSymbol,
-                lightMemberOrigin,
-                this@SymbolLightClassForClassOrObject,
-                METHOD_INDEX_BASE,
-                false,
-                suppressStatic = false,
-            )
+        createSimpleMethods(
+            this@SymbolLightClassForClassOrObject,
+            result,
+            functionSymbol,
+            lightMemberOrigin,
+            METHOD_INDEX_BASE,
+            isTopLevel = false,
         )
     }
 
@@ -202,17 +194,13 @@ internal open class SymbolLightClassForClassOrObject : SymbolLightClassForNamedC
         fun createDelegateMethod(functionSymbol: KaNamedFunctionSymbol) {
             val kotlinOrigin = functionSymbol.psiSafe<KtDeclaration>() ?: classOrObjectDeclaration
             val lightMemberOrigin = kotlinOrigin?.let { LightMemberOriginForDeclaration(it, JvmDeclarationOriginKind.DELEGATION) }
-            result.add(
-                SymbolLightSimpleMethod(
-                    ktAnalysisSession = this,
-                    functionSymbol,
-                    lightMemberOrigin,
-                    this@SymbolLightClassForClassOrObject,
-                    METHOD_INDEX_FOR_NON_ORIGIN_METHOD,
-                    false,
-                    argumentsSkipMask = null,
-                    suppressStatic = false,
-                )
+            createSimpleMethods(
+                containingClass = this@SymbolLightClassForClassOrObject,
+                result = result,
+                functionSymbol = functionSymbol,
+                lightMemberOrigin = lightMemberOrigin,
+                methodIndex = METHOD_INDEX_FOR_NON_ORIGIN_METHOD,
+                isTopLevel = false,
             )
         }
 

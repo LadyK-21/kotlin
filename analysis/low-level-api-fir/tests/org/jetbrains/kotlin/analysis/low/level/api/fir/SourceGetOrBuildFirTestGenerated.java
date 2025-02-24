@@ -480,6 +480,12 @@ public class SourceGetOrBuildFirTestGenerated extends AbstractSourceGetOrBuildFi
     }
 
     @Test
+    @TestMetadata("isInitializedCommonModule.kt")
+    public void testIsInitializedCommonModule() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/calls/isInitializedCommonModule.kt");
+    }
+
+    @Test
     @TestMetadata("noReceiverOnLambda.kt")
     public void testNoReceiverOnLambda() {
       runTest("analysis/low-level-api-fir/testData/getOrBuildFir/calls/noReceiverOnLambda.kt");
@@ -958,6 +964,48 @@ public class SourceGetOrBuildFirTestGenerated extends AbstractSourceGetOrBuildFi
     }
 
     @Test
+    @TestMetadata("stringConcatenation.kt")
+    public void testStringConcatenation() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation.kt");
+    }
+
+    @Test
+    @TestMetadata("stringConcatenation_lhs1.kt")
+    public void testStringConcatenation_lhs1() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation_lhs1.kt");
+    }
+
+    @Test
+    @TestMetadata("stringConcatenation_lhs2.kt")
+    public void testStringConcatenation_lhs2() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation_lhs2.kt");
+    }
+
+    @Test
+    @TestMetadata("stringConcatenation_op1.kt")
+    public void testStringConcatenation_op1() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation_op1.kt");
+    }
+
+    @Test
+    @TestMetadata("stringConcatenation_op2.kt")
+    public void testStringConcatenation_op2() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation_op2.kt");
+    }
+
+    @Test
+    @TestMetadata("stringConcatenation_rhs1.kt")
+    public void testStringConcatenation_rhs1() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation_rhs1.kt");
+    }
+
+    @Test
+    @TestMetadata("stringConcatenation_rhs2.kt")
+    public void testStringConcatenation_rhs2() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringConcatenation_rhs2.kt");
+    }
+
+    @Test
     @TestMetadata("stringLiteral.kt")
     public void testStringLiteral() {
       runTest("analysis/low-level-api-fir/testData/getOrBuildFir/expressions/stringLiteral.kt");
@@ -1174,6 +1222,30 @@ public class SourceGetOrBuildFirTestGenerated extends AbstractSourceGetOrBuildFi
     }
 
     @Test
+    @TestMetadata("destructuringNonLocal2.kt")
+    public void testDestructuringNonLocal2() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/destructuringNonLocal2.kt");
+    }
+
+    @Test
+    @TestMetadata("destructuringNonLocalBeforeInitBlock.kt")
+    public void testDestructuringNonLocalBeforeInitBlock() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/destructuringNonLocalBeforeInitBlock.kt");
+    }
+
+    @Test
+    @TestMetadata("destructuringTopLevel.kt")
+    public void testDestructuringTopLevel() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/destructuringTopLevel.kt");
+    }
+
+    @Test
+    @TestMetadata("destructuringTopLevel2.kt")
+    public void testDestructuringTopLevel2() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/destructuringTopLevel2.kt");
+    }
+
+    @Test
     @TestMetadata("duplicatedClasses.kt")
     public void testDuplicatedClasses() {
       runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/duplicatedClasses.kt");
@@ -1238,6 +1310,12 @@ public class SourceGetOrBuildFirTestGenerated extends AbstractSourceGetOrBuildFi
     public void testSetterWithoutBodyValueParameterType() {
       runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/setterWithoutBodyValueParameterType.kt");
     }
+
+    @Test
+    @TestMetadata("typeParameterOnAnonymousFunction.kt")
+    public void testTypeParameterOnAnonymousFunction() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/invalidCode/typeParameterOnAnonymousFunction.kt");
+    }
   }
 
   @Nested
@@ -1299,6 +1377,12 @@ public class SourceGetOrBuildFirTestGenerated extends AbstractSourceGetOrBuildFi
     @Test
     public void testAllFilesPresentInTypes() {
       KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("analysis/low-level-api-fir/testData/getOrBuildFir/types"), Pattern.compile("^(.+)\\.(kt)$"), null, true);
+    }
+
+    @Test
+    @TestMetadata("definitelyNotNullType.kt")
+    public void testDefinitelyNotNullType() {
+      runTest("analysis/low-level-api-fir/testData/getOrBuildFir/types/definitelyNotNullType.kt");
     }
 
     @Test

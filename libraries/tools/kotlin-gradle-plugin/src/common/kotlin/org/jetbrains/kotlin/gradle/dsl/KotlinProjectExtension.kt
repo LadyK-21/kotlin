@@ -60,6 +60,12 @@ internal val Project.kotlinJvmExtensionOrNull: KotlinJvmProjectExtension?
 internal val Project.kotlinJvmExtension: KotlinJvmProjectExtension
     get() = extensions.getByName(KOTLIN_PROJECT_EXTENSION_NAME).castIsolatedKotlinPluginClassLoaderAware()
 
+internal val Project.kotlinAndroidExtensionOrNull: KotlinAndroidProjectExtension?
+    get() = extensions.findByName(KOTLIN_PROJECT_EXTENSION_NAME)?.castIsolatedKotlinPluginClassLoaderAware()
+
+internal val Project.kotlinAndroidExtension: KotlinAndroidProjectExtension
+    get() = extensions.getByName(KOTLIN_PROJECT_EXTENSION_NAME).castIsolatedKotlinPluginClassLoaderAware()
+
 internal val Project.multiplatformExtensionOrNull: KotlinMultiplatformExtension?
     get() = extensions.findByName(KOTLIN_PROJECT_EXTENSION_NAME)?.castIsolatedKotlinPluginClassLoaderAware()
 
@@ -209,11 +215,14 @@ abstract class KotlinJsProjectExtension(project: Project) :
     KotlinJsCompilerTypeHolder {
     lateinit var irPreset: KotlinJsIrSingleTargetPreset
 
-    @Deprecated("Use js() instead", ReplaceWith("js()"))
+    @Deprecated("Use js() instead. Scheduled for removal in Kotlin 2.3.", ReplaceWith("js()"), level = DeprecationLevel.ERROR)
     override val target: KotlinJsTargetDsl
         get() = targetFuture.lenient.getOrNull() ?: js()
 
-    @Deprecated("Because only the IR compiler is left, it's no longer necessary to know about the compiler type in properties")
+    @Deprecated(
+        "Because only the IR compiler is left, it's no longer necessary to know about the compiler type in properties. Scheduled for removal in Kotlin 2.3.",
+        level = DeprecationLevel.ERROR
+    )
     override val compilerTypeFromProperties: KotlinJsCompilerType? = null
 
     override val targetFuture = CompletableFuture<KotlinJsTargetDsl>()
@@ -224,7 +233,7 @@ abstract class KotlinJsProjectExtension(project: Project) :
         }
     }
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     private fun jsInternal(
         body: KotlinJsTargetDsl.() -> Unit,
     ): KotlinJsTargetDsl {
@@ -276,7 +285,7 @@ abstract class KotlinJsProjectExtension(project: Project) :
         configure.execute(this)
     }
 
-    @Deprecated("Use js instead", ReplaceWith("js(body)"))
+    @Deprecated("Use js instead. Scheduled for removal in Kotlin 2.3.", ReplaceWith("js(body)"), level = DeprecationLevel.ERROR)
     open fun target(body: KotlinJsTargetDsl.() -> Unit) = js(body)
 
     @Deprecated(

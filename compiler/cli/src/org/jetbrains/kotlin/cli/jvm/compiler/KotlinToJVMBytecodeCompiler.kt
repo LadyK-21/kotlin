@@ -24,6 +24,8 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.toLogger
 import org.jetbrains.kotlin.cli.jvm.config.*
 import org.jetbrains.kotlin.cli.jvm.config.ClassicFrontendSpecificJvmConfigurationKeys.JAVA_CLASSES_TRACKER
+import org.jetbrains.kotlin.codegen.ClassBuilderFactories
+import org.jetbrains.kotlin.codegen.ClassBuilderFactory
 import org.jetbrains.kotlin.codegen.JvmBackendClassResolverForModuleWithDependencies
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.config.*
@@ -138,10 +140,18 @@ object KotlinToJVMBytecodeCompiler {
                 diagnosticsReporter,
                 compilerConfiguration,
                 reportGenerationFinished = true,
+                reportDiagnosticsToMessageCollector = true,
             )
         }
 
-        return writeOutputsIfNeeded(project, compilerConfiguration, messageCollector, outputs, mainClassFqName)
+        return writeOutputsIfNeeded(
+            project,
+            compilerConfiguration,
+            messageCollector,
+            hasPendingErrors = false,
+            outputs,
+            mainClassFqName
+        )
     }
 
     private fun runFrontendAndGenerateIrUsingClassicFrontend(
@@ -255,6 +265,7 @@ object KotlinToJVMBytecodeCompiler {
             diagnosticsReporter,
             environment.configuration,
             reportGenerationFinished = true,
+            reportDiagnosticsToMessageCollector = true,
         )
     }
 
@@ -376,10 +387,16 @@ object KotlinToJVMBytecodeCompiler {
     ): JvmIrCodegenFactory.CodegenInput {
         val performanceManager = configuration[CLIConfigurationKeys.PERF_MANAGER]
 
+        val builderFactory = when {
+            configuration.useClassBuilderFactoryForTest -> ClassBuilderFactories.TEST
+            else -> ClassBuilderFactories.BINARIES
+        }
+
         val state = GenerationState(
             project,
             moduleDescriptor,
             configuration,
+            builderFactory = builderFactory,
             targetId = module?.let(::TargetId),
             moduleName = module?.getModuleName() ?: configuration.moduleName,
             onIndependentPartCompilationEnd = createOutputFilesFlushingCallbackIfPossible(configuration),
@@ -403,7 +420,8 @@ object KotlinToJVMBytecodeCompiler {
         codegenFactory: JvmIrCodegenFactory,
         diagnosticsReporter: BaseDiagnosticsCollector,
         configuration: CompilerConfiguration,
-        reportGenerationFinished: Boolean
+        reportGenerationFinished: Boolean,
+        reportDiagnosticsToMessageCollector: Boolean,
     ): GenerationState {
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
 
@@ -419,11 +437,13 @@ object KotlinToJVMBytecodeCompiler {
 
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
 
-        FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
-            diagnosticsReporter,
-            configuration.getNotNull(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY),
-            configuration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME)
-        )
+        if (reportDiagnosticsToMessageCollector) {
+            FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
+                diagnosticsReporter,
+                configuration.getNotNull(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY),
+                configuration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME)
+            )
+        }
 
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
         return state

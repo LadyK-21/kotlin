@@ -5,13 +5,16 @@
 
 package org.jetbrains.kotlin.fir.backend.jvm
 
+import org.jetbrains.kotlin.backend.jvm.localClassType
 import org.jetbrains.kotlin.codegen.ClassBuilderMode
 import org.jetbrains.kotlin.codegen.serialization.JvmSerializationBindings
 import org.jetbrains.kotlin.codegen.serialization.JvmSignatureSerializer
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.config.JvmDefaultMode
+import org.jetbrains.kotlin.constant.KClassValue
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.backend.ConstValueProviderImpl
 import org.jetbrains.kotlin.fir.backend.Fir2IrComponents
@@ -23,12 +26,10 @@ import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.resolve.providers.getRegularClassSymbolByClassId
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
-import org.jetbrains.kotlin.fir.serialization.FirAdditionalMetadataProvider
-import org.jetbrains.kotlin.fir.serialization.FirElementAwareStringTable
-import org.jetbrains.kotlin.fir.serialization.FirElementSerializer
-import org.jetbrains.kotlin.fir.serialization.FirSerializerExtension
+import org.jetbrains.kotlin.fir.serialization.*
 import org.jetbrains.kotlin.fir.serialization.constant.ConstValueProvider
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.load.kotlin.NON_EXISTENT_CLASS_NAME
 import org.jetbrains.kotlin.metadata.ProtoBuf
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
@@ -89,6 +90,20 @@ open class FirJvmSerializerExtension(
         components.annotationsFromPluginRegistrar.createAdditionalMetadataProvider()
     )
 
+    override val localClassIdOracle: LocalClassIdOracle
+        get() = object : LocalClassIdOracle() {
+            override fun getLocalClassId(klass: KClassValue.Value.LocalClass): ClassId? {
+                val irClass = klass.irClass as? IrClass ?: return null
+                val type = irClass.localClassType ?: return null
+                val fqName = FqName(type.internalName.replace('/', '.'))
+                // Note that this ClassId cannot be used for anything other than mapping it back to the JVM type, which is exactly the only
+                // way it's being used -- kotlin-reflect uses it to find the java.lang.Class object if requested.
+                // For this reason, the relative class name in this ClassId does not make sense, and for example, in case of an inner class
+                // in a local class, will contain something like "foo$Local$Inner".
+                return ClassId(fqName.parent(), FqName.topLevel(fqName.shortName()), isLocal = true)
+            }
+        }
+
     override fun shouldUseTypeTable(): Boolean = useTypeTable
 
     override fun serializeClass(
@@ -110,13 +125,15 @@ open class FirJvmSerializerExtension(
                 JvmProtoBuf.jvmClassFlags,
                 JvmFlags.getClassFlags(
                     true,
-                    (JvmDefaultMode.ALL_COMPATIBILITY == jvmDefaultMode &&
+                    (JvmDefaultMode.ENABLE == jvmDefaultMode &&
                             !klass.hasAnnotation(JVM_DEFAULT_NO_COMPATIBILITY_CLASS_ID, session)) ||
-                            (JvmDefaultMode.ALL == jvmDefaultMode &&
+                            (JvmDefaultMode.NO_COMPATIBILITY == jvmDefaultMode &&
                                     klass.hasAnnotation(JVM_DEFAULT_WITH_COMPATIBILITY_CLASS_ID, session))
                 )
             )
         }
+
+        serializeAnnotations(klass, proto::addAnnotation)
     }
 
     override fun serializeScript(
@@ -124,6 +141,22 @@ open class FirJvmSerializerExtension(
         proto: ProtoBuf.Class.Builder,
         versionRequirementTable: MutableVersionRequirementTable,
         childSerializer: FirElementSerializer
+    ) {
+        processScriptOrSnippet(proto, childSerializer)
+    }
+
+    override fun serializeSnippet(
+        snippet: FirReplSnippet,
+        proto: ProtoBuf.Class.Builder,
+        versionRequirementTable: MutableVersionRequirementTable,
+        childSerializer: FirElementSerializer,
+    ) {
+        processScriptOrSnippet(proto, childSerializer)
+    }
+
+    private fun processScriptOrSnippet(
+        proto: ProtoBuf.Class.Builder,
+        childSerializer: FirElementSerializer,
     ) {
         if (moduleName != JvmProtoBufUtil.DEFAULT_MODULE_NAME) {
             proto.setExtension(JvmProtoBuf.classModuleName, stringTable.getStringIndex(moduleName))
@@ -141,7 +174,7 @@ open class FirJvmSerializerExtension(
         versionRequirementTable: MutableVersionRequirementTable
     ) {
         if (klass is FirRegularClass && klass.classKind == ClassKind.INTERFACE) {
-            if (jvmDefaultMode == JvmDefaultMode.ALL) {
+            if (jvmDefaultMode == JvmDefaultMode.NO_COMPATIBILITY) {
                 builder.addVersionRequirement(
                     DescriptorSerializer.writeVersionRequirement(
                         1,
@@ -207,6 +240,8 @@ open class FirJvmSerializerExtension(
                 proto.setExtension(JvmProtoBuf.constructorSignature, signature)
             }
         }
+
+        serializeAnnotations(constructor, proto::addAnnotation)
     }
 
     override fun serializeFunction(
@@ -226,6 +261,8 @@ open class FirJvmSerializerExtension(
         if (function.needsInlineParameterNullCheckRequirement()) {
             versionRequirementTable?.writeInlineParameterNullCheckRequirement(proto::addVersionRequirement)
         }
+
+        serializeAnnotations(function, proto::addAnnotation)
     }
 
     private fun MutableVersionRequirementTable.writeInlineParameterNullCheckRequirement(add: (Int) -> Unit) {
@@ -280,6 +317,10 @@ open class FirJvmSerializerExtension(
         if (getter?.needsInlineParameterNullCheckRequirement() == true || setter?.needsInlineParameterNullCheckRequirement() == true) {
             versionRequirementTable?.writeInlineParameterNullCheckRequirement(proto::addVersionRequirement)
         }
+
+        serializeAnnotations(getter, proto::addGetterAnnotation)
+        serializeAnnotations(setter, proto::addSetterAnnotation)
+        serializeAnnotations(property, proto::addAnnotation)
     }
 
     private fun FirProperty.isJvmFieldPropertyInInterfaceCompanion(): Boolean {
@@ -311,6 +352,10 @@ open class FirJvmSerializerExtension(
         return super.getClassSupertypes(klass)
     }
 
+    override fun serializeValueParameter(parameter: FirValueParameter, proto: ProtoBuf.ValueParameter.Builder) {
+        serializeAnnotations(parameter, proto::addAnnotation)
+    }
+
     override fun serializeErrorType(type: ConeErrorType, builder: ProtoBuf.Type.Builder) {
         if (classBuilderMode === ClassBuilderMode.KAPT3) {
             builder.className = stringTable.getStringIndex(NON_EXISTENT_CLASS_NAME)
@@ -322,6 +367,14 @@ open class FirJvmSerializerExtension(
 
     private fun <K : Any, V : Any> getBinding(slice: JvmSerializationBindings.SerializationMappingSlice<K, V>, key: K): V? =
         bindings.get(slice, key) ?: globalBindings.get(slice, key)
+
+    private inline fun serializeAnnotations(declaration: FirAnnotationContainer?, addAnnotation: (ProtoBuf.Annotation) -> Unit) {
+        if (metadataVersion.isAtLeast(2, 2, 0)) {
+            for (annotation in declaration?.allRequiredAnnotations(session, additionalMetadataProvider).orEmpty()) {
+                addAnnotation(annotationSerializer.serializeAnnotation(annotation))
+            }
+        }
+    }
 
     companion object {
         val METHOD_FOR_FIR_FUNCTION: JvmSerializationBindings.SerializationMappingSlice<FirFunction, Method> =

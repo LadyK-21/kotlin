@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.konan.test.blackbox
 
 import com.intellij.testFramework.TestDataPath
+import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.test.blackbox.CachesAutoBuildTest.Companion.TEST_SUITE_PATH
 import org.jetbrains.kotlin.konan.test.blackbox.support.EnforcedHostTarget
 import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilationArtifact
@@ -13,6 +14,7 @@ import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilat
 import org.jetbrains.kotlin.konan.test.blackbox.support.group.FirPipeline
 import org.jetbrains.kotlin.konan.test.blackbox.support.group.UsePartialLinkage
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.CacheMode
+import org.jetbrains.kotlin.konan.test.blackbox.support.settings.GCType
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.KotlinNativeTargets
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.OptimizationMode
 import org.jetbrains.kotlin.test.TestMetadata
@@ -27,7 +29,6 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 @FirPipeline
-@Tag("frontend-fir")
 @Tag("caches")
 @EnforcedHostTarget
 @TestMetadata(TEST_SUITE_PATH)
@@ -37,6 +38,14 @@ class IncrementalCompilationTest : AbstractNativeSimpleTest() {
     @BeforeEach
     fun assumeCachesAreEnabled() {
         Assumptions.assumeFalse(testRunSettings.get<CacheMode>() == CacheMode.WithoutCache)
+    }
+
+    @BeforeEach
+    fun assumeNotMinGW() {
+        // Per-file caches are sensitive to how the path is computed.
+        // Given that Windows paths are trickier than Unix ones, these test do not work on Windows for now.
+        // TODO: KT-74972.
+        Assumptions.assumeFalse(testRunSettings.get<KotlinNativeTargets>().testTarget.family == Family.MINGW)
     }
 
     @Test
@@ -521,7 +530,8 @@ class IncrementalCompilationTest : AbstractNativeSimpleTest() {
             testRunSettings.get<KotlinNativeTargets>().testTarget,
             "STATIC",
             testRunSettings.get<OptimizationMode>() == OptimizationMode.DEBUG,
-            partialLinkageEnabled = false
+            partialLinkageEnabled = false,
+            testRunSettings.get<GCType>()
         )
 
     private fun getLibraryFileCache(libName: String, libFileRelativePath: String, fqName: String): File {

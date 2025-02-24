@@ -24,11 +24,13 @@ import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
+import org.jetbrains.kotlin.fir.FirImplementationDetail
 import org.jetbrains.kotlin.fir.FirModuleCapabilities
 import org.jetbrains.kotlin.fir.FirModuleData
 import org.jetbrains.kotlin.fir.FirModuleDataImpl
 import org.jetbrains.kotlin.fir.analysis.checkers.MppCheckerKind
 import org.jetbrains.kotlin.fir.deserialization.ModuleDataProvider
+import org.jetbrains.kotlin.fir.deserialization.SingleModuleDataProvider
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
 import org.jetbrains.kotlin.fir.pipeline.*
@@ -41,11 +43,13 @@ import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
+import org.jetbrains.kotlin.resolve.jvm.KotlinJavaPsiFacade
 import org.jetbrains.kotlin.scripting.compiler.plugin.ReplCompilerPluginRegistrar
 import org.jetbrains.kotlin.scripting.compiler.plugin.dependencies.collectScriptsCompilationDependencies
 import org.jetbrains.kotlin.scripting.compiler.plugin.services.FirReplHistoryProviderImpl
 import org.jetbrains.kotlin.scripting.compiler.plugin.services.firReplHistoryProvider
 import org.jetbrains.kotlin.scripting.compiler.plugin.services.isReplSnippetSource
+import org.jetbrains.kotlin.scripting.compiler.plugin.services.replCompilationConfigurationProviderService
 import org.jetbrains.kotlin.scripting.definitions.ScriptConfigurationsProvider
 import java.io.File
 import java.nio.file.Path
@@ -165,7 +169,7 @@ class K2ReplCompilationState(
     internal val compilerContext: SharedScriptCompilationContext,
     internal val packagePartProvider: PackagePartProvider,
 ) {
-    internal var lastCompiledSnippet: LinkedSnippetImpl<CompiledSnippet>? = null
+    var lastCompiledSnippet: LinkedSnippetImpl<CompiledSnippet>? = null
 }
 
 class ReplModuleDataProvider(baseLibraryPaths: List<Path>) : ModuleDataProvider() {
@@ -196,12 +200,12 @@ class ReplModuleDataProvider(baseLibraryPaths: List<Path>) : ModuleDataProvider(
         get() = moduleDataHistory
 
     override fun getModuleData(path: Path?): FirModuleData? {
-        val normalizedPath = path?.normalize()
-        return if (normalizedPath != null) {
-            pathToModuleData[normalizedPath]
-        } else {
-            null
+        val normalizedPath = path?.normalize() ?: return null
+        pathToModuleData[normalizedPath]?.let { return it }
+        for ((libPath, moduleData) in pathToModuleData) {
+            if (normalizedPath.startsWith(libPath)) return moduleData
         }
+        return null
     }
 
     fun addNewLibraryModuleDataIfNeeded(libraryPaths: List<Path>): Pair<FirModuleData?, List<Path>> {
@@ -287,7 +291,7 @@ private fun compileImpl(
         )
     }
 
-    val (_, newClassPath) = state.moduleDataProvider.addNewLibraryModuleDataIfNeeded(classpath.map(File::toPath))
+    val (libModuleData, newClassPath) = state.moduleDataProvider.addNewLibraryModuleDataIfNeeded(classpath.map(File::toPath))
 
     if (newClassPath.isNotEmpty()) {
         state.compilerContext.environment.updateClasspath(newClassPath.map { JvmClasspathRoot(it.toFile()) })
@@ -295,13 +299,29 @@ private fun compileImpl(
 
     val moduleData = state.moduleDataProvider.addNewSnippetModuleData(Name.special("<REPL-snippet-${snippet.name!!}>"))
 
+    val extensionRegistrars = FirExtensionRegistrar.getInstances(project)
+    if (libModuleData != null) {
+        FirJvmSessionFactory.createLibrarySession(
+            mainModuleName = moduleData.name,
+            sessionProvider = state.sessionProvider,
+            moduleDataProvider = SingleModuleDataProvider(libModuleData),
+            projectEnvironment = state.projectEnvironment,
+            extensionRegistrars = extensionRegistrars,
+            scope = PsiBasedProjectFileSearchScope(ProjectScope.getLibrariesScope(project)),
+            packagePartProvider = state.packagePartProvider,
+            languageVersionSettings = compilerConfiguration.languageVersionSettings,
+            predefinedJavaComponents = state.predefinedJavaComponents,
+        )
+        KotlinJavaPsiFacade.getInstance(project).clearPackageCaches()
+    }
+
     val session = FirJvmSessionFactory.createModuleBasedSession(
         moduleData,
         state.sessionProvider,
         AbstractProjectFileSearchScope.EMPTY,
         state.projectEnvironment,
         createIncrementalCompilationSymbolProviders = { null },
-        FirExtensionRegistrar.getInstances(project),
+        extensionRegistrars,
         compilerConfiguration.languageVersionSettings,
         jvmTarget = JvmTarget.DEFAULT, // TODO: from script config
         lookupTracker = null,
@@ -311,6 +331,8 @@ private fun compileImpl(
         needRegisterJavaElementFinder = true,
         init = {},
     )
+    @OptIn(FirImplementationDetail::class)
+    session.replCompilationConfigurationProviderService.scriptConfiguration = state.scriptCompilationConfiguration
 
     val rawFir = session.buildFirFromKtFiles(allSourceFiles)
 

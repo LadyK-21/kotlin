@@ -2294,6 +2294,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     }
 
     @Test
+    @TestMetadata("kt74377.kt")
+    public void testKt74377() {
+      runTest("compiler/testData/codegen/box/bridges/kt74377.kt", TransformersFunctions.getRemoveOptionalJvmInlineAnnotation());
+    }
+
+    @Test
     @TestMetadata("longChainOneBridge.kt")
     public void testLongChainOneBridge() {
       runTest("compiler/testData/codegen/box/bridges/longChainOneBridge.kt");
@@ -3033,6 +3039,60 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
       }
 
       @Test
+      @TestMetadata("contextFunctionAdaptedReferences.kt")
+      public void testContextFunctionAdaptedReferences() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionAdaptedReferences.kt");
+      }
+
+      @Test
+      @TestMetadata("contextFunctionAnonymous.kt")
+      public void testContextFunctionAnonymous() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionAnonymous.kt");
+      }
+
+      @Test
+      @TestMetadata("contextFunctionWithDefaultValue.kt")
+      public void testContextFunctionWithDefaultValue() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionWithDefaultValue.kt");
+      }
+
+      @Test
+      @TestMetadata("contextFunctionWithExtensionProperty.kt")
+      public void testContextFunctionWithExtensionProperty() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionWithExtensionProperty.kt");
+      }
+
+      @Test
+      @TestMetadata("contextFunctionWithPassedSuperType.kt")
+      public void testContextFunctionWithPassedSuperType() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionWithPassedSuperType.kt");
+      }
+
+      @Test
+      @TestMetadata("contextFunctionWithSam.kt")
+      public void testContextFunctionWithSam() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionWithSam.kt");
+      }
+
+      @Test
+      @TestMetadata("contextFunctionWithVararg.kt")
+      public void testContextFunctionWithVararg() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextFunctionWithVararg.kt");
+      }
+
+      @Test
+      @TestMetadata("contextPropertyWithSam.kt")
+      public void testContextPropertyWithSam() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextPropertyWithSam.kt");
+      }
+
+      @Test
+      @TestMetadata("contextTypeWithSam.kt")
+      public void testContextTypeWithSam() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/contextTypeWithSam.kt");
+      }
+
+      @Test
       @TestMetadata("defaultAfterVararg.kt")
       public void testDefaultAfterVararg() {
         runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/defaultAfterVararg.kt");
@@ -3090,6 +3150,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
       @TestMetadata("extensionPropertyToFun.kt")
       public void testExtensionPropertyToFun() {
         runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/extensionPropertyToFun.kt");
+      }
+
+      @Test
+      @TestMetadata("extensionPropertyWithAnonymousContextFun.kt")
+      public void testExtensionPropertyWithAnonymousContextFun() {
+        runTest("compiler/testData/codegen/box/callableReference/adaptedReferences/extensionPropertyWithAnonymousContextFun.kt");
       }
 
       @Test
@@ -6828,15 +6894,99 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     }
 
     @Test
+    @TestMetadata("assignmentOfContextVar.kt")
+    public void testAssignmentOfContextVar() {
+      runTest("compiler/testData/codegen/box/contextParameters/assignmentOfContextVar.kt");
+    }
+
+    @Test
+    @TestMetadata("classMemberAndTopLevelExtensionWithContext.kt")
+    public void testClassMemberAndTopLevelExtensionWithContext() {
+      runTest("compiler/testData/codegen/box/contextParameters/classMemberAndTopLevelExtensionWithContext.kt");
+    }
+
+    @Test
+    @TestMetadata("classMemberAndTopLevelWithContext.kt")
+    public void testClassMemberAndTopLevelWithContext() {
+      runTest("compiler/testData/codegen/box/contextParameters/classMemberAndTopLevelWithContext.kt");
+    }
+
+    @Test
+    @TestMetadata("companionObjectInContext.kt")
+    public void testCompanionObjectInContext() {
+      runTest("compiler/testData/codegen/box/contextParameters/companionObjectInContext.kt");
+    }
+
+    @Test
+    @TestMetadata("contextFunInSam.kt")
+    public void testContextFunInSam() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextFunInSam.kt");
+    }
+
+    @Test
     @TestMetadata("contextParameterToDefaultArgument.kt")
     public void testContextParameterToDefaultArgument() {
       runTest("compiler/testData/codegen/box/contextParameters/contextParameterToDefaultArgument.kt");
     }
 
     @Test
+    @TestMetadata("contextPropertyInInterface.kt")
+    public void testContextPropertyInInterface() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextPropertyInInterface.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualAnonymousFunAsAnExpression.kt")
+    public void testContextualAnonymousFunAsAnExpression() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualAnonymousFunAsAnExpression.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualAnonymousFunction.kt")
+    public void testContextualAnonymousFunction() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualAnonymousFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualLocalFunAndTopLevelFun.kt")
+    public void testContextualLocalFunAndTopLevelFun() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualLocalFunAndTopLevelFun.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualLocalFunWithExtensiionReceiver.kt")
+    public void testContextualLocalFunWithExtensiionReceiver() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualLocalFunWithExtensiionReceiver.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualLocalFunWithTypeParam.kt")
+    public void testContextualLocalFunWithTypeParam() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualLocalFunWithTypeParam.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualLocalFunction.kt")
+    public void testContextualLocalFunction() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualLocalFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("contextualLocalWithLocalExtensionAndValue.kt")
+    public void testContextualLocalWithLocalExtensionAndValue() {
+      runTest("compiler/testData/codegen/box/contextParameters/contextualLocalWithLocalExtensionAndValue.kt");
+    }
+
+    @Test
     @TestMetadata("propertyWithContextAndWithout.kt")
     public void testPropertyWithContextAndWithout() {
       runTest("compiler/testData/codegen/box/contextParameters/propertyWithContextAndWithout.kt");
+    }
+
+    @Test
+    @TestMetadata("sameExtensionContextAndDispatchReceiver.kt")
+    public void testSameExtensionContextAndDispatchReceiver() {
+      runTest("compiler/testData/codegen/box/contextParameters/sameExtensionContextAndDispatchReceiver.kt");
     }
 
     @Test
@@ -6858,15 +7008,51 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     }
 
     @Test
+    @TestMetadata("sameNameWithLocalValueParameter.kt")
+    public void testSameNameWithLocalValueParameter() {
+      runTest("compiler/testData/codegen/box/contextParameters/sameNameWithLocalValueParameter.kt");
+    }
+
+    @Test
     @TestMetadata("sameNameWithMemberProperty.kt")
     public void testSameNameWithMemberProperty() {
       runTest("compiler/testData/codegen/box/contextParameters/sameNameWithMemberProperty.kt");
     }
 
     @Test
+    @TestMetadata("sameNameWithOuterContext.kt")
+    public void testSameNameWithOuterContext() {
+      runTest("compiler/testData/codegen/box/contextParameters/sameNameWithOuterContext.kt");
+    }
+
+    @Test
     @TestMetadata("sameNameWithPropertyName.kt")
     public void testSameNameWithPropertyName() {
       runTest("compiler/testData/codegen/box/contextParameters/sameNameWithPropertyName.kt");
+    }
+
+    @Test
+    @TestMetadata("typealiasOnTypeWithContext.kt")
+    public void testTypealiasOnTypeWithContext() {
+      runTest("compiler/testData/codegen/box/contextParameters/typealiasOnTypeWithContext.kt");
+    }
+
+    @Test
+    @TestMetadata("withExtensionReceiverAndThis.kt")
+    public void testWithExtensionReceiverAndThis() {
+      runTest("compiler/testData/codegen/box/contextParameters/withExtensionReceiverAndThis.kt");
+    }
+
+    @Test
+    @TestMetadata("withExtensionReceiverInSupertype.kt")
+    public void testWithExtensionReceiverInSupertype() {
+      runTest("compiler/testData/codegen/box/contextParameters/withExtensionReceiverInSupertype.kt");
+    }
+
+    @Test
+    @TestMetadata("withExtensionReceiverInType.kt")
+    public void testWithExtensionReceiverInType() {
+      runTest("compiler/testData/codegen/box/contextParameters/withExtensionReceiverInType.kt");
     }
   }
 
@@ -6889,6 +7075,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     @TestMetadata("contractForCast.kt")
     public void testContractForCast() {
       runTest("compiler/testData/codegen/box/contracts/contractForCast.kt");
+    }
+
+    @Test
+    @TestMetadata("contractOnContextParameter.kt")
+    public void testContractOnContextParameter() {
+      runTest("compiler/testData/codegen/box/contracts/contractOnContextParameter.kt");
     }
 
     @Test
@@ -15927,6 +16119,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     @Test
     public void testAllFilesPresentInExtensionProperties() {
       KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/extensionProperties"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+    }
+
+    @Test
+    @TestMetadata("contextPropertyInInterface.kt")
+    public void testContextPropertyInInterface() {
+      runTest("compiler/testData/codegen/box/extensionProperties/contextPropertyInInterface.kt");
     }
 
     @Test
@@ -26691,26 +26889,6 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
       }
 
       @Nested
-      @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/allCompatibility")
-      @TestDataPath("$PROJECT_ROOT")
-      public class AllCompatibility {
-        @Test
-        public void testAllFilesPresentInAllCompatibility() {
-          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/allCompatibility"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
-        }
-
-        @Nested
-        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/allCompatibility/delegationBy")
-        @TestDataPath("$PROJECT_ROOT")
-        public class DelegationBy {
-          @Test
-          public void testAllFilesPresentInDelegationBy() {
-            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/allCompatibility/delegationBy"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
-          }
-        }
-      }
-
-      @Nested
       @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/defaultCompatibilityBridges")
       @TestDataPath("$PROJECT_ROOT")
       public class DefaultCompatibilityBridges {
@@ -26731,41 +26909,61 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
       }
 
       @Nested
-      @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls")
+      @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/enable")
       @TestDataPath("$PROJECT_ROOT")
-      public class NoDefaultImpls {
+      public class Enable {
         @Test
-        public void testAllFilesPresentInNoDefaultImpls() {
-          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+        public void testAllFilesPresentInEnable() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/enable"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
         }
 
         @Nested
-        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls/delegationBy")
+        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/enable/delegationBy")
         @TestDataPath("$PROJECT_ROOT")
         public class DelegationBy {
           @Test
           public void testAllFilesPresentInDelegationBy() {
-            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls/delegationBy"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/enable/delegationBy"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+          }
+        }
+      }
+
+      @Nested
+      @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noCompatibility")
+      @TestDataPath("$PROJECT_ROOT")
+      public class NoCompatibility {
+        @Test
+        public void testAllFilesPresentInNoCompatibility() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noCompatibility"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noCompatibility/delegationBy")
+        @TestDataPath("$PROJECT_ROOT")
+        public class DelegationBy {
+          @Test
+          public void testAllFilesPresentInDelegationBy() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noCompatibility/delegationBy"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
           }
         }
 
         @Nested
-        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls/specialization")
+        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noCompatibility/specialization")
         @TestDataPath("$PROJECT_ROOT")
         public class Specialization {
           @Test
           public void testAllFilesPresentInSpecialization() {
-            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls/specialization"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noCompatibility/specialization"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
           }
         }
 
         @Nested
-        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls/withCompatibility")
+        @TestMetadata("compiler/testData/codegen/box/jvm8/defaults/noCompatibility/withCompatibility")
         @TestDataPath("$PROJECT_ROOT")
         public class WithCompatibility {
           @Test
           public void testAllFilesPresentInWithCompatibility() {
-            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noDefaultImpls/withCompatibility"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/jvm8/defaults/noCompatibility/withCompatibility"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
           }
         }
       }
@@ -37491,6 +37689,30 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
       runTest("compiler/testData/codegen/box/reflection/associatedObjectNested.kt");
     }
 
+    @Test
+    @TestMetadata("findAssociatedObject.kt")
+    public void testFindAssociatedObject() {
+      runTest("compiler/testData/codegen/box/reflection/findAssociatedObject.kt");
+    }
+
+    @Test
+    @TestMetadata("findAssociatedObjectAndDCE.kt")
+    public void testFindAssociatedObjectAndDCE() {
+      runTest("compiler/testData/codegen/box/reflection/findAssociatedObjectAndDCE.kt");
+    }
+
+    @Test
+    @TestMetadata("findAssociatedObjectInSeparatedFile.kt")
+    public void testFindAssociatedObjectInSeparatedFile() {
+      runTest("compiler/testData/codegen/box/reflection/findAssociatedObjectInSeparatedFile.kt");
+    }
+
+    @Test
+    @TestMetadata("findAssociatedObjectLazyness.kt")
+    public void testFindAssociatedObjectLazyness() {
+      runTest("compiler/testData/codegen/box/reflection/findAssociatedObjectLazyness.kt");
+    }
+
     @Nested
     @TestMetadata("compiler/testData/codegen/box/reflection/annotations")
     @TestDataPath("$PROJECT_ROOT")
@@ -39098,6 +39320,18 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     }
 
     @Test
+    @TestMetadata("funInterfaceExtendsSuspendFunction.kt")
+    public void testFunInterfaceExtendsSuspendFunction() {
+      runTest("compiler/testData/codegen/box/sam/funInterfaceExtendsSuspendFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("funInterfaceExtendsSuspendFunction2.kt")
+    public void testFunInterfaceExtendsSuspendFunction2() {
+      runTest("compiler/testData/codegen/box/sam/funInterfaceExtendsSuspendFunction2.kt");
+    }
+
+    @Test
     @TestMetadata("inProjectedSam.kt")
     public void testInProjectedSam() {
       runTest("compiler/testData/codegen/box/sam/inProjectedSam.kt");
@@ -39137,6 +39371,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     @TestMetadata("samWithAbstractToString.kt")
     public void testSamWithAbstractToString() {
       runTest("compiler/testData/codegen/box/sam/samWithAbstractToString.kt");
+    }
+
+    @Test
+    @TestMetadata("topLevelConversions.kt")
+    public void testTopLevelConversions() {
+      runTest("compiler/testData/codegen/box/sam/topLevelConversions.kt");
     }
 
     @Nested
@@ -39347,6 +39587,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     @TestMetadata("kt54028.kt")
     public void testKt54028() {
       runTest("compiler/testData/codegen/box/sealed/kt54028.kt");
+    }
+
+    @Test
+    @TestMetadata("kt54028_cursed.kt")
+    public void testKt54028_cursed() {
+      runTest("compiler/testData/codegen/box/sealed/kt54028_cursed.kt");
     }
 
     @Test
@@ -39874,6 +40120,12 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     }
 
     @Test
+    @TestMetadata("smartCastOnSuper.kt")
+    public void testSmartCastOnSuper() {
+      runTest("compiler/testData/codegen/box/smartCasts/smartCastOnSuper.kt");
+    }
+
+    @Test
     @TestMetadata("smartCastedGenericWhenSubjectInRangeCheck.kt")
     public void testSmartCastedGenericWhenSubjectInRangeCheck() {
       runTest("compiler/testData/codegen/box/smartCasts/smartCastedGenericWhenSubjectInRangeCheck.kt");
@@ -40176,6 +40428,18 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     }
 
     @Test
+    @TestMetadata("charSequenceGet.kt")
+    public void testCharSequenceGet() {
+      runTest("compiler/testData/codegen/box/strings/charSequenceGet.kt");
+    }
+
+    @Test
+    @TestMetadata("charSequenceSubSequence.kt")
+    public void testCharSequenceSubSequence() {
+      runTest("compiler/testData/codegen/box/strings/charSequenceSubSequence.kt");
+    }
+
+    @Test
     @TestMetadata("concatDynamicWithConstants.kt")
     public void testConcatDynamicWithConstants() {
       runTest("compiler/testData/codegen/box/strings/concatDynamicWithConstants.kt");
@@ -40423,6 +40687,24 @@ public class K1WasmCodegenBoxTestGenerated extends AbstractK1WasmCodegenBoxTest 
     @TestMetadata("basicproperty.kt")
     public void testBasicproperty() {
       runTest("compiler/testData/codegen/box/super/basicproperty.kt");
+    }
+
+    @Test
+    @TestMetadata("diamondWithCovariantOverride.kt")
+    public void testDiamondWithCovariantOverride() {
+      runTest("compiler/testData/codegen/box/super/diamondWithCovariantOverride.kt");
+    }
+
+    @Test
+    @TestMetadata("diamondWithGenericParameterType.kt")
+    public void testDiamondWithGenericParameterType() {
+      runTest("compiler/testData/codegen/box/super/diamondWithGenericParameterType.kt");
+    }
+
+    @Test
+    @TestMetadata("diamondWithGenericReturnType.kt")
+    public void testDiamondWithGenericReturnType() {
+      runTest("compiler/testData/codegen/box/super/diamondWithGenericReturnType.kt");
     }
 
     @Test

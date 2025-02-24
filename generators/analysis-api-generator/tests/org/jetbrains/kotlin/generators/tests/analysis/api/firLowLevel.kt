@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -326,15 +326,15 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
         "compiler/fir/analysis-tests/testData",
     ) {
         fun TestGroup.TestClass.modelInit() {
-            model("resolve", pattern = TestGeneratorUtil.KT_WITHOUT_DOTS_IN_NAME, excludeDirsRecursively = listOf("lightTree"))
-            model("resolveWithStdlib", pattern = TestGeneratorUtil.KT_WITHOUT_DOTS_IN_NAME, excludeDirsRecursively = listOf("lightTree"))
+            model("resolve", pattern = TestGeneratorUtil.KT_WITHOUT_DOTS_IN_NAME)
+            model("resolveWithStdlib", pattern = TestGeneratorUtil.KT_WITHOUT_DOTS_IN_NAME)
         }
 
-        testClass<AbstractDiagnosticCompilerTestDataTest>(suiteTestClassName = "DiagnosticCompilerTestFirTestdataTestGenerated") {
+        testClass<AbstractLLDiagnosticsTest>(suiteTestClassName = "LLDiagnosticsFirTestGenerated") {
             modelInit()
         }
 
-        testClass<AbstractLLFirPreresolvedReversedDiagnosticCompilerTestDataTest>(suiteTestClassName = "LLFirPreresolvedReversedDiagnosticCompilerFirTestDataTestGenerated") {
+        testClass<AbstractLLReversedDiagnosticsTest>(suiteTestClassName = "LLReversedDiagnosticsFirTestGenerated") {
             modelInit()
         }
     }
@@ -342,10 +342,10 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
         "analysis/low-level-api-fir/tests",
         "analysis/low-level-api-fir/testData",
     ) {
-        testClass<AbstractDiagnosticCompilerTestDataTest>(suiteTestClassName = "DiagnosticCompilerTestAATestdataTestGenerated") {
+        testClass<AbstractLLDiagnosticsTest> {
             model("compilerLikeAnalysis", pattern = TestGeneratorUtil.KT_WITHOUT_DOTS_IN_NAME)
         }
-        testClass<AbstractLLFirPreresolvedReversedDiagnosticCompilerTestDataTest>(suiteTestClassName = "LLFirPreresolvedReversedDiagnosticCompilerAATestDataTestGenerated") {
+        testClass<AbstractLLReversedDiagnosticsTest> {
             model("compilerLikeAnalysis", pattern = TestGeneratorUtil.KT_WITHOUT_DOTS_IN_NAME)
         }
 
@@ -364,11 +364,11 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
                 )
             }
 
-            testClass<AbstractLLFirScriptDiagnosticCompilerTestDataTest> {
+            testClass<AbstractLLScriptWithCustomDefDiagnosticsTest> {
                 scriptDiagnosticsInit()
             }
 
-            testClass<AbstractLLFirPreresolvedReversedScriptDiagnosticCompilerTestDataTest>() {
+            testClass<AbstractLLReversedScriptWithCustomDefDiagnosticsTest>() {
                 scriptDiagnosticsInit()
             }
         }
@@ -382,11 +382,11 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
                 )
             }
 
-            testClass<AbstractLLFirCustomDefScriptBlackBoxCodegenBasedTest> {
+            testClass<AbstractLLScriptWithCustomDefBlackBoxTest> {
                 scriptCustomDefBackBoxInit()
             }
 
-            testClass<AbstractLLFirReversedCustomDefScriptBlackBoxCodegenBasedTest>() {
+            testClass<AbstractLLReversedScriptWithCustomDefBlackBoxTest>() {
                 scriptCustomDefBackBoxInit()
             }
         }
@@ -401,7 +401,6 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
                 "diagnostics/tests",
                 excludedPattern = CUSTOM_TEST_DATA_EXTENSION_PATTERN,
                 pattern = KT_OR_KTS,
-                excludeDirsRecursively = listOf("lightTree"),
             )
             model(
                 "diagnostics/testsWithStdLib",
@@ -411,15 +410,15 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
             )
         }
 
-        testClass<AbstractDiagnosticCompilerTestDataTest>(suiteTestClassName = "DiagnosticCompilerTestFE10TestdataTestGenerated") {
+        testClass<AbstractLLDiagnosticsTest>(suiteTestClassName = "LLDiagnosticsFe10TestGenerated") {
             modelInit()
         }
 
-        testClass<AbstractLLFirPreresolvedReversedDiagnosticCompilerTestDataTest>(suiteTestClassName = "LLFirPreresolvedReversedDiagnosticCompilerFE10TestDataTestGenerated") {
+        testClass<AbstractLLReversedDiagnosticsTest>(suiteTestClassName = "LLReversedDiagnosticsFe10TestGenerated") {
             modelInit()
         }
 
-        testClass<AbstractLLFirBlackBoxCodegenBasedTest> {
+        testClass<AbstractLLBlackBoxTest> {
             model(
                 "codegen/box",
                 excludeDirs = listOf(
@@ -429,7 +428,7 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
             )
         }
 
-        testClass<AbstractLLFirReversedBlackBoxCodegenBasedTest> {
+        testClass<AbstractLLReversedBlackBoxTest> {
             model(
                 "codegen/box",
                 excludeDirs = listOf(
@@ -439,11 +438,11 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
             )
         }
 
-        testClass<AbstractLLFirBlackBoxCodegenBasedTest>(suiteTestClassName = "LLFirBlackBoxModernJdkCodegenBasedTestGenerated") {
+        testClass<AbstractLLBlackBoxTest>(suiteTestClassName = "LLBlackBoxModernJdkTestGenerated") {
             model("codegen/boxModernJdk")
         }
 
-        testClass<AbstractLLFirReversedBlackBoxCodegenBasedTest>(suiteTestClassName = "LLFirReversedBlackBoxModernJdkCodegenBasedTestGenerated") {
+        testClass<AbstractLLReversedBlackBoxTest>(suiteTestClassName = "LLReversedBlackBoxModernJdkTestGenerated") {
             model("codegen/boxModernJdk")
         }
 
@@ -452,11 +451,11 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
                 model("codegen/script", pattern = TestGeneratorUtil.KTS)
             }
 
-            testClass<AbstractLLFirScriptBlackBoxCodegenBasedTest> {
+            testClass<AbstractLLScriptBlackBoxTest> {
                 scriptBlackBoxInit()
             }
 
-            testClass<AbstractLLFirReversedScriptBlackBoxCodegenBasedTest> {
+            testClass<AbstractLLReversedScriptBlackBoxTest> {
                 scriptBlackBoxInit()
             }
         }
@@ -471,12 +470,30 @@ internal fun TestGroupSuite.generateFirLowLevelApiTests() {
             )
         }
 
-        testClass<AbstractLLFirDiagnosticCompilerTestDataSpecTest>(suiteTestClassName = "FirIdeSpecTestGenerated") {
+        testClass<AbstractLLSpecTest> {
             modelInit()
         }
 
-        testClass<AbstractLLFirPreresolvedReversedDiagnosticCompilerTestDataSpecTest>(suiteTestClassName = "PreFirIdeSpecTestGenerated") {
+        testClass<AbstractLLReversedSpecTest> {
             modelInit()
+        }
+    }
+
+    testGroup("analysis/low-level-api-fir/tests", testDataRoot = "plugins/plugin-sandbox/testData") {
+        testClass<AbstractLLSandboxBackBoxTest> {
+            model("box", excludedPattern = CUSTOM_TEST_DATA_EXTENSION_PATTERN)
+        }
+
+        testClass<AbstractLLReversedSandboxBackBoxTest> {
+            model("box", excludedPattern = CUSTOM_TEST_DATA_EXTENSION_PATTERN)
+        }
+
+        testClass<AbstractLLSandboxDiagnosticsTest> {
+            model("diagnostics", excludedPattern = CUSTOM_TEST_DATA_EXTENSION_PATTERN)
+        }
+
+        testClass<AbstractLLReversedSandboxDiagnosticsTest> {
+            model("diagnostics", excludedPattern = CUSTOM_TEST_DATA_EXTENSION_PATTERN)
         }
     }
 

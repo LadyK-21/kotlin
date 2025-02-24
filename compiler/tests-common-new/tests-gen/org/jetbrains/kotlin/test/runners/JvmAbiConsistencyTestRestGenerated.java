@@ -4870,6 +4870,12 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
       }
 
       @Test
+      @TestMetadata("trivialSmap.kt")
+      public void testTrivialSmap() {
+        runTest("compiler/testData/codegen/boxInline/smap/trivialSmap.kt");
+      }
+
+      @Test
       @TestMetadata("tryFinally1.kt")
       public void testTryFinally1() {
         runTest("compiler/testData/codegen/boxInline/smap/tryFinally1.kt");
@@ -6485,21 +6491,33 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
         }
 
         @Test
-        @TestMetadata("propertiesOverrides.kt")
-        public void testPropertiesOverrides() {
-          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/propertiesOverrides.kt");
+        @TestMetadata("propertiesOverridesDisableJvmDefault.kt")
+        public void testPropertiesOverridesDisableJvmDefault() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/propertiesOverridesDisableJvmDefault.kt");
         }
 
         @Test
-        @TestMetadata("propertiesOverridesAllCompatibilityJvmDefault.kt")
-        public void testPropertiesOverridesAllCompatibilityJvmDefault() {
-          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/propertiesOverridesAllCompatibilityJvmDefault.kt");
+        @TestMetadata("propertiesOverridesEnableJvmDefault.kt")
+        public void testPropertiesOverridesEnableJvmDefault() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/propertiesOverridesEnableJvmDefault.kt");
         }
 
         @Test
-        @TestMetadata("propertiesOverridesAllJvmDefault.kt")
-        public void testPropertiesOverridesAllJvmDefault() {
-          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/propertiesOverridesAllJvmDefault.kt");
+        @TestMetadata("propertiesOverridesNoCompatibilityJvmDefault.kt")
+        public void testPropertiesOverridesNoCompatibilityJvmDefault() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/propertiesOverridesNoCompatibilityJvmDefault.kt");
+        }
+
+        @Test
+        @TestMetadata("recordAnnotation.kt")
+        public void testRecordAnnotation() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/recordAnnotation.kt");
+        }
+
+        @Test
+        @TestMetadata("recordAnnotationWithoutDefaultTarget.kt")
+        public void testRecordAnnotationWithoutDefaultTarget() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/records/recordAnnotationWithoutDefaultTarget.kt");
         }
 
         @Test
@@ -11092,12 +11110,6 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
       }
 
       @Test
-      @TestMetadata("kt53804.kt")
-      public void testKt53804() {
-        runTest("compiler/testData/codegen/bytecodeText/innerClasses/kt53804.kt");
-      }
-
-      @Test
       @TestMetadata("kt56104.kt")
       public void testKt56104() {
         runTest("compiler/testData/codegen/bytecodeText/innerClasses/kt56104.kt");
@@ -11113,12 +11125,6 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
       @TestMetadata("nestedClassInAnnotationArgument.kt")
       public void testNestedClassInAnnotationArgument() {
         runTest("compiler/testData/codegen/bytecodeText/innerClasses/nestedClassInAnnotationArgument.kt");
-      }
-
-      @Test
-      @TestMetadata("nestedClassInAnnotationArgumentOldMode.kt")
-      public void testNestedClassInAnnotationArgumentOldMode() {
-        runTest("compiler/testData/codegen/bytecodeText/innerClasses/nestedClassInAnnotationArgumentOldMode.kt");
       }
     }
 
@@ -14598,12 +14604,6 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
       }
 
       @Test
-      @TestMetadata("defaultInterfaceMethodsInInlineClass.kt")
-      public void testDefaultInterfaceMethodsInInlineClass() {
-        runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/defaultInterfaceMethodsInInlineClass.kt");
-      }
-
-      @Test
       @TestMetadata("genericChild.kt")
       public void testGenericChild() {
         runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/genericChild.kt");
@@ -14733,15 +14733,27 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
         }
 
         @Test
+        @TestMetadata("genericSubstitutionJvmDefaultDisable.kt")
+        public void testGenericSubstitutionJvmDefaultDisable() {
+          runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/defaultInterfaceMembers/genericSubstitutionJvmDefaultDisable.kt");
+        }
+
+        @Test
+        @TestMetadata("genericSubstitutionJvmDefaultEnable.kt")
+        public void testGenericSubstitutionJvmDefaultEnable() {
+          runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/defaultInterfaceMembers/genericSubstitutionJvmDefaultEnable.kt");
+        }
+
+        @Test
         @TestMetadata("javaDefaultInterfaceMember.kt")
         public void testJavaDefaultInterfaceMember() {
           runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/defaultInterfaceMembers/javaDefaultInterfaceMember.kt");
         }
 
         @Test
-        @TestMetadata("jvmDefaultAll.kt")
-        public void testJvmDefaultAll() {
-          runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/defaultInterfaceMembers/jvmDefaultAll.kt");
+        @TestMetadata("jvmDefaultNoCompatibility.kt")
+        public void testJvmDefaultNoCompatibility() {
+          runTest("compiler/testData/codegen/bytecodeListing/inlineClasses/defaultInterfaceMembers/jvmDefaultNoCompatibility.kt");
         }
       }
 
@@ -15027,68 +15039,6 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
         }
 
         @Nested
-        @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility")
-        @TestDataPath("$PROJECT_ROOT")
-        public class AllCompatibility {
-          @Test
-          public void testAllFilesPresentInAllCompatibility() {
-            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
-          }
-
-          @Test
-          @TestMetadata("deprecation.kt")
-          public void testDeprecation() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/deprecation.kt");
-          }
-
-          @Test
-          @TestMetadata("deprecationWithDefault.kt")
-          public void testDeprecationWithDefault() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/deprecationWithDefault.kt");
-          }
-
-          @Test
-          @TestMetadata("interfaceProperty.kt")
-          public void testInterfaceProperty() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/interfaceProperty.kt");
-          }
-
-          @Test
-          @TestMetadata("jvmDefaultWithoutCompatibility.kt")
-          public void testJvmDefaultWithoutCompatibility() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/jvmDefaultWithoutCompatibility.kt");
-          }
-
-          @Test
-          @TestMetadata("noDefaultImplsOnEmptySubInterface.kt")
-          public void testNoDefaultImplsOnEmptySubInterface() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/noDefaultImplsOnEmptySubInterface.kt");
-          }
-
-          @Nested
-          @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/specialization")
-          @TestDataPath("$PROJECT_ROOT")
-          public class Specialization {
-            @Test
-            public void testAllFilesPresentInSpecialization() {
-              KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/specialization"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
-            }
-
-            @Test
-            @TestMetadata("primitiveAndAny.kt")
-            public void testPrimitiveAndAny() {
-              runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/specialization/primitiveAndAny.kt");
-            }
-
-            @Test
-            @TestMetadata("primitiveAndNullable.kt")
-            public void testPrimitiveAndNullable() {
-              runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/allCompatibility/specialization/primitiveAndNullable.kt");
-            }
-          }
-        }
-
-        @Nested
         @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/defaultCompatibilityBridges")
         @TestDataPath("$PROJECT_ROOT")
         public class DefaultCompatibilityBridges {
@@ -15111,24 +15061,150 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
         }
 
         @Nested
-        @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noDefaultImpl")
+        @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable")
         @TestDataPath("$PROJECT_ROOT")
-        public class NoDefaultImpl {
+        public class Disable {
           @Test
-          public void testAllFilesPresentInNoDefaultImpl() {
-            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noDefaultImpl"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+          public void testAllFilesPresentInDisable() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+          }
+
+          @Test
+          @TestMetadata("bridgeInInterface.kt")
+          public void testBridgeInInterface() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/bridgeInInterface.kt");
+          }
+
+          @Test
+          @TestMetadata("bridgeInInterfaceWithProperties.kt")
+          public void testBridgeInInterfaceWithProperties() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/bridgeInInterfaceWithProperties.kt");
+          }
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable")
+        @TestDataPath("$PROJECT_ROOT")
+        public class Enable {
+          @Test
+          public void testAllFilesPresentInEnable() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+          }
+
+          @Test
+          @TestMetadata("bridgeInInterface.kt")
+          public void testBridgeInInterface() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/bridgeInInterface.kt");
+          }
+
+          @Test
+          @TestMetadata("bridgeInInterfaceWithProperties.kt")
+          public void testBridgeInInterfaceWithProperties() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/bridgeInInterfaceWithProperties.kt");
+          }
+
+          @Test
+          @TestMetadata("bridgeWithJava.kt")
+          public void testBridgeWithJava() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/bridgeWithJava.kt");
+          }
+
+          @Test
+          @TestMetadata("bridgesInClassWithDisableAgainstEnable.kt")
+          public void testBridgesInClassWithDisableAgainstEnable() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/bridgesInClassWithDisableAgainstEnable.kt");
+          }
+
+          @Test
+          @TestMetadata("deprecation.kt")
+          public void testDeprecation() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/deprecation.kt");
+          }
+
+          @Test
+          @TestMetadata("deprecationWithDefault.kt")
+          public void testDeprecationWithDefault() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/deprecationWithDefault.kt");
           }
 
           @Test
           @TestMetadata("interfaceProperty.kt")
           public void testInterfaceProperty() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noDefaultImpl/interfaceProperty.kt");
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/interfaceProperty.kt");
+          }
+
+          @Test
+          @TestMetadata("jvmDefaultWithoutCompatibility.kt")
+          public void testJvmDefaultWithoutCompatibility() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/jvmDefaultWithoutCompatibility.kt");
+          }
+
+          @Test
+          @TestMetadata("noDefaultImplsOnEmptySubInterface.kt")
+          public void testNoDefaultImplsOnEmptySubInterface() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/noDefaultImplsOnEmptySubInterface.kt");
+          }
+
+          @Nested
+          @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/specialization")
+          @TestDataPath("$PROJECT_ROOT")
+          public class Specialization {
+            @Test
+            public void testAllFilesPresentInSpecialization() {
+              KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/specialization"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+            }
+
+            @Test
+            @TestMetadata("primitiveAndAny.kt")
+            public void testPrimitiveAndAny() {
+              runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/specialization/primitiveAndAny.kt");
+            }
+
+            @Test
+            @TestMetadata("primitiveAndNullable.kt")
+            public void testPrimitiveAndNullable() {
+              runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/specialization/primitiveAndNullable.kt");
+            }
+          }
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility")
+        @TestDataPath("$PROJECT_ROOT")
+        public class NoCompatibility {
+          @Test
+          public void testAllFilesPresentInNoCompatibility() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+          }
+
+          @Test
+          @TestMetadata("bridgeInInterface.kt")
+          public void testBridgeInInterface() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/bridgeInInterface.kt");
+          }
+
+          @Test
+          @TestMetadata("bridgeInInterfaceWithProperties.kt")
+          public void testBridgeInInterfaceWithProperties() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/bridgeInInterfaceWithProperties.kt");
+          }
+
+          @Test
+          @TestMetadata("bridgeWithJava.kt")
+          public void testBridgeWithJava() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/bridgeWithJava.kt");
+          }
+
+          @Test
+          @TestMetadata("interfaceProperty.kt")
+          public void testInterfaceProperty() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/interfaceProperty.kt");
           }
 
           @Test
           @TestMetadata("privateAccessorNaming.kt")
           public void testPrivateAccessorNaming() {
-            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noDefaultImpl/privateAccessorNaming.kt");
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/privateAccessorNaming.kt");
           }
         }
       }

@@ -250,15 +250,32 @@ sealed class CacheMode {
                 .map { KonanTarget.predefinedTargets.getValue(it) }
                 .toSet()
 
-            return if (kotlinNativeTargets.testTarget in cacheableTargets) Alias.STATIC_ONLY_DIST else Alias.NO
+            return when (kotlinNativeTargets.testTarget) {
+                in cacheableTargets -> Alias.STATIC_ONLY_DIST
+                // Support stdlib caches only for tests speedup
+                KonanTarget.MINGW_X64 -> Alias.STATIC_ONLY_DIST
+                else -> Alias.NO
+            }
         }
 
+        // TODO: KT-75325
         fun computeCacheDirName(
             testTarget: KonanTarget,
             cacheKind: String,
             debuggable: Boolean,
-            partialLinkageEnabled: Boolean
-        ) = "$testTarget${if (debuggable) "-g" else ""}$cacheKind${if (partialLinkageEnabled) "-pl" else ""}"
+            partialLinkageEnabled: Boolean,
+            gcType: GCType,
+        ) = buildString {
+            append(testTarget)
+            if (debuggable) append("-g")
+            append(cacheKind)
+            when (gcType) {
+                // PMCS is the current default. This line will break when GC is going to be switched to CMS.
+                GCType.UNSPECIFIED -> append("-gcpmcs")
+                else -> append("-gc${gcType.name.lowercase()}")
+            }
+            if (partialLinkageEnabled) append("-pl")
+        }
     }
 }
 
@@ -344,11 +361,13 @@ internal class XCTestRunner(val isEnabled: Boolean, private val nativeTargets: K
     }
 }
 
+val Settings.systemFrameworksPath: String get() = get<XCTestRunner>().frameworksPath
+
 internal class ReleasedCompiler(private val lazyNativeHome: Lazy<KotlinNativeHome>) {
     val nativeHome: KotlinNativeHome get() = lazyNativeHome.value
     val lazyClassloader: Lazy<URLClassLoader> = lazy {
         val nativeClassPath = setOf(
-            nativeHome.dir.resolve("konan/lib/trove4j.jar"),
+            nativeHome.dir.resolve("konan/lib/trove4j.jar"), // to be removed after bumping `kotlin.internal.native.test.latestReleasedCompilerVersion` to 2.2.0+
             nativeHome.dir.resolve("konan/lib/kotlin-native-compiler-embeddable.jar")
         )
             .map { it.toURI().toURL() }

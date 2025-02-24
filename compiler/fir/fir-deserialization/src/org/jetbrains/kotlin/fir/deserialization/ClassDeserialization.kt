@@ -171,7 +171,7 @@ fun deserializeClassToSymbol(
         )
 
         addDeclarations(
-            classProto.typeAliasList.mapNotNull(classDeserializer::loadTypeAlias)
+            classProto.typeAliasList.mapNotNull { classDeserializer.loadTypeAlias(it, scopeProvider) }
         )
 
         addDeclarations(
@@ -195,6 +195,9 @@ fun deserializeClassToSymbol(
                     resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
                 }.apply {
                     containingClassForStaticMemberAttr = context.dispatchReceiver!!.lookupTag
+                    replaceAnnotations(
+                        context.annotationDeserializer.loadEnumEntryAnnotations(classId, enumEntryProto, context.nameResolver)
+                    )
                 }
 
                 property

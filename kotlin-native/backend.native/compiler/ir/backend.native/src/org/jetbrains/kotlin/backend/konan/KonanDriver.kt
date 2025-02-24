@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.backend.konan
 
 import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.backend.common.serialization.codedInputStream
+import org.jetbrains.kotlin.backend.common.serialization.fileEntry
 import org.jetbrains.kotlin.backend.common.serialization.proto.IrFile
 import org.jetbrains.kotlin.backend.konan.driver.DynamicCompilerDriver
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -87,7 +88,7 @@ class KonanDriver(
                     val lib = createKonanLibrary(File(libPath), "default", null, true)
                     (0 until lib.fileCount()).map { fileIndex ->
                         val proto = IrFile.parseFrom(lib.file(fileIndex).codedInputStream, ExtensionRegistryLite.newInstance())
-                        proto.fileEntry.name
+                        lib.fileEntry(proto, fileIndex).name
                     }
                 }
                 else -> null
@@ -146,9 +147,11 @@ class KonanDriver(
 
         val performanceManager = configuration[CLIConfigurationKeys.PERF_MANAGER]
         val sourcesFiles = environment.getSourceFiles()
-        performanceManager?.notifyCompilerInitialized(
-                sourcesFiles.size, environment.countLinesOfCode(sourcesFiles), "${konanConfig.moduleId}-${konanConfig.produce}"
-        )
+        performanceManager?.apply {
+            targetDescription = "${konanConfig.moduleId}-${konanConfig.produce}"
+            addSourcesStats(sourcesFiles.size, environment.countLinesOfCode(sourcesFiles))
+            notifyCompilerInitialized()
+        }
 
         DynamicCompilerDriver(performanceManager).run(konanConfig, environment)
     }

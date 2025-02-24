@@ -33,6 +33,8 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.disambiguateName
 import org.jetbrains.kotlin.gradle.tasks.locateTask
 import org.jetbrains.kotlin.gradle.utils.getByType
 import org.jetbrains.kotlin.gradle.utils.newInstance
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.capitalizeAsciiOnly
+import org.jetbrains.kotlin.gradle.utils.onlyJars
 import javax.inject.Inject
 
 // Should be as much close to Gradle 'JavaApplication' spec as possible
@@ -108,6 +110,24 @@ interface KotlinJvmBinariesDsl {
     fun executable(
         configure: Action<KotlinJvmBinaryDsl>
     ): TaskProvider<JavaExec> = executable(KotlinCompilation.MAIN_COMPILATION_NAME, configure = configure)
+
+    /**
+     * Creates [JavaExec] task to run configured in the [KotlinJvmBinariesDsl] spec class from this target
+     * compilation with name equals [compilationName].
+     */
+    fun executable(
+        compilationName: String,
+        configure: KotlinJvmBinaryDsl.() -> Unit
+    ): TaskProvider<JavaExec> = executable(compilationName, disambiguationSuffix = "", configure = configure)
+
+    /**
+     * Creates [JavaExec] task to run configured in the [KotlinJvmBinariesDsl] spec class from this target
+     * compilation with name equals [compilationName].
+     */
+    fun executable(
+        compilationName: String,
+        configure: Action<KotlinJvmBinaryDsl>
+    ): TaskProvider<JavaExec> = executable(compilationName, disambiguationSuffix = "", configure = configure)
 
     /**
      * Creates [JavaExec] task to run configured in the [KotlinJvmBinariesDsl] spec class from this target
@@ -191,7 +211,7 @@ internal abstract class DefaultKotlinJvmBinariesDsl @Inject constructor(
     // null is only used in JS only projects
     private fun KotlinJvmCompilation.runTaskName(
         disambiguationSuffix: String
-    ) = "run${disambiguateName(disambiguationSuffix.capitalize()).capitalize()}"
+    ) = "run${disambiguateName(disambiguationSuffix.capitalizeAsciiOnly()).capitalizeAsciiOnly()}"
 
     private fun KotlinJvmCompilation.distributionName(
         disambiguationSuffix: String
@@ -254,14 +274,19 @@ internal abstract class DefaultKotlinJvmBinariesDsl @Inject constructor(
     private fun jarOnlyClasspath(
         jvmCompilation: KotlinJvmCompilation,
         compilationJarTask: TaskProvider<Jar>,
-    ): FileCollection = jvmCompilation.project.layout.files(
-        {
-            arrayOf(
-                compilationJarTask.map { it.archiveFile },
-                jvmCompilation.runtimeDependencyFiles,
-            )
-        }
-    )
+    ): FileCollection {
+        val classpath = jvmCompilation.project.objects.fileCollection()
+        classpath.from(compilationJarTask)
+        classpath.from(jvmCompilation.runtimeDependencyFiles.onlyJars)
+        jvmCompilation
+            .allAssociatedCompilations
+            .forAll { compilation ->
+                compilation as KotlinJvmCompilation
+                classpath.from(compilation.jarTask)
+                classpath.from(compilation.runtimeDependencyFiles.onlyJars)
+            }
+        return classpath
+    }
 
     private fun JavaExec.configureTaskToolchain() {
         val toolchainService = project.extensions.getByType(JavaToolchainService::class.java)
@@ -288,8 +313,7 @@ internal abstract class DefaultKotlinJvmBinariesDsl @Inject constructor(
             distribution.distributionClassifier.convention(jvmCompilation.disambiguateName(disambiguationSuffix))
 
             val libChildSpec = project.copySpec().into("lib")
-            libChildSpec.from(jvmCompilation.runtimeDependencyFiles)
-            libChildSpec.from(jvmCompilation.jarTask)
+            libChildSpec.from(jarOnlyClasspath(jvmCompilation, compilationJarTask))
 
             val binChildSpec = project.copySpec()
             binChildSpec.into(jvmBinarySpec.executableDir)
@@ -317,7 +341,7 @@ internal abstract class DefaultKotlinJvmBinariesDsl @Inject constructor(
         jvmCompilation: KotlinJvmCompilation,
         compilationJarTask: TaskProvider<Jar>,
     ): TaskProvider<CreateStartScripts> {
-        return taskContainer.register("startScriptsFor${distributionName.capitalize()}", CreateStartScripts::class.java) { task ->
+        return taskContainer.register("startScriptsFor${distributionName.capitalizeAsciiOnly()}", CreateStartScripts::class.java) { task ->
             task.description = "Creates OS specific scripts to run the project/${distributionName} as a JVM application."
 
             task.classpath = jarOnlyClasspath(jvmCompilation, compilationJarTask)

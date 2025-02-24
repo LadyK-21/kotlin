@@ -41,10 +41,23 @@ interface KotlinCommonCompilerOptions : org.jetbrains.kotlin.gradle.dsl.KotlinCo
     val optIn: org.gradle.api.provider.ListProperty<kotlin.String>
 
     /**
-     * Enable progressive compiler mode. In this mode, deprecations and bug fixes for unstable code take effect immediately instead of going through a graceful migration cycle. Code written in progressive mode is backward compatible; however, code written without progressive mode enabled may cause compilation errors in progressive mode.
+     * Enable progressive compiler mode.
+     * In this mode, deprecations and bug fixes for unstable code take effect immediately
+     * instead of going through a graceful migration cycle.
+     * Code written in progressive mode is backward compatible; however, code written without
+     * progressive mode enabled may cause compilation errors in progressive mode.
      *
      * Default value: false
      */
     @get:org.gradle.api.tasks.Input
     val progressiveMode: org.gradle.api.provider.Property<kotlin.Boolean>
+
+    /**
+     * Compile using the experimental K2 compiler pipeline. No compatibility guarantees are provided yet.
+     *
+     * Default value: false
+     */
+    @Deprecated(message = "Compiler flag -Xuse-k2 is deprecated; please use language version 2.0 instead", level = DeprecationLevel.HIDDEN)
+    @get:org.gradle.api.tasks.Input
+    val useK2: org.gradle.api.provider.Property<kotlin.Boolean>
 }

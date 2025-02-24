@@ -8,11 +8,10 @@ package org.jetbrains.kotlin.backend.jvm.lower.indy
 import org.jetbrains.kotlin.backend.common.lower.VariableRemapper
 import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
 import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
-import org.jetbrains.kotlin.ir.util.erasedUpperBound
+import org.jetbrains.kotlin.backend.jvm.ir.findInterfaceImplementation
 import org.jetbrains.kotlin.backend.jvm.ir.findSuperDeclaration
 import org.jetbrains.kotlin.backend.jvm.ir.getSingleAbstractMethod
 import org.jetbrains.kotlin.backend.jvm.ir.isCompiledToJvmDefault
-import org.jetbrains.kotlin.backend.jvm.lower.findInterfaceImplementation
 import org.jetbrains.kotlin.backend.jvm.needsMfvcFlattening
 import org.jetbrains.kotlin.builtins.functions.BuiltInFunctionArity
 import org.jetbrains.kotlin.config.LanguageFeature
@@ -156,7 +155,7 @@ internal class LambdaMetafactoryArgumentsBuilder(
         // In this case the corresponding method might be inaccessible in the context where it's referenced (see KT-48954).
         // For now, just prohibit referencing methods from package-private Java classes through indy (without precise accessibility check).
         if (implFun is IrSimpleFunction) {
-            val baseFun = findSuperDeclaration(implFun, false, context.config.jvmDefaultMode)
+            val baseFun = findSuperDeclaration(implFun)
             val baseFunClass = baseFun.parent as? IrClass
             if (baseFunClass != null && baseFunClass.visibility == JavaDescriptorVisibilities.PACKAGE_VISIBILITY) {
                 functionHazard = true
@@ -262,7 +261,7 @@ internal class LambdaMetafactoryArgumentsBuilder(
         // Create a fake instance method as if it was defined in a class implementing SAM interface
         // (such class would be eventually created by LambdaMetafactory at run-time).
         val fakeClass = context.irFactory.buildClass { name = Name.special("<fake>") }
-        fakeClass.parent = context.ir.symbols.kotlinJvmInternalInvokeDynamicPackage
+        fakeClass.parent = context.symbols.kotlinJvmInternalInvokeDynamicPackage
         val fakeInstanceMethod = buildFakeOverrideMember(samType, samMethod, fakeClass) as IrSimpleFunction
         (fakeInstanceMethod as IrFunctionWithLateBinding).acquireSymbol(IrSimpleFunctionSymbolImpl())
         fakeInstanceMethod.overriddenSymbols = listOf(samMethod.symbol)

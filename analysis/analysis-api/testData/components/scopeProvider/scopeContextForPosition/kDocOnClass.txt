@@ -1,14 +1,17 @@
 element: param1
-implicit receivers:
-  type: KaUsualClassType:
-    annotations: []
-    typeArguments: [
-      KaTypeParameterType:
-        annotations: []
-        type: TypeParam
-    ]
-    type: test/MyClass<TypeParam>
-  owner symbol: KaFirNamedClassSymbol
+implicit values:
+  KaImplicitReceiver:
+    scopeIndexInTower = 0
+    type = KaUsualClassType:
+      annotations: []
+      typeArguments: [
+        KaTypeParameterType:
+          annotations: []
+          type: TypeParam
+      ]
+      type: test/MyClass<TypeParam>
+    ownerSymbol = KaNamedClassSymbol:
+      test/MyClass
 
 scopes:
   TypeScope, index = 0
@@ -39,6 +42,7 @@ scopes:
           visibility: PRIVATE
         callableId: test/MyClass.property
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
@@ -66,7 +70,7 @@ scopes:
         hasBackingField: true
         hasGetter: true
         hasSetter: false
-        initializer: KtConstantInitializerValue(10)
+        initializer: KaConstantInitializerValue(10)
         isActual: false
         isConst: false
         isDelegatedProperty: false
@@ -94,6 +98,7 @@ scopes:
         annotations: []
         callableId: test/MyClass.member
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -125,6 +130,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.equals
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -182,6 +188,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.hashCode
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -213,6 +220,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.toString
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true

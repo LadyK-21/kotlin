@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.backend.wasm
 
-import org.jetbrains.kotlin.backend.common.ir.Ir
 import org.jetbrains.kotlin.backend.common.linkage.partial.createPartialLinkageSupportForLowerings
 import org.jetbrains.kotlin.backend.common.lower.InnerClassesSupport
 import org.jetbrains.kotlin.backend.wasm.ir2wasm.JsModuleAndQualifierReference
@@ -38,7 +37,7 @@ import org.jetbrains.kotlin.wasm.config.wasmTarget
 class WasmBackendContext(
     val module: ModuleDescriptor,
     override val irBuiltIns: IrBuiltIns,
-    val symbolTable: SymbolTable,
+    override val symbolTable: SymbolTable,
     val irModuleFragment: IrModuleFragment,
     propertyLazyInitialization: Boolean,
     override val configuration: CompilerConfiguration,
@@ -101,10 +100,8 @@ class WasmBackendContext(
     override val propertyLazyInitialization: PropertyLazyInitialization =
         PropertyLazyInitialization(enabled = propertyLazyInitialization, eagerInitialization = wasmSymbols.eagerInitialization)
 
-    override val ir = object : Ir() {
-        override val symbols: WasmSymbols = wasmSymbols
-        override fun shouldGenerateHandlerParameterForDefaultBodyFun() = true
-    }
+    override val shouldGenerateHandlerParameterForDefaultBodyFun: Boolean
+        get() = true
 
     override val inlineClassesUtils = WasmInlineClassesUtils(wasmSymbols)
 

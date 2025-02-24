@@ -1,6 +1,6 @@
 /*
- * Copyright 2010-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
- * that can be found in the license/LICENSE.txt file.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
 package org.jetbrains.kotlin.benchmarks
@@ -14,6 +14,7 @@ import com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.backend.common.linkage.issues.checkNoUnboundSymbols
 import org.jetbrains.kotlin.backend.common.linkage.partial.PartialLinkageSupportForLinker
+import org.jetbrains.kotlin.backend.common.phaser.then
 import org.jetbrains.kotlin.backend.common.serialization.IrSerializationSettings
 import org.jetbrains.kotlin.backend.common.serialization.signature.IdSignatureDescriptor
 import org.jetbrains.kotlin.build.report.DoNothingBuildReporter
@@ -23,6 +24,7 @@ import org.jetbrains.kotlin.cli.js.klib.TopDownAnalyzerFacadeForJSIR
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.config.phaser.CompilerPhase
 import org.jetbrains.kotlin.config.phaser.invokeToplevel
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
@@ -48,8 +50,8 @@ import org.jetbrains.kotlin.js.config.JSConfigurationKeys
 import org.jetbrains.kotlin.library.*
 import org.jetbrains.kotlin.library.impl.BuiltInsPlatform
 import org.jetbrains.kotlin.library.impl.KotlinLibraryOnlyIrWriter
-import org.jetbrains.kotlin.library.metadata.KlibMetadataVersion
 import org.jetbrains.kotlin.library.metadata.kotlinLibrary
+import org.jetbrains.kotlin.metadata.deserialization.MetadataVersion
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi2ir.Psi2IrConfiguration
@@ -99,13 +101,13 @@ class GenerateIrRuntime {
     }
 
     private val CompilerConfiguration.metadataVersion
-        get() = get(CommonConfigurationKeys.METADATA_VERSION) as? KlibMetadataVersion ?: KlibMetadataVersion.INSTANCE
+        get() = get(CommonConfigurationKeys.METADATA_VERSION) as? MetadataVersion ?: KLIB_LEGACY_METADATA_VERSION
 
     private val environment =
         KotlinCoreEnvironment.createForTests(Disposable { }, CompilerConfiguration(), EnvironmentConfigFiles.JS_CONFIG_FILES)
     private val configuration = buildConfiguration(environment)
     private val project = environment.project
-    private val jsPhases = getJsPhases(configuration)
+    private val jsPhases = getJsLowerings(configuration).toCompilerPhase()
 
     private val languageVersionSettings = configuration.languageVersionSettings
     private val moduleName = configuration[CommonConfigurationKeys.MODULE_NAME]!!
@@ -125,6 +127,9 @@ class GenerateIrRuntime {
         return if (isDirectory) listFiles().flatMap { it.listAllFiles() }
         else listOf(this)
     }
+
+    private fun List<CompilerPhase<JsIrBackendContext, IrModuleFragment, IrModuleFragment>>.toCompilerPhase() =
+        reduce { acc, lowering -> acc.then(lowering) }
 
     private fun createPsiFileFromDir(path: String, vararg extraDirs: String): List<KtFile> {
         val dir = File(path)
@@ -247,7 +252,7 @@ class GenerateIrRuntime {
     fun runMonolithicDiskWriting() {
         val compilerVersion = KotlinCompilerVersion.getVersion()
         val abiVersion = KotlinAbiVersion.CURRENT
-        val metadataVersion = KlibMetadataVersion.INSTANCE.toString()
+        val metadataVersion = KLIB_LEGACY_METADATA_VERSION
 
         val versions = KotlinLibraryVersioning(compilerVersion, abiVersion, metadataVersion)
         val file = createTempFile(directory = workingDir.toPath()).toFile()
@@ -267,7 +272,7 @@ class GenerateIrRuntime {
     fun runPerFileDiskWriting() {
         val compilerVersion = KotlinCompilerVersion.getVersion()
         val abiVersion = KotlinAbiVersion.CURRENT
-        val metadataVersion = KlibMetadataVersion.INSTANCE.toString()
+        val metadataVersion = KLIB_LEGACY_METADATA_VERSION
 
         val versions = KotlinLibraryVersioning(compilerVersion, abiVersion, metadataVersion)
         val file = createTempFile(directory = workingDir.toPath()).toFile()

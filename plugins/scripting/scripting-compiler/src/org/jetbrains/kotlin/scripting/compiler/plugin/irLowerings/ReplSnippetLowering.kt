@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.*
@@ -71,6 +72,16 @@ internal class ReplSnippetsToClassesLowering(val context: IrPluginContext) : Mod
         }
     }
 
+    private fun collectCapturingClasses(irSnippet: IrReplSnippet, typeRemapper: SimpleTypeRemapper): Set<IrClass> {
+        val snippetReceivers = mutableSetOf<IrType>()
+        irSnippet.receiverParameters.forEach {
+            snippetReceivers.add(it.type)
+            snippetReceivers.add(typeRemapper.remapType(it.type))
+        }
+
+        return irSnippet.body.statements.filterIsInstance<IrClass>().collectCapturersByReceivers(context, irSnippet, snippetReceivers)
+    }
+
     private fun finalizeReplSnippetClass(irSnippet: IrReplSnippet, symbolRemapper: ReplSnippetsToClassesSymbolRemapper) {
 
         val irSnippetClass = irSnippet.targetClass!!.owner
@@ -100,12 +111,15 @@ internal class ReplSnippetsToClassesLowering(val context: IrPluginContext) : Mod
             visibility = INTERNAL
         }.also { evalFun ->
             evalFun.parent = irSnippetClass
-            evalFun.parameters = listOf(
-                evalFun.buildReceiverParameter {
-                    origin = irSnippetClass.origin
-                    type = irSnippetClass.defaultType
-                }
-            )
+            evalFun.parameters = buildList {
+                add(
+                    evalFun.buildReceiverParameter {
+                        origin = irSnippetClass.origin
+                        type = irSnippetClass.defaultType
+                    }
+                )
+                implicitReceiversFieldsWithParameters.forEach { (_, param) -> add(param) }
+            }
             evalFun.body =
                 context.irBuiltIns.createIrBuilder(evalFun.symbol).irBlockBody {
                     +snippetAccessCallsGenerator.createPutSelfToState(
@@ -171,6 +185,10 @@ internal class ReplSnippetsToClassesLowering(val context: IrPluginContext) : Mod
                     }
                     evalFun.returnType = lastExpressionVar?.type ?: context.irBuiltIns.unitType
                 }
+            // required because some declarations deeper in the subtree may get a "wrong" parent on Fir2Ir
+            // E.g. anonymous objects in a property initializer. (see KT-75301 for possible future directions).
+            // Or lambda as in KT-74607
+            evalFun.patchDeclarationParents(irSnippet)
         }
 
         val scriptTransformer = ReplSnippetToClassTransformer(
@@ -180,7 +198,8 @@ internal class ReplSnippetsToClassesLowering(val context: IrPluginContext) : Mod
             irSnippetClassThisReceiver,
             typeRemapper,
             snippetAccessCallsGenerator,
-            valsToFields
+            valsToFields,
+            capturingClasses = collectCapturingClasses(irSnippet, typeRemapper)
         )
         val lambdaPatcher = ScriptFixLambdasTransformer(irSnippetClass)
 
@@ -316,6 +335,7 @@ private class ReplSnippetToClassTransformer(
     typeRemapper: TypeRemapper,
     override val accessCallsGenerator: ReplSnippetAccessCallsGenerator,
     val varsToFields: Map<IrVariableSymbol, IrFieldSymbol>,
+    capturingClasses: Set<IrClass>,
 ) : ScriptLikeToClassTransformer(
     context,
     irSnippet,
@@ -323,8 +343,7 @@ private class ReplSnippetToClassTransformer(
     snippetClassReceiver,
     typeRemapper,
     accessCallsGenerator,
-    // currently assuming that the snippet top level decls do not capture anything from the snippet or history, but use global state instead
-    capturingClasses = emptySet(),
+    capturingClasses,
     needsReceiverProcessing = true
 ) {
     override fun visitSimpleFunction(

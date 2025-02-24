@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.backend.konan.llvm.computeFunctionName
 import org.jetbrains.kotlin.backend.konan.llvm.localHash
 import org.jetbrains.kotlin.backend.konan.llvm.toLLVMType
 import org.jetbrains.kotlin.backend.konan.lower.bridgeTarget
+import org.jetbrains.kotlin.backend.konan.serialization.ClassFieldsDeserializer
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.*
@@ -314,7 +315,7 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context) {
         val superVtableEntries = if (irClass.isSpecialClassWithNoSupertypes()) {
             emptyList()
         } else {
-            val superClass = irClass.getSuperClassNotAny() ?: context.ir.symbols.any.owner
+            val superClass = irClass.getSuperClassNotAny() ?: context.symbols.any.owner
             context.getLayoutBuilder(superClass).vtableEntries
         }
 
@@ -479,7 +480,7 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context) {
             val annotationClass = it.symbol.owner.constructedClass
 
             if (annotationClass.hasAnnotation(RuntimeNames.associatedObjectKey)) {
-                val argument = it.getValueArgument(0)
+                val argument = it.arguments[0]
 
                 val irClassReference = argument as? IrClassReference
                         ?: error(irFile, argument, "unexpected annotation argument")
@@ -515,10 +516,11 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context) {
             context.innerClassesSupport.getOuterThisField(irClass)
         else null
 
-        val moduleDeserializer = context.irLinker.getCachedDeclarationModuleDeserializer(irClass)
-        if (moduleDeserializer != null)
-            return moduleDeserializer.deserializeClassFields(irClass, outerThisField?.toFieldInfo(llvm))
-
+        val moduleDeserializer = context.moduleDeserializerProvider.getDeserializerOrNull(irClass)
+        if (moduleDeserializer != null) {
+            val classFieldsDeserializer = ClassFieldsDeserializer(context.config.cachedLibraries, context.irBuiltIns, moduleDeserializer)
+            return classFieldsDeserializer.deserializeClassFields(irClass, outerThisField?.toFieldInfo(llvm))
+        }
         val declarations = irClass.declarations.toMutableList()
         outerThisField?.let {
             if (!declarations.contains(it))

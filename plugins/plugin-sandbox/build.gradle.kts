@@ -33,14 +33,14 @@ dependencies {
     testApi(project(":compiler:fir:checkers:checkers.native"))
     testApi(project(":compiler:fir:checkers:checkers.wasm"))
     testApi(project(":compiler:fir:plugin-utils"))
+    testImplementation(project(":tools:kotlinp-jvm"))
 
     testRuntimeOnly(project(":core:descriptors.runtime"))
     testRuntimeOnly(project(":compiler:fir:fir-serialization"))
 
     testRuntimeOnly(commonDependency("org.jetbrains.intellij.deps.jna:jna"))
     testRuntimeOnly(intellijJDom())
-    testRuntimeOnly(commonDependency("org.jetbrains.intellij.deps:trove4j"))
-    testRuntimeOnly(commonDependency("org.jetbrains.intellij.deps.fastutil:intellij-deps-fastutil"))
+    testRuntimeOnly(libs.intellij.fastutil)
 
     testRuntimeOnly(commonDependency("org.codehaus.woodstox:stax2-api"))
     testRuntimeOnly(commonDependency("com.fasterxml:aalto-xml"))

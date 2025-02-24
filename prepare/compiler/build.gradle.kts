@@ -150,7 +150,6 @@ dependencies {
     api(kotlinStdlib("jdk8"))
     api(project(":kotlin-script-runtime"))
     api(commonDependency("org.jetbrains.kotlin:kotlin-reflect")) { isTransitive = false }
-    api(commonDependency("org.jetbrains.intellij.deps", "trove4j"))
     api(libs.kotlinx.coroutines.core)
 
     proguardLibraries(project(":kotlin-annotations-jvm"))
@@ -171,7 +170,6 @@ dependencies {
     }
 
     librariesStripVersion(libs.kotlinx.coroutines.core) { isTransitive = false }
-    librariesStripVersion(commonDependency("org.jetbrains.intellij.deps:trove4j")) { isTransitive = false }
 
     distLibraryProjects.forEach {
         libraries(project(it)) { isTransitive = false }
@@ -231,7 +229,7 @@ dependencies {
     fatJarContents(intellijCore())
     fatJarContents(commonDependency("org.jetbrains.intellij.deps.jna:jna")) { isTransitive = false }
     fatJarContents(commonDependency("org.jetbrains.intellij.deps.jna:jna-platform")) { isTransitive = false }
-    fatJarContents(commonDependency("org.jetbrains.intellij.deps.fastutil:intellij-deps-fastutil"))
+    fatJarContents(libs.intellij.fastutil)
     fatJarContents(commonDependency("org.lz4:lz4-java")) { isTransitive = false }
     fatJarContents(libs.intellij.asm) { isTransitive = false }
     fatJarContents(libs.guava) { isTransitive = false }
