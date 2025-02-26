@@ -7,13 +7,11 @@ package org.jetbrains.kotlin.gradle
 
 import org.gradle.api.JavaVersion
 import org.gradle.api.logging.LogLevel
-import org.gradle.internal.jvm.JavaInfo
-import org.gradle.internal.jvm.Jvm
 import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.plugin.diagnostics.KotlinToolingDiagnostics
 import org.jetbrains.kotlin.gradle.testbase.*
+import org.jetbrains.kotlin.gradle.util.replaceText
 import org.junit.jupiter.api.DisplayName
-import java.io.File
 import kotlin.io.path.appendText
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteExisting
@@ -362,7 +360,7 @@ class JvmTargetValidationTest : KGPBaseTest() {
             gradleProperties.append(
                 """
                 kotlin.jvm.target.validation.mode = error
-                org.gradle.java.installations.paths=${getJdk17().javaHome},${getJdk11().javaHome}
+                org.gradle.java.installations.paths=${jdk17Info.javaHome},${jdk11Info.javaHome}
                 """.trimIndent()
             )
 
@@ -421,6 +419,12 @@ class JvmTargetValidationTest : KGPBaseTest() {
                 """.trimIndent()
             )
 
+            if (!isWithJavaSupported) {
+                listOf("lib", "dependsOnPlainJvm", "dependsOnJvmWithJava").forEach {
+                    subProject(it).buildGradleKts.replaceText("withJava()", "")
+                }
+            }
+
             subProject("lib").buildGradleKts.appendText(
                 """
                 |
@@ -451,6 +455,12 @@ class JvmTargetValidationTest : KGPBaseTest() {
                 """.trimIndent()
             )
 
+            if (!isWithJavaSupported) {
+                listOf("lib", "dependsOnPlainJvm", "dependsOnJvmWithJava").forEach {
+                    subProject(it).buildGradleKts.replaceText("withJava()", "")
+                }
+            }
+
             subProject("lib").buildGradleKts.appendText(
                 """
                 |
@@ -465,6 +475,28 @@ class JvmTargetValidationTest : KGPBaseTest() {
                 ":lib:compileKotlinPlainJvm",
                 "-Pkotlin.internal.suppressGradlePluginErrors=KotlinTargetAlreadyDeclaredError"
             )
+        }
+    }
+
+    @MppGradlePluginTests
+    @DisplayName("Validation should not run in MPP on empty Java sources")
+    @GradleTest
+    internal fun testMppJvmNoValidationOnEmptyJavaSources(gradleVersion: GradleVersion) {
+        project("mpp-single-jvm-target", gradleVersion) {
+            gradleProperties.append(
+                """
+                kotlin.jvm.target.validation.mode = error
+                """.trimIndent()
+            )
+
+            buildScriptInjection {
+                java.targetCompatibility = JavaVersion.VERSION_11
+                java.sourceCompatibility = JavaVersion.VERSION_11
+            }
+
+            build(":compileKotlinJvm") {
+                assertTasksExecuted(":compileKotlinJvm")
+            }
         }
     }
 
@@ -508,10 +540,6 @@ class JvmTargetValidationTest : KGPBaseTest() {
             """.trimIndent()
         )
     }
-
-    private fun getJdk11(): JavaInfo = Jvm.forHome(File(System.getProperty("jdk11Home")))
-
-    private fun getJdk17(): JavaInfo = Jvm.forHome(File(System.getProperty("jdk17Home")))
 
     private val String.fullProjectName get() = "kotlin-java-toolchain/$this"
 }

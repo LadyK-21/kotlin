@@ -33,11 +33,11 @@ var K2JVMCompilerArguments.classpathAsList: List<File>
     }
 
 val K2JVMCompilerArguments.isK1ForcedByKapt: Boolean
-    // coordinated with org.jetbrains.kotlin.cli.common.ArgumentsKt.switchToFallbackModeIfNecessary
+    // coordinated with org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.shouldRunK2
     get() {
         val isK2 = languageVersion?.startsWith('2') != false
         val isKaptUsed = pluginOptions?.any { it.startsWith("plugin:org.jetbrains.kotlin.kapt3") } == true
-        return isK2 && isKaptUsed && !useK2Kapt
+        return isK2 && isKaptUsed && useK2Kapt == false
     }
 
 fun K2JVMCompilerArguments.disablePreciseJavaTrackingIfK2(usePreciseJavaTrackingByDefault: Boolean): Boolean {
@@ -69,35 +69,19 @@ fun makeJvmIncrementally(
     val buildReporter = BuildReporter(icReporter = reporter, buildMetricsReporter = DoNothingBuildMetricsReporter)
 
     withIncrementalCompilation(args) {
-        val languageVersion = LanguageVersion.fromVersionString(args.languageVersion) ?: LanguageVersion.LATEST_STABLE
-        val useK2 = languageVersion.usesK2
+        val verifiedPreciseJavaTracking = args.disablePreciseJavaTrackingIfK2(usePreciseJavaTrackingByDefault = true)
 
-        val compiler =
-            if (useK2 && args.useFirIC && args.useFirLT /* TODO by @Ilya.Chernikov: move LT check into runner */) {
-                IncrementalFirJvmCompilerRunner(
-                    cachesDir,
-                    buildReporter,
-                    buildHistoryFile,
-                    outputDirs = null,
-                    EmptyModulesApiHistory,
-                    kotlinExtensions,
-                    ClasspathChanges.ClasspathSnapshotDisabled
-                )
-            } else {
-                val verifiedPreciseJavaTracking = args.disablePreciseJavaTrackingIfK2(usePreciseJavaTrackingByDefault = true)
-                IncrementalJvmCompilerRunner(
-                    cachesDir,
-                    buildReporter,
-                    // Use precise setting in case of non-Gradle build
-                    usePreciseJavaTracking = verifiedPreciseJavaTracking,
-                    buildHistoryFile = buildHistoryFile,
-                    outputDirs = null,
-                    modulesApiHistory = EmptyModulesApiHistory,
-                    kotlinSourceFilesExtensions = kotlinExtensions,
-                    classpathChanges = ClasspathChanges.ClasspathSnapshotDisabled
-                )
-            }
-        //TODO by @Ilya.Chernikov set properly
+        val compiler = BuildHistoryJvmICRunner(
+            cachesDir,
+            buildReporter,
+            buildHistoryFile = buildHistoryFile,
+            outputDirs = null,
+            modulesApiHistory = EmptyModulesApiHistory,
+            kotlinSourceFilesExtensions = kotlinExtensions,
+            icFeatures = IncrementalCompilationFeatures(
+                usePreciseJavaTracking = verifiedPreciseJavaTracking
+            ),
+        )
         compiler.compile(sourceFiles, args, messageCollector, changedFiles = ChangedFiles.DeterminableFiles.ToBeComputed)
     }
 }

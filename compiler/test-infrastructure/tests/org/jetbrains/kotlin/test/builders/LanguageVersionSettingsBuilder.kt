@@ -101,7 +101,7 @@ class LanguageVersionSettingsBuilder {
 
         val analysisFlags = listOfNotNull(
             analysisFlag(AnalysisFlags.optIn, directives[LanguageSettingsDirectives.OPT_IN].takeIf { it.isNotEmpty() }),
-            analysisFlag(AnalysisFlags.globallySuppressedDiagnostics, directives[LanguageSettingsDirectives.SUPPRESS_WARNINGS].takeIf { it.isNotEmpty() }),
+            analysisFlag(AnalysisFlags.warningLevels, directives[LanguageSettingsDirectives.SUPPRESS_WARNINGS].associateWith { WarningLevel.Disabled }),
             analysisFlag(AnalysisFlags.ignoreDataFlowInAssert, trueOrNull(LanguageSettingsDirectives.IGNORE_DATA_FLOW_IN_ASSERT in directives)),
             analysisFlag(AnalysisFlags.explicitApiMode, directives.singleOrZeroValue(LanguageSettingsDirectives.EXPLICIT_API_MODE)),
             analysisFlag(AnalysisFlags.explicitReturnTypes, directives.singleOrZeroValue(LanguageSettingsDirectives.EXPLICIT_RETURN_TYPES_MODE)),
@@ -114,7 +114,7 @@ class LanguageVersionSettingsBuilder {
             analysisFlag(JvmAnalysisFlags.inheritMultifileParts, trueOrNull(LanguageSettingsDirectives.INHERIT_MULTIFILE_PARTS in directives)),
             analysisFlag(JvmAnalysisFlags.sanitizeParentheses, trueOrNull(LanguageSettingsDirectives.SANITIZE_PARENTHESES in directives)),
             analysisFlag(JvmAnalysisFlags.enableJvmPreview, trueOrNull(LanguageSettingsDirectives.ENABLE_JVM_PREVIEW in directives)),
-            analysisFlag(JvmAnalysisFlags.useIR, targetBackend?.isIR != false),
+            analysisFlag(JvmAnalysisFlags.expectBuiltinsAsPartOfStdlib, trueOrNull(LanguageSettingsDirectives.EXPECT_BUILTINS_AS_PART_OF_STDLIB in directives)),
 
             analysisFlag(AnalysisFlags.explicitApiVersion, trueOrNull(apiVersion != null)),
         )
@@ -136,6 +136,14 @@ class LanguageVersionSettingsBuilder {
         }
 
         directives[LanguageSettingsDirectives.LANGUAGE].forEach { parseLanguageFeature(it) }
+        if (LanguageSettingsDirectives.PROGRESSIVE_MODE in directives) {
+            for (feature in LanguageFeature.entries.filter { it.enabledInProgressiveMode }) {
+                if (feature.sinceVersion!! <= languageVersion) continue
+                if (feature !in specificFeatures) {
+                    specificFeatures[feature] = LanguageFeature.State.ENABLED
+                }
+            }
+        }
     }
 
     private fun parseLanguageFeature(featureString: String) {

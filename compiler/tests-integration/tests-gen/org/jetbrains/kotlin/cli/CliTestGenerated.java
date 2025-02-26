@@ -850,16 +850,6 @@ public class CliTestGenerated extends AbstractCliTest {
     public void testUseDeclarationThatWasExperimentalWithoutExplicitImport() {
       runTest("compiler/testData/cli/jvm/optIn/useDeclarationThatWasExperimentalWithoutExplicitImport.args");
     }
-
-    @TestMetadata("useDeclarationThatWasExperimentalWithoutExplicitImportCommandLine.args")
-    public void testUseDeclarationThatWasExperimentalWithoutExplicitImportCommandLine() {
-      runTest("compiler/testData/cli/jvm/optIn/useDeclarationThatWasExperimentalWithoutExplicitImportCommandLine.args");
-    }
-
-    @TestMetadata("useDeclarationThatWasExperimentalWithoutMarker.args")
-    public void testUseDeclarationThatWasExperimentalWithoutMarker() {
-      runTest("compiler/testData/cli/jvm/optIn/useDeclarationThatWasExperimentalWithoutMarker.args");
-    }
   }
 
   @TestMetadata("compiler/testData/cli/jvm/sourcesCommonChecks")
@@ -1058,11 +1048,6 @@ public class CliTestGenerated extends AbstractCliTest {
       KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/cli/jvm/XjspecifyAnnotation"), Pattern.compile("^(.+)\\.args$"), null, false);
     }
 
-    @TestMetadata("jspecifyByLv16.args")
-    public void testJspecifyByLv16() {
-      runTest("compiler/testData/cli/jvm/XjspecifyAnnotation/jspecifyByLv16.args");
-    }
-
     @TestMetadata("jspecifyDefault.args")
     public void testJspecifyDefault() {
       runTest("compiler/testData/cli/jvm/XjspecifyAnnotation/jspecifyDefault.args");
@@ -1225,6 +1210,16 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("suppressAllWarningsJvm.args")
     public void testSuppressAllWarningsJvm() {
       runTest("compiler/testData/cli/jvm/XsupressWarnings/suppressAllWarningsJvm.args");
+    }
+
+    @TestMetadata("warningLevelAndNowarn.args")
+    public void testWarningLevelAndNowarn() {
+      runTest("compiler/testData/cli/jvm/XsupressWarnings/warningLevelAndNowarn.args");
+    }
+
+    @TestMetadata("warningLevelAndWerror.args")
+    public void testWarningLevelAndWerror() {
+      runTest("compiler/testData/cli/jvm/XsupressWarnings/warningLevelAndWerror.args");
     }
 
     @TestMetadata("warningSuppression.args")
@@ -1433,6 +1428,16 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/coroutinesWarn.args");
     }
 
+    @TestMetadata("dfaWarningExampleK2_22.args")
+    public void testDfaWarningExampleK2_22() {
+      runTest("compiler/testData/cli/jvm/dfaWarningExampleK2_22.args");
+    }
+
+    @TestMetadata("dfaWarningExampleK2_23.args")
+    public void testDfaWarningExampleK2_23() {
+      runTest("compiler/testData/cli/jvm/dfaWarningExampleK2_23.args");
+    }
+
     @TestMetadata("disabledFeatureFromUnsupportedVersion.args")
     public void testDisabledFeatureFromUnsupportedVersion() {
       runTest("compiler/testData/cli/jvm/disabledFeatureFromUnsupportedVersion.args");
@@ -1548,11 +1553,6 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/firStdlibDependency.args");
     }
 
-    @TestMetadata("firSyntaxError.args")
-    public void testFirSyntaxError() {
-      runTest("compiler/testData/cli/jvm/firSyntaxError.args");
-    }
-
     @TestMetadata("firVsClassicAnnotation.args")
     public void testFirVsClassicAnnotation() {
       runTest("compiler/testData/cli/jvm/firVsClassicAnnotation.args");
@@ -1591,6 +1591,16 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("jvmDefaultIncorrectValue.args")
     public void testJvmDefaultIncorrectValue() {
       runTest("compiler/testData/cli/jvm/jvmDefaultIncorrectValue.args");
+    }
+
+    @TestMetadata("jvmDefaultIncorrectValueOld.args")
+    public void testJvmDefaultIncorrectValueOld() {
+      runTest("compiler/testData/cli/jvm/jvmDefaultIncorrectValueOld.args");
+    }
+
+    @TestMetadata("jvmDefaultOld.args")
+    public void testJvmDefaultOld() {
+      runTest("compiler/testData/cli/jvm/jvmDefaultOld.args");
     }
 
     @TestMetadata("jvmRecordOk.args")
@@ -1698,16 +1708,6 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/nullabilityAnnotations.args");
     }
 
-    @TestMetadata("oldBackend.args")
-    public void testOldBackend() {
-      runTest("compiler/testData/cli/jvm/oldBackend.args");
-    }
-
-    @TestMetadata("oldBackendWithScript.args")
-    public void testOldBackendWithScript() {
-      runTest("compiler/testData/cli/jvm/oldBackendWithScript.args");
-    }
-
     @TestMetadata("progressiveModeOff.args")
     public void testProgressiveModeOff() {
       runTest("compiler/testData/cli/jvm/progressiveModeOff.args");
@@ -1728,6 +1728,31 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/reportInternalDiagnosticNames.args");
     }
 
+    @TestMetadata("reportPerf.args")
+    public void testReportPerf() {
+      runTest("compiler/testData/cli/jvm/reportPerf.args");
+    }
+
+    @TestMetadata("reportPerfPsi.args")
+    public void testReportPerfPsi() {
+      runTest("compiler/testData/cli/jvm/reportPerfPsi.args");
+    }
+
+    @TestMetadata("reportPerfWithConfigError.args")
+    public void testReportPerfWithConfigError() {
+      runTest("compiler/testData/cli/jvm/reportPerfWithConfigError.args");
+    }
+
+    @TestMetadata("reportPerfWithError.args")
+    public void testReportPerfWithError() {
+      runTest("compiler/testData/cli/jvm/reportPerfWithError.args");
+    }
+
+    @TestMetadata("reportPerfWithInitError.args")
+    public void testReportPerfWithInitError() {
+      runTest("compiler/testData/cli/jvm/reportPerfWithInitError.args");
+    }
+
     @TestMetadata("selfUpperBoundInference.args")
     public void testSelfUpperBoundInference() {
       runTest("compiler/testData/cli/jvm/selfUpperBoundInference.args");
@@ -1736,6 +1761,16 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("simple.args")
     public void testSimple() {
       runTest("compiler/testData/cli/jvm/simple.args");
+    }
+
+    @TestMetadata("syntaxError_lt.args")
+    public void testSyntaxError_lt() {
+      runTest("compiler/testData/cli/jvm/syntaxError_lt.args");
+    }
+
+    @TestMetadata("syntaxError_psi.args")
+    public void testSyntaxError_psi() {
+      runTest("compiler/testData/cli/jvm/syntaxError_psi.args");
     }
 
     @TestMetadata("syntheticAccessorForPropertiesSignatureClash.args")
@@ -1758,6 +1793,11 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/jvm/twoDiagnosticsOnSingleElement.args");
     }
 
+    @TestMetadata("unknownReleaseVersion.args")
+    public void testUnknownReleaseVersion() {
+      runTest("compiler/testData/cli/jvm/unknownReleaseVersion.args");
+    }
+
     @TestMetadata("unrestrictedBuilderInference.args")
     public void testUnrestrictedBuilderInference() {
       runTest("compiler/testData/cli/jvm/unrestrictedBuilderInference.args");
@@ -1766,6 +1806,21 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("version.args")
     public void testVersion() {
       runTest("compiler/testData/cli/jvm/version.args");
+    }
+
+    @TestMetadata("warningLevels_correct.args")
+    public void testWarningLevels_correct() {
+      runTest("compiler/testData/cli/jvm/warningLevels_correct.args");
+    }
+
+    @TestMetadata("warningLevels_duplicated.args")
+    public void testWarningLevels_duplicated() {
+      runTest("compiler/testData/cli/jvm/warningLevels_duplicated.args");
+    }
+
+    @TestMetadata("warningLevels_incorrect.args")
+    public void testWarningLevels_incorrect() {
+      runTest("compiler/testData/cli/jvm/warningLevels_incorrect.args");
     }
 
     @TestMetadata("werror.args")
@@ -1849,6 +1904,11 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("compilationErrorConstDivByZero.args")
     public void testCompilationErrorConstDivByZero() {
       runTest("compiler/testData/cli/js/compilationErrorConstDivByZero.args");
+    }
+
+    @TestMetadata("compilationErrorExposureOfPrivateTypes.args")
+    public void testCompilationErrorExposureOfPrivateTypes() {
+      runTest("compiler/testData/cli/js/compilationErrorExposureOfPrivateTypes.args");
     }
 
     @TestMetadata("compilationErrorK2.args")
@@ -1936,6 +1996,11 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/js/libraryDirNotFound.args");
     }
 
+    @TestMetadata("noModuleName.args")
+    public void testNoModuleName() {
+      runTest("compiler/testData/cli/js/noModuleName.args");
+    }
+
     @TestMetadata("noStdlib.args")
     public void testNoStdlib() {
       runTest("compiler/testData/cli/js/noStdlib.args");
@@ -1969,6 +2034,21 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("reifiedIntersectionType.args")
     public void testReifiedIntersectionType() {
       runTest("compiler/testData/cli/js/reifiedIntersectionType.args");
+    }
+
+    @TestMetadata("reportPerf.args")
+    public void testReportPerf() {
+      runTest("compiler/testData/cli/js/reportPerf.args");
+    }
+
+    @TestMetadata("reportPerfPsi.args")
+    public void testReportPerfPsi() {
+      runTest("compiler/testData/cli/js/reportPerfPsi.args");
+    }
+
+    @TestMetadata("reportPerfWithError.args")
+    public void testReportPerfWithError() {
+      runTest("compiler/testData/cli/js/reportPerfWithError.args");
     }
 
     @TestMetadata("simple2js.args")
@@ -2029,6 +2109,16 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("suppressAllWarningsJS.args")
     public void testSuppressAllWarningsJS() {
       runTest("compiler/testData/cli/js/suppressAllWarningsJS.args");
+    }
+
+    @TestMetadata("syntaxError_lt.args")
+    public void testSyntaxError_lt() {
+      runTest("compiler/testData/cli/js/syntaxError_lt.args");
+    }
+
+    @TestMetadata("syntaxError_psi.args")
+    public void testSyntaxError_psi() {
+      runTest("compiler/testData/cli/js/syntaxError_psi.args");
     }
 
     @TestMetadata("warningsSuppressionDisablesErrors_Js.args")
@@ -2132,6 +2222,31 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("optionalExpectationUsage.args")
     public void testOptionalExpectationUsage() {
       runTest("compiler/testData/cli/metadata/optionalExpectationUsage.args");
+    }
+
+    @TestMetadata("reportPerf.args")
+    public void testReportPerf() {
+      runTest("compiler/testData/cli/metadata/reportPerf.args");
+    }
+
+    @TestMetadata("reportPerfPsi.args")
+    public void testReportPerfPsi() {
+      runTest("compiler/testData/cli/metadata/reportPerfPsi.args");
+    }
+
+    @TestMetadata("reportPerfWithError.args")
+    public void testReportPerfWithError() {
+      runTest("compiler/testData/cli/metadata/reportPerfWithError.args");
+    }
+
+    @TestMetadata("syntaxError_lt.args")
+    public void testSyntaxError_lt() {
+      runTest("compiler/testData/cli/metadata/syntaxError_lt.args");
+    }
+
+    @TestMetadata("syntaxError_psi.args")
+    public void testSyntaxError_psi() {
+      runTest("compiler/testData/cli/metadata/syntaxError_psi.args");
     }
 
     @TestMetadata("unsignedDeclarationsFromStdlib.args")

@@ -70,6 +70,12 @@ public class DiagnosticsWithJsStdLibTestGenerated extends AbstractDiagnosticsTes
   }
 
   @Test
+  @TestMetadata("inaccurateJsExportBehavior.kt")
+  public void testInaccurateJsExportBehavior() {
+    runTest("compiler/testData/diagnostics/testsWithJsStdLib/inaccurateJsExportBehavior.kt");
+  }
+
+  @Test
   @TestMetadata("isInitializedInInline.kt")
   public void testIsInitializedInInline() {
     runTest("compiler/testData/diagnostics/testsWithJsStdLib/isInitializedInInline.kt");
@@ -106,9 +112,21 @@ public class DiagnosticsWithJsStdLibTestGenerated extends AbstractDiagnosticsTes
   }
 
   @Test
+  @TestMetadata("kt42271.kt")
+  public void testKt42271() {
+    runTest("compiler/testData/diagnostics/testsWithJsStdLib/kt42271.kt");
+  }
+
+  @Test
   @TestMetadata("localClassMetadata.kt")
   public void testLocalClassMetadata() {
     runTest("compiler/testData/diagnostics/testsWithJsStdLib/localClassMetadata.kt");
+  }
+
+  @Test
+  @TestMetadata("moreThanOneOverriddenExternals.kt")
+  public void testMoreThanOneOverriddenExternals() {
+    runTest("compiler/testData/diagnostics/testsWithJsStdLib/moreThanOneOverriddenExternals.kt");
   }
 
   @Test

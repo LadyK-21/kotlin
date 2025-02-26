@@ -45,6 +45,12 @@ public class JsIrInvalidationPerModuleTestGenerated extends AbstractJsIrInvalida
   }
 
   @Test
+  @TestMetadata("associatedObjectKey")
+  public void testAssociatedObjectKey() {
+    runTest("js/js.translator/testData/incremental/invalidation/associatedObjectKey/");
+  }
+
+  @Test
   @TestMetadata("circleExportsUpdate")
   public void testCircleExportsUpdate() {
     runTest("js/js.translator/testData/incremental/invalidation/circleExportsUpdate/");
@@ -366,6 +372,12 @@ public class JsIrInvalidationPerModuleTestGenerated extends AbstractJsIrInvalida
   @TestMetadata("jsExportReexport")
   public void testJsExportReexport() {
     runTest("js/js.translator/testData/incremental/invalidation/jsExportReexport/");
+  }
+
+  @Test
+  @TestMetadata("jsExportWithClass")
+  public void testJsExportWithClass() {
+    runTest("js/js.translator/testData/incremental/invalidation/jsExportWithClass/");
   }
 
   @Test

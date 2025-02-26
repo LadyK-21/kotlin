@@ -29,6 +29,11 @@ public class K2KotlinpTestGenerated extends AbstractK2KotlinpTest {
     KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("libraries/tools/kotlinp/jvm/testData"), Pattern.compile("^(.*)\\.kts?$"), null, true);
   }
 
+  @TestMetadata("AnnotationTargets.kt")
+  public void testAnnotationTargets() {
+    runTest("libraries/tools/kotlinp/jvm/testData/AnnotationTargets.kt");
+  }
+
   @TestMetadata("AnnotationWithQualifiedExpressionInArgument.kt")
   public void testAnnotationWithQualifiedExpressionInArgument() {
     runTest("libraries/tools/kotlinp/jvm/testData/AnnotationWithQualifiedExpressionInArgument.kt");
@@ -92,6 +97,11 @@ public class K2KotlinpTestGenerated extends AbstractK2KotlinpTest {
   @TestMetadata("NestedClasses.kt")
   public void testNestedClasses() {
     runTest("libraries/tools/kotlinp/jvm/testData/NestedClasses.kt");
+  }
+
+  @TestMetadata("NestedTypeAlias.kt")
+  public void testNestedTypeAlias() {
+    runTest("libraries/tools/kotlinp/jvm/testData/NestedTypeAlias.kt");
   }
 
   @TestMetadata("NotEnumWithEnumEntriesEnabled.kt")
@@ -172,18 +182,23 @@ public class K2KotlinpTestGenerated extends AbstractK2KotlinpTest {
       KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
     }
 
-    @TestMetadata("All.kt")
-    public void testAll() {
-      runTest("libraries/tools/kotlinp/jvm/testData/jvmDefault/All.kt");
-    }
-
-    @TestMetadata("AllCompatibility.kt")
-    public void testAllCompatibility() {
-      runTest("libraries/tools/kotlinp/jvm/testData/jvmDefault/AllCompatibility.kt");
-    }
-
     public void testAllFilesPresentInJvmDefault() {
       KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("libraries/tools/kotlinp/jvm/testData/jvmDefault"), Pattern.compile("^(.*)\\.kts?$"), null, true);
+    }
+
+    @TestMetadata("Disable.kt")
+    public void testDisable() {
+      runTest("libraries/tools/kotlinp/jvm/testData/jvmDefault/Disable.kt");
+    }
+
+    @TestMetadata("Enable.kt")
+    public void testEnable() {
+      runTest("libraries/tools/kotlinp/jvm/testData/jvmDefault/Enable.kt");
+    }
+
+    @TestMetadata("NoCompatibility.kt")
+    public void testNoCompatibility() {
+      runTest("libraries/tools/kotlinp/jvm/testData/jvmDefault/NoCompatibility.kt");
     }
 
     @TestMetadata("withCompatibility.kt")

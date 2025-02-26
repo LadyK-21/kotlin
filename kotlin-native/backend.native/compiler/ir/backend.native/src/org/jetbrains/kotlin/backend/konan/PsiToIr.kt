@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.backend.konan.driver.phases.PsiToIrContext
 import org.jetbrains.kotlin.backend.konan.driver.phases.PsiToIrInput
 import org.jetbrains.kotlin.backend.konan.driver.phases.PsiToIrOutput
 import org.jetbrains.kotlin.backend.konan.ir.KonanSymbols
-import org.jetbrains.kotlin.backend.konan.ir.SymbolOverDescriptorsLookupUtils
 import org.jetbrains.kotlin.backend.konan.ir.interop.IrProviderForCEnumAndCStructStubs
 import org.jetbrains.kotlin.backend.konan.ir.konanLibrary
 import org.jetbrains.kotlin.backend.konan.serialization.CInteropModuleDeserializerFactory
@@ -23,7 +22,6 @@ import org.jetbrains.kotlin.backend.konan.serialization.isFromCInteropLibrary
 import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.config.messageCollector
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.declarations.DescriptorMetadataSource
 import org.jetbrains.kotlin.ir.linkage.IrDeserializer
@@ -32,7 +30,6 @@ import org.jetbrains.kotlin.ir.objcinterop.IrObjCOverridabilityCondition
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.DeclarationStubGenerator
 import org.jetbrains.kotlin.ir.util.IdSignature
-import org.jetbrains.kotlin.ir.util.StubGeneratorExtensions
 import org.jetbrains.kotlin.library.KotlinLibrary
 import org.jetbrains.kotlin.library.isHeader
 import org.jetbrains.kotlin.library.metadata.DeserializedKlibModuleOrigin
@@ -45,12 +42,6 @@ import org.jetbrains.kotlin.psi2ir.Psi2IrTranslator
 import org.jetbrains.kotlin.psi2ir.descriptors.IrBuiltInsOverDescriptors
 import org.jetbrains.kotlin.psi2ir.generators.DeclarationStubGeneratorImpl
 import org.jetbrains.kotlin.utils.DFS
-
-object KonanStubGeneratorExtensions : StubGeneratorExtensions() {
-    override fun isPropertyWithPlatformField(descriptor: PropertyDescriptor): Boolean {
-        return super.isPropertyWithPlatformField(descriptor) || descriptor.isLateInit
-    }
-}
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 internal fun PsiToIrContext.psiToIr(
@@ -101,7 +92,6 @@ internal fun PsiToIrContext.psiToIr(
     irBuiltInsOverDescriptors.functionFactory = functionIrClassFactory
     val symbols = KonanSymbols(
             this,
-            SymbolOverDescriptorsLookupUtils(generatorContext.symbolTable),
             generatorContext.irBuiltIns,
             this.config.configuration
     )
@@ -154,8 +144,6 @@ internal fun PsiToIrContext.psiToIr(
                         builtIns = generatorContext.irBuiltIns,
                         messageCollector = messageCollector
                 ),
-                cachedLibraries = config.cachedLibraries,
-                lazyIrForCaches = config.lazyIrForCaches,
                 libraryBeingCached = config.libraryToCache,
                 userVisibleIrModulesSupport = config.userVisibleIrModulesSupport,
                 externalOverridabilityConditions = listOf(IrObjCOverridabilityCondition)

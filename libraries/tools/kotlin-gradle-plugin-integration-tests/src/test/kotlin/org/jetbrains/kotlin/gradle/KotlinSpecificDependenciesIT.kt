@@ -28,6 +28,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("JVM: kotlin-stdlib dependency is added by default")
     @GradleTest
+    @BrokenOnMacosTest
     fun testStdlibByDefaultJvm(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -38,6 +39,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @GradleTest
     @DisplayName("JVM: add pre-1.9.20 kotlin-stdlib dependency")
     @JvmGradlePluginTests
+    @BrokenOnMacosTest
     fun testStdlibByDefaultPre1920Jvm(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -57,6 +59,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("JVM: kotlin-stdlib dependency is not added when disabled via properties")
     @GradleTest
+    @BrokenOnMacosTest
     fun testStdlibNotAddedJvm(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -74,6 +77,8 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JsGradlePluginTests
     @DisplayName("JS: kotlin-stdlib dependency is added by default")
     @GradleTest
+    @TestMetadata("kotlin-js-plugin-project")
+    @BrokenOnMacosTest
     fun testStdlibByDefaultJs(gradleVersion: GradleVersion) {
         project(
             "kotlin-js-plugin-project",
@@ -94,6 +99,8 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JsGradlePluginTests
     @DisplayName("JS: kotlin-stdlib dependency is not added when disabled via properties")
     @GradleTest
+    @TestMetadata("kotlin-js-plugin-project")
+    @BrokenOnMacosTest
     fun testStdlibDisabledJs(gradleVersion: GradleVersion) {
         project(
             "kotlin-js-plugin-project",
@@ -121,10 +128,11 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @AndroidGradlePluginTests
     @DisplayName("Android: kotlin-stdlib dependency is added by default")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testStdlibDefaultAndroid(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "AndroidLibraryKotlinProject",
@@ -146,10 +154,11 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @AndroidGradlePluginTests
     @DisplayName("Android: kotlin-stdlib dependency is not added when disabled via properties")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testStdlibDisabledAndroid(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "AndroidLibraryKotlinProject",
@@ -174,6 +183,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @MppGradlePluginTests
     @DisplayName("MPP: kotlin-stdlib is added by default")
     @GradleTest
+    @BrokenOnMacosTest
     fun kotlinStdlibDefaultMpp(gradleVersion: GradleVersion) {
         project("jvm-and-js-hmpp", gradleVersion) {
             removeDependencies(buildGradleKts)
@@ -192,6 +202,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @MppGradlePluginTests
     @DisplayName("MPP: kotlin-stdlib is not added when disabled in properties")
     @GradleTest
+    @BrokenOnMacosTest
     fun kotlinStdlibDisabledMpp(gradleVersion: GradleVersion) {
         project("jvm-and-js-hmpp", gradleVersion) {
             removeDependencies(buildGradleKts)
@@ -221,6 +232,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("Explicit kotlin-stdlib version overrides default one")
     @GradleTest
+    @BrokenOnMacosTest
     fun testOverrideStdlib(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -243,6 +255,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @MppGradlePluginTests
     @DisplayName("Stdlib should be added into compilation not depending on common")
     @GradleTest
+    @BrokenOnMacosTest
     fun testStdlibAddedIntoCompilationNotUsingCommon(gradleVersion: GradleVersion) {
         project("hierarchical-all-native", gradleVersion) {
             buildGradleKts.modify {
@@ -282,6 +295,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JsGradlePluginTests
     @DisplayName("Stdlib should be added into wasm compilations")
     @GradleTest
+    @BrokenOnMacosTest
     fun testStdlibAddedIntoWasmCompilationDependencies(gradleVersion: GradleVersion) {
         project("wasm-d8-simple-project", gradleVersion) {
             checkTaskCompileClasspath(
@@ -368,10 +382,11 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @AndroidGradlePluginTests
     @DisplayName("Android: Kotlin test single dependency in unit tests")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun kotlinTestSingleDependencyAndroidUnitTests(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "AndroidLibraryKotlinProject",
@@ -394,10 +409,11 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @AndroidGradlePluginTests
     @DisplayName("Android: Kotlin test single dependency in ui tests")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun kotlinTestSingleDependencyAndroidUiTests(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "AndroidLibraryKotlinProject",
@@ -417,6 +433,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("JVM: Kotlin test single dependency")
     @GradleTest
+    @BrokenOnMacosTest
     fun kotlinTestSingleDependencyJvm(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             assertKotlinTestDependency(
@@ -429,6 +446,8 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JsGradlePluginTests
     @DisplayName("JS: Kotlin test single dependency")
     @GradleTest
+    @TestMetadata("kotlin-js-plugin-project")
+    @BrokenOnMacosTest
     fun kotlinTestSingleDependencyJs(gradleVersion: GradleVersion) {
         project(
             "kotlin-js-plugin-project",
@@ -445,6 +464,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @MppGradlePluginTests
     @DisplayName("MPP: Kotlin test single dependency in common")
     @GradleTest
+    @BrokenOnMacosTest
     fun kotlinTestSingleDependencyMppCommon(gradleVersion: GradleVersion) {
         project("jvm-and-js-hmpp", gradleVersion) {
             assertKotlinTestDependency(
@@ -471,6 +491,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @MppGradlePluginTests
     @DisplayName("MPP: Kotlin test single dependency in JVM and JS variants")
     @GradleTest
+    @BrokenOnMacosTest
     fun kotlinTestSingleDependencyMppJvmJs(gradleVersion: GradleVersion) {
         project("jvm-and-js-hmpp", gradleVersion) {
             assertKotlinTestDependency(
@@ -493,6 +514,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @MppGradlePluginTests
     @DisplayName("MPP (KTIJ-6098): in single platform project common metadata configurations resolve the framework-specific dependency ")
     @GradleTest
+    @BrokenOnMacosTest(expectedToFailOnlyAfterGradle8 = false)
     fun kotlinTestSingleDependencyMppCommonSinglePlatform(gradleVersion: GradleVersion) {
         project("jvm-and-js-hmpp", gradleVersion) {
             assertKotlinTestDependency(
@@ -513,9 +535,10 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @GradleTestVersions
     @ParameterizedTest(name = "{1} with {0}: {displayName}")
     @ArgumentsSource(GradleAndTestFrameworksArgumentsProvider::class)
+    @BrokenOnMacosTest(expectedToFailOnlyAfterGradle8 = false)
     fun testFrameworkSelectionJvm(
         gradleVersion: GradleVersion,
-        testFramework: Pair<String, String>
+        testFramework: Pair<String, String>,
     ) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -536,9 +559,10 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @GradleTestVersions
     @ParameterizedTest(name = "{1} with {0}: {displayName}")
     @ArgumentsSource(GradleAndTestFrameworksArgumentsProvider::class)
+    @BrokenOnMacosTest(expectedToFailOnlyAfterGradle8 = false)
     fun testFrameworkSelectionMppJvm(
         gradleVersion: GradleVersion,
-        testFramework: Pair<String, String>
+        testFramework: Pair<String, String>,
     ) {
         project("jvm-and-js-hmpp", gradleVersion) {
             removeDependencies(buildGradleKts)
@@ -560,9 +584,10 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @GradleTestVersions
     @ParameterizedTest(name = "{1} with {0}: {displayName}")
     @ArgumentsSource(GradleAndTestFrameworksArgumentsProvider::class)
+    @BrokenOnMacosTest(expectedToFailOnlyAfterGradle8 = false)
     fun testFrameworkSelectionMppCommon(
         gradleVersion: GradleVersion,
-        testFramework: Pair<String, String>
+        testFramework: Pair<String, String>,
     ) {
         project("jvm-and-js-hmpp", gradleVersion) {
             removeDependencies(buildGradleKts)
@@ -582,6 +607,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("Possible to remove 'kotlin-test' dependency from configuration")
     @GradleTest
+    @BrokenOnMacosTest
     fun testRemoveKotlinTestDependency(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -609,6 +635,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("coreLibrariesVersion override default version")
     @GradleTest
+    @BrokenOnMacosTest
     fun testCoreLibraryVersionsDsl(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -635,6 +662,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     @JvmGradlePluginTests
     @DisplayName("No failure if configuration is observed")
     @GradleTest
+    @BrokenOnMacosTest
     fun testNoFailureIfConfigurationIsObserved(gradleVersion: GradleVersion) {
         project("simpleProject", gradleVersion) {
             removeDependencies(buildGradle)
@@ -679,7 +707,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
         configurationsToAddDependency: List<String>,
         classpathElementsExpectedByTask: Map<String, List<String>>,
         filesExpectedByConfiguration: Map<String, List<String>> = emptyMap(),
-        isBuildGradleKts: Boolean = false
+        isBuildGradleKts: Boolean = false,
     ) {
         val buildFile = if (isBuildGradleKts) buildGradleKts else buildGradle
         removeDependencies(buildFile)
@@ -712,7 +740,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
         configurationName: String,
         checkModulesInResolutionResult: List<String> = emptyList(),
         checkModulesNotInResolutionResult: List<String> = emptyList(),
-        isBuildGradleKts: Boolean
+        isBuildGradleKts: Boolean,
     ) {
         val expression = """configurations["$configurationName"].toList()"""
         checkPrintedItems(
@@ -729,7 +757,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
         taskPath: String,
         checkModulesInClasspath: List<String> = emptyList(),
         checkModulesNotInClasspath: List<String> = emptyList(),
-        isBuildGradleKts: Boolean = false
+        isBuildGradleKts: Boolean = false,
     ) {
         val subproject = taskPath.substringBeforeLast(":").takeIf { it.isNotEmpty() && it != taskPath }
         val taskName = taskPath.removePrefix(subproject.orEmpty())
@@ -748,7 +776,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
         itemsExpression: String,
         checkAnyItemsContains: List<String>,
         checkNoItemContains: List<String>,
-        isBuildGradleKts: Boolean
+        isBuildGradleKts: Boolean,
     ) {
         val printingTaskName = "printItems${UUID.randomUUID()}"
         val buildFile = if (subproject != null) {
@@ -786,7 +814,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
     }
 
     private fun removeDependencies(
-        buildGradleFile: Path
+        buildGradleFile: Path,
     ) {
         buildGradleFile.modify {
             it.lines()
@@ -799,7 +827,7 @@ class KotlinSpecificDependenciesIT : KGPBaseTest() {
 
     internal class GradleAndTestFrameworksArgumentsProvider : GradleArgumentsProvider() {
         override fun provideArguments(
-            context: ExtensionContext
+            context: ExtensionContext,
         ): Stream<out Arguments> {
             val gradleVersions = super.provideArguments(context).map { it.get().first() as GradleVersion }.toList()
             return testFrameworks

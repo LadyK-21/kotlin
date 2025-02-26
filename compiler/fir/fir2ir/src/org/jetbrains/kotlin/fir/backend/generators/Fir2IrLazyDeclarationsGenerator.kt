@@ -6,18 +6,20 @@
 package org.jetbrains.kotlin.fir.backend.generators
 
 import org.jetbrains.kotlin.fir.backend.*
-import org.jetbrains.kotlin.fir.backend.utils.contextParametersForFunctionOrContainingProperty
 import org.jetbrains.kotlin.fir.backend.utils.convertWithOffsets
 import org.jetbrains.kotlin.fir.backend.utils.declareThisReceiverParameter
 import org.jetbrains.kotlin.fir.backend.utils.irOrigin
 import org.jetbrains.kotlin.fir.containingClassLookupTag
 import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.utils.contextParametersForFunctionOrContainingProperty
 import org.jetbrains.kotlin.fir.isSubstitutionOrIntersectionOverride
 import org.jetbrains.kotlin.fir.lazy.*
 import org.jetbrains.kotlin.fir.lazy.Fir2IrLazyConstructor
 import org.jetbrains.kotlin.fir.unwrapUseSiteSubstitutionOverrides
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.IrParameterKind
 import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.ir.util.SYNTHETIC_OFFSET
 import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.parentClassOrNull
@@ -28,13 +30,17 @@ class Fir2IrLazyDeclarationsGenerator(private val c: Fir2IrComponents) : Fir2IrC
         fir: FirSimpleFunction,
         symbol: IrSimpleFunctionSymbol,
         lazyParent: IrDeclarationParent,
-        declarationOrigin: IrDeclarationOrigin
+        declarationOrigin: IrDeclarationOrigin,
+        isSynthetic: Boolean,
     ): Fir2IrLazySimpleFunction {
         val irFunction = fir.convertWithOffsets { startOffset, endOffset ->
             val firContainingClass = (lazyParent as? Fir2IrLazyClass)?.fir
             val isFakeOverride = fir.isFakeOverride(firContainingClass)
             Fir2IrLazySimpleFunction(
-                c, startOffset, endOffset, declarationOrigin,
+                c,
+                startOffset = if (isSynthetic) SYNTHETIC_OFFSET else startOffset,
+                endOffset = if (isSynthetic) SYNTHETIC_OFFSET else endOffset,
+                declarationOrigin,
                 fir, firContainingClass, symbol, lazyParent, isFakeOverride
             )
         }
@@ -43,31 +49,33 @@ class Fir2IrLazyDeclarationsGenerator(private val c: Fir2IrComponents) : Fir2IrC
 
         declarationStorage.enterScope(symbol)
 
-        irFunction.extensionReceiverParameter = fir.receiverParameter?.let {
-            irFunction.declareThisReceiverParameter(
-                c,
-                thisType = it.typeRef.toIrType(typeConverter),
-                thisOrigin = irFunction.origin,
-                explicitReceiver = it,
-            )
-        }
+        irFunction.parameters = buildList {
+            val containingClass = lazyParent as? IrClass
+            if (containingClass != null && irFunction.shouldHaveDispatchReceiver(containingClass)) {
+                val thisType = Fir2IrCallableDeclarationsGenerator.computeDispatchReceiverType(irFunction, fir, containingClass, c)
+                this += irFunction.declareThisReceiverParameter(
+                    c,
+                    thisType = thisType ?: error("No dispatch receiver receiver for function"),
+                    thisOrigin = irFunction.origin,
+                    kind = IrParameterKind.DispatchReceiver,
+                )
+            }
 
-        val containingClass = lazyParent as? IrClass
-        if (containingClass != null && irFunction.shouldHaveDispatchReceiver(containingClass)) {
-            val thisType = Fir2IrCallableDeclarationsGenerator.computeDispatchReceiverType(irFunction, fir, containingClass, c)
-            irFunction.dispatchReceiverParameter = irFunction.declareThisReceiverParameter(
-                c,
-                thisType = thisType ?: error("No dispatch receiver receiver for function"),
-                thisOrigin = irFunction.origin
-            )
-        }
-
-        irFunction.valueParameters = buildList {
             callablesGenerator.addContextParametersTo(
                 fir.contextParametersForFunctionOrContainingProperty(),
                 irFunction,
                 this@buildList
             )
+
+            fir.receiverParameter?.let {
+                this += irFunction.declareThisReceiverParameter(
+                    c,
+                    thisType = it.typeRef.toIrType(typeConverter),
+                    thisOrigin = irFunction.origin,
+                    explicitReceiver = it,
+                    kind = IrParameterKind.ExtensionReceiver,
+                )
+            }
 
             fir.valueParameters.mapTo(this) { valueParameter ->
                 callablesGenerator.createIrParameter(
@@ -116,17 +124,18 @@ class Fir2IrLazyDeclarationsGenerator(private val c: Fir2IrComponents) : Fir2IrC
 
         declarationStorage.enterScope(symbol)
 
-        val containingClass = lazyParent as? IrClass
-        val outerClass = containingClass?.parentClassOrNull
-        if (containingClass?.isInner == true && outerClass != null) {
-            irConstructor.dispatchReceiverParameter = irConstructor.declareThisReceiverParameter(
-                c,
-                thisType = outerClass.thisReceiver!!.type,
-                thisOrigin = irConstructor.origin
-            )
-        }
+        irConstructor.parameters = buildList {
+            val containingClass = lazyParent as? IrClass
+            val outerClass = containingClass?.parentClassOrNull
+            if (containingClass?.isInner == true && outerClass != null) {
+                this += irConstructor.declareThisReceiverParameter(
+                    c,
+                    thisType = outerClass.thisReceiver!!.type,
+                    thisOrigin = irConstructor.origin,
+                    kind = IrParameterKind.DispatchReceiver,
+                )
+            }
 
-        irConstructor.valueParameters = buildList {
             callablesGenerator.addContextParametersTo(
                 fir.contextParameters,
                 irConstructor,

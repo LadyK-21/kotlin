@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.konan.test.blackbox.compileLibrary
 import org.jetbrains.kotlin.konan.test.blackbox.support.ClassLevelProperty
 import org.jetbrains.kotlin.konan.test.blackbox.support.EnforcedProperty
 import org.jetbrains.kotlin.konan.test.blackbox.support.group.FirPipeline
+import org.jetbrains.kotlin.konan.test.blackbox.support.group.ClassicPipeline
 import org.jetbrains.kotlin.konan.test.blackbox.toOutput
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.TestMetadata
@@ -50,7 +51,7 @@ abstract class KlibCrossCompilationOutputTest : AbstractNativeSimpleTest() {
         KotlinTestUtils.assertEqualsToFile(expectedOutput, compilationResult.toOutput().sanitizeCrossCompilationOutput())
     }
 
-    private fun String.sanitizeCrossCompilationOutput(): String = lines().map { line ->
+    private fun String.sanitizeCrossCompilationOutput(): String = lines().joinToString(separator = "\n") { line ->
         when {
             KLIB_RESOLVER_TARGET_DOESNT_MATCH_DIAGNOSTIC_REGEX.matches(line) -> {
                 val match = KLIB_RESOLVER_TARGET_DOESNT_MATCH_DIAGNOSTIC_REGEX.matchEntire(line)!!
@@ -64,9 +65,11 @@ abstract class KlibCrossCompilationOutputTest : AbstractNativeSimpleTest() {
                 line.replace(klibRoots, KLIB_ROOTS_STUB)
             }
 
+            DEPRECATED_K1_LANGUAGE_VERSIONS_DIAGNOSTIC_REGEX.matches(line) -> ""
+
             else -> line
         }
-    }.joinToString(separator = "\n")
+    }
 
     companion object {
 
@@ -91,17 +94,21 @@ abstract class KlibCrossCompilationOutputTest : AbstractNativeSimpleTest() {
             error: KLIB resolver: Could not find "(.*)" in \[(.*)]
         """.trimIndent().toRegex()
 
+        val DEPRECATED_K1_LANGUAGE_VERSIONS_DIAGNOSTIC_REGEX = """
+            warning: language version 1.[0-9.]+ is deprecated and its support will be removed in a future version of Kotlin
+        """.trimIndent().toRegex()
+
         private const val KLIB_ROOTS_STUB = "<klib roots>"
         private const val KONAN_HOME_STUB = "\$KONAN_HOME"
     }
 }
 
+@ClassicPipeline()
 @EnforcedProperty(ClassLevelProperty.COMPILER_OUTPUT_INTERCEPTOR, "NONE")
 @EnforcedProperty(ClassLevelProperty.TEST_TARGET, "ios_arm64")
 class ClassicFEKlibCrossCompilationOutputTest : KlibCrossCompilationOutputTest()
 
 @FirPipeline
-@Tag("frontend-fir")
 @EnforcedProperty(ClassLevelProperty.COMPILER_OUTPUT_INTERCEPTOR, "NONE")
 @EnforcedProperty(ClassLevelProperty.TEST_TARGET, "ios_arm64")
 class FirKlibCrossCompilationOutputTest : KlibCrossCompilationOutputTest()

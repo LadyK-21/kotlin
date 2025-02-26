@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
 import org.jetbrains.kotlin.backend.konan.Context
-import org.jetbrains.kotlin.backend.konan.lower.FunctionReferenceLowering.Companion.isLoweredFunctionReference
+import org.jetbrains.kotlin.backend.konan.lower.NativeFunctionReferenceLowering.Companion.isLoweredFunctionReference
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irConstantObject
@@ -29,11 +29,11 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
  */
 internal class StaticCallableReferenceOptimization(val context: Context) : FileLoweringPass {
     private val allPropertyReferenceSymbols = buildList {
-        val immutableSymbols = context.ir.symbols.immutablePropertiesConstructors
+        val immutableSymbols = context.symbols.immutablePropertiesConstructors
         addAll(immutableSymbols.byRecieversCount)
         add(immutableSymbols.local)
 
-        val mutableSymbols = context.ir.symbols.mutablePropertiesConstructors
+        val mutableSymbols = context.symbols.mutablePropertiesConstructors
         addAll(mutableSymbols.byRecieversCount)
         add(mutableSymbols.local)
     }.toSet()
@@ -62,7 +62,7 @@ internal class StaticCallableReferenceOptimization(val context: Context) : FileL
                 val constructor = expression.symbol.owner
                 val constructedClass = constructor.constructedClass
 
-                return if ((isLoweredFunctionReference(constructedClass) && constructor.valueParameters.isEmpty()) || expression.symbol in allPropertyReferenceSymbols) {
+                return if ((isLoweredFunctionReference(constructedClass) && constructor.parameters.isEmpty()) || expression.symbol in allPropertyReferenceSymbols) {
                     context.createIrBuilder(
                             currentScope!!.scope.scopeOwnerSymbol,
                             expression.startOffset,

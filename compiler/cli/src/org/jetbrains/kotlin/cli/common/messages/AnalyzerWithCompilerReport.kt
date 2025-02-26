@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.cli.common.messages
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiFormatUtil
+import org.jetbrains.kotlin.KtRealPsiSourceElement
 import org.jetbrains.kotlin.analyzer.AbstractAnalyzerWithCompilerReport
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -26,7 +27,9 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils.sortedDiagnostics
+import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
+import org.jetbrains.kotlin.fir.builder.FirSyntaxErrors
 import org.jetbrains.kotlin.load.java.components.TraceBasedErrorReporter
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.*
@@ -66,9 +69,6 @@ class AnalyzerWithCompilerReport(
                 message.append("    class ").append(fqName)
                     .append(", unresolved supertypes: ").append(unresolved!!.joinToString())
                     .append("\n")
-            }
-            if (!languageVersionSettings.getFlag(AnalysisFlags.extendedCompilerChecks)) {
-                message.append("Adding -Xextended-compiler-checks argument might provide additional information.\n")
             }
             messageCollector.report(ERROR, message.toString())
         }
@@ -136,6 +136,7 @@ class AnalyzerWithCompilerReport(
             Severity.INFO -> INFO
             Severity.ERROR -> ERROR
             Severity.WARNING -> WARNING
+            Severity.FIXED_WARNING -> FIXED_WARNING
         }
 
         private val SYNTAX_ERROR_FACTORY = DiagnosticFactory0.create<PsiErrorElement>(Severity.ERROR)
@@ -218,19 +219,46 @@ class AnalyzerWithCompilerReport(
             }
         }
 
+        // Reports K1 diagnostics ([org.jetbrains.kotlin.diagnostics.SimpleDiagnostic])
         fun reportSyntaxErrors(file: PsiElement, reporter: DiagnosticMessageReporter): SyntaxErrorReport {
+            return reportSyntaxErrors(file) { element, message ->
+                val diagnostic = MyDiagnostic(element, SYNTAX_ERROR_FACTORY, message)
+                AnalyzerWithCompilerReport.reportDiagnostic(diagnostic, reporter, renderDiagnosticName = false)
+            }
+        }
+
+        // Reports K2 diagnostics ([org.jetbrains.kotlin.diagnostics.KtDiagnostic])
+        fun reportSyntaxErrors(file: PsiElement, diagnosticCollector: BaseDiagnosticsCollector): SyntaxErrorReport {
+            return reportSyntaxErrors(file) { element, message ->
+                @OptIn(InternalDiagnosticFactoryMethod::class)
+                val diagnostic = FirSyntaxErrors.SYNTAX.on(
+                    KtRealPsiSourceElement(element),
+                    message,
+                    positioningStrategy = null,
+                    LanguageVersionSettingsImpl.DEFAULT, // syntax errors couldn't be suppressed anyway
+                )
+                val context = object : DiagnosticContext {
+                    override val containingFilePath: String?
+                        get() = file.containingFile.virtualFile?.path
+
+                    override fun isDiagnosticSuppressed(diagnostic: KtDiagnostic): Boolean {
+                        return false
+                    }
+
+                    override val languageVersionSettings: LanguageVersionSettings
+                        get() = LanguageVersionSettingsImpl.DEFAULT
+                }
+                diagnosticCollector.report(diagnostic, context)
+            }
+        }
+
+        private fun reportSyntaxErrors(
+            file: PsiElement,
+            createAndReportSyntaxError: (PsiErrorElement, message: String) -> Unit,
+        ): SyntaxErrorReport {
             class ErrorReportingVisitor : AnalyzingUtils.PsiErrorElementVisitor() {
                 var hasErrors = false
                 var allErrorsAtEof = true
-
-                private fun <E : PsiElement> reportDiagnostic(element: E, factory: DiagnosticFactory0<E>, message: String) {
-                    val diagnostic = MyDiagnostic(element, factory, message)
-                    AnalyzerWithCompilerReport.reportDiagnostic(diagnostic, reporter, renderDiagnosticName = false)
-                    if (allErrorsAtEof && !element.isAtEof()) {
-                        allErrorsAtEof = false
-                    }
-                    hasErrors = true
-                }
 
                 private fun PsiElement.isAtEof(): Boolean {
                     var element = this
@@ -242,8 +270,12 @@ class AnalyzerWithCompilerReport(
 
                 override fun visitErrorElement(element: PsiErrorElement) {
                     val description = element.errorDescription
-                    reportDiagnostic(
-                        element, SYNTAX_ERROR_FACTORY,
+                    if (allErrorsAtEof && !element.isAtEof()) {
+                        allErrorsAtEof = false
+                    }
+                    hasErrors = true
+                    createAndReportSyntaxError(
+                        element,
                         if (StringUtil.isEmpty(description)) "Syntax error" else description
                     )
                 }

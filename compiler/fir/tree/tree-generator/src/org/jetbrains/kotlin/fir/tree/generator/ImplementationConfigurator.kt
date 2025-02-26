@@ -300,12 +300,11 @@ object ImplementationConfigurator : AbstractFirTreeImplementationConfigurator() 
 
             defaultNull(
                 "receiverParameter",
-                "initializer",
                 "delegate",
                 "getter", "setter",
                 withGetter = true
             )
-            default("returnTypeRef", "FirErrorTypeRefImpl(null, MutableOrEmptyList.empty(), null, null, diagnostic)")
+            default("returnTypeRef", "FirErrorTypeRefImpl(source, MutableOrEmptyList.empty(), null, null, diagnostic)")
             additionalImports(errorTypeRefImplType)
         }
 
@@ -446,7 +445,7 @@ object ImplementationConfigurator : AbstractFirTreeImplementationConfigurator() 
 
         impl(whenSubjectExpression) {
             default("coneTypeOrNull") {
-                value = "whenRef.value.subject?.coneTypeOrNull ?: StandardClassIds.Unit.constructClassLikeType()"
+                value = "whenRef.value.subjectVariable?.initializer?.coneTypeOrNull ?: StandardClassIds.Unit.constructClassLikeType()"
                 withGetter = true
             }
             additionalImports(whenExpression, standardClassIdsType, constructClassLikeTypeImport)
@@ -543,6 +542,7 @@ object ImplementationConfigurator : AbstractFirTreeImplementationConfigurator() 
 
         impl(resolvedTypeRef) {
             publicImplementation()
+            defaultFalse("customRenderer", withGetter = true)
         }
 
         impl(errorExpression) {
@@ -561,7 +561,15 @@ object ImplementationConfigurator : AbstractFirTreeImplementationConfigurator() 
             additionalImports(errorTypeRefImplType)
         }
 
-        impl(functionTypeRef)
+        impl(functionTypeRef) {
+            defaultFalse("customRenderer", withGetter = true)
+        }
+        impl(dynamicTypeRef) {
+            defaultFalse("customRenderer", withGetter = true)
+        }
+        impl(intersectionTypeRef) {
+            defaultFalse("customRenderer", withGetter = true)
+        }
         noImpl(implicitTypeRef)
 
         impl(reference, "FirStubReference") {

@@ -134,7 +134,8 @@ private class LibraryDeserializer(
             val packageFQN = fileReader.deserializeFqName(proto.fqNameList)
             packageName = AbiCompoundName(packageFQN)
 
-            val fileName = if (proto.hasFileEntry() && proto.fileEntry.hasName()) proto.fileEntry.name else "<unknown>"
+            val fileEntry = library.fileEntry(proto, fileIndex)
+            val fileName = if (fileEntry.hasName()) fileEntry.name else "<unknown>"
 
             val fileSignature = FileSignature(
                 id = Any(), // Just an unique object.
@@ -360,10 +361,9 @@ private class LibraryDeserializer(
                 )
             else
                 null
-            val contextParametersCount = if (proto.hasContextReceiverParametersCount()) proto.contextReceiverParametersCount else 0
 
             val allValueParameters = ArrayList<AbiValueParameter>()
-            proto.valueParameterList.take(contextParametersCount).mapTo(allValueParameters) { contextParameterProto ->
+            proto.contextParameterList.mapTo(allValueParameters) { contextParameterProto ->
                 deserializeValueParameter(
                     proto = contextParameterProto,
                     kind = AbiValueParameterKind.CONTEXT,
@@ -371,7 +371,7 @@ private class LibraryDeserializer(
                 )
             }
             allValueParameters.addIfNotNull(extensionReceiver)
-            proto.valueParameterList.drop(contextParametersCount).mapTo(allValueParameters) { regularParameterProto ->
+            proto.regularParameterList.mapTo(allValueParameters) { regularParameterProto ->
                 deserializeValueParameter(
                     proto = regularParameterProto,
                     kind = AbiValueParameterKind.REGULAR,

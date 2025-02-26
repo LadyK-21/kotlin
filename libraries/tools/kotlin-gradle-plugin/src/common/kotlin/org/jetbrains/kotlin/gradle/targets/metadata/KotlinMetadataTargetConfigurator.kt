@@ -25,26 +25,6 @@ import org.jetbrains.kotlin.gradle.tasks.locateOrRegisterTask
 import org.jetbrains.kotlin.gradle.utils.*
 import org.jetbrains.kotlin.tooling.core.extrasLazyProperty
 
-internal const val COMMON_MAIN_ELEMENTS_CONFIGURATION_NAME = "commonMainMetadataElements"
-
-internal val Project.isKotlinGranularMetadataEnabled: Boolean
-    get() = with(PropertiesProvider(this)) {
-        mppHierarchicalStructureByDefault || // then we want to use KLIB granular compilation & artifacts even if it's just commonMain
-                hierarchicalStructureSupport ||
-                enableGranularSourceSetsMetadata == true
-    }
-
-internal val Project.shouldCompileIntermediateSourceSetsToMetadata: Boolean
-    get() = with(PropertiesProvider(this)) {
-        when {
-            !hierarchicalStructureSupport && mppHierarchicalStructureByDefault -> false
-            else -> true
-        }
-    }
-
-internal val Project.isCompatibilityMetadataVariantEnabled: Boolean
-    get() = PropertiesProvider(this).enableCompatibilityMetadataVariant == true
-
 class KotlinMetadataTargetConfigurator :
     KotlinOnlyTargetConfigurator<KotlinCompilation<*>, KotlinMetadataTarget>(createTestCompilation = false) {
     companion object {
@@ -54,39 +34,22 @@ class KotlinMetadataTargetConfigurator :
     override fun configureTarget(target: KotlinMetadataTarget) {
         super.configureTarget(target)
 
-        if (target.project.isKotlinGranularMetadataEnabled) {
-            target.project.addConfigurationMetrics {
-                KotlinMetadataConfigurationMetrics.collectMetrics(it)
-            }
-
-            target.compilations.withType(KotlinCommonCompilation::class.java).getByName(KotlinCompilation.MAIN_COMPILATION_NAME).run {
-                // Force the default 'main' compilation to produce *.kotlin_metadata regardless of the klib feature flag.
-                forceCompilationToKotlinMetadata = true
-
-                // Capture it here to use in onlyIf spec. Direct usage causes serialization of target attempt when configuration cache is enabled
-                val isCompatibilityMetadataVariantEnabled = target.project.isCompatibilityMetadataVariantEnabled
-                if (isCompatibilityMetadataVariantEnabled) {
-                    // Add directly dependsOn sources for Legacy Compatibility Metadata variant
-                    // it isn't necessary for KLib compilations
-                    // see [KotlinCompilationSourceSetInclusion.AddSourcesWithoutDependsOnClosure]
-                    defaultSourceSet.internal.dependsOnClosure.forAll {
-                        @Suppress("DEPRECATION")
-                        addSourceSet(it)
-                    }
-                } else {
-                    // Clear the dependencies of the compilation so that they don't take time resolving during task graph construction:
-                    compileDependencyFiles = target.project.files()
-                }
-                compileTaskProvider.configure { it.onlyIf { isCompatibilityMetadataVariantEnabled } }
-            }
-
-            createMetadataCompilationsForCommonSourceSets(target)
-
-            configureMetadataDependenciesConfigurationsForCommonSourceSets(target)
-        } else {
-            /* We had nothing to do: Still mark this job as complete */
-            target.metadataCompilationsCreated.complete()
+        target.project.addConfigurationMetrics {
+            KotlinMetadataConfigurationMetrics.collectMetrics(it)
         }
+
+        target.compilations.withType(KotlinCommonCompilation::class.java).getByName(KotlinCompilation.MAIN_COMPILATION_NAME).run {
+            // Force the default 'main' compilation to produce *.kotlin_metadata regardless of the klib feature flag.
+            forceCompilationToKotlinMetadata = true
+
+            // Clear the dependencies of the compilation so that they don't take time resolving during task graph construction:
+            compileDependencyFiles = target.project.files()
+            compileTaskProvider.configure { it.onlyIf { false } }
+        }
+
+        createMetadataCompilationsForCommonSourceSets(target)
+
+        configureMetadataDependenciesConfigurationsForCommonSourceSets(target)
     }
 
     private fun configureMetadataDependenciesConfigurationsForCommonSourceSets(target: KotlinMetadataTarget) {
@@ -119,10 +82,6 @@ class KotlinMetadataTargetConfigurator :
                     }
                 }
 
-            if (project.isCompatibilityMetadataVariantEnabled) {
-                val mainCompilation = target.compilations.getByName(KotlinCompilation.MAIN_COMPILATION_NAME)
-                configureMetadataDependenciesForCompilation(mainCompilation)
-            }
 
             sourceSetsWithMetadataCompilations.values.forEach { compilation ->
                 exportDependenciesForPublishing(compilation)
@@ -299,9 +258,6 @@ internal fun dependsOnClosureWithInterCompilationDependencies(sourceSet: KotlinS
  * Those compilations will be created but the corresponding tasks will be disabled.
  */
 internal suspend fun getCommonSourceSetsForMetadataCompilation(project: Project): Set<KotlinSourceSet> {
-    if (!project.shouldCompileIntermediateSourceSetsToMetadata)
-        return setOf(project.multiplatformExtension.awaitSourceSets().getByName(KotlinSourceSet.COMMON_MAIN_SOURCE_SET_NAME))
-
     val compilationsBySourceSet: Map<KotlinSourceSet, Set<KotlinCompilation<*>>> =
         project.kotlinExtension.awaitSourceSets().associateWith { it.internal.awaitPlatformCompilations() }
 

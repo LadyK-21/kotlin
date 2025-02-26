@@ -8,12 +8,14 @@ package org.jetbrains.kotlin.gradle.android
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.util.GradleVersion
+import org.jetbrains.kotlin.gradle.BrokenOnMacosTest
 import org.jetbrains.kotlin.gradle.plugin.diagnostics.KotlinToolingDiagnostics
 import org.jetbrains.kotlin.gradle.testbase.*
 import org.jetbrains.kotlin.gradle.testbase.TestVersions.AgpCompatibilityMatrix
 import org.jetbrains.kotlin.gradle.tooling.BuildKotlinToolingMetadataTask
 import org.jetbrains.kotlin.gradle.util.replaceText
 import org.jetbrains.kotlin.gradle.util.testResolveAllConfigurations
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -65,6 +67,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
 
     @DisplayName("mpp source sets are registered in AGP")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testAndroidMppSourceSets(
         gradleVersion: GradleVersion,
         agpVersion: String,
@@ -122,6 +125,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
 
     @DisplayName("android mpp lib flavors publication can be configured")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testMppAndroidLibFlavorsPublication(
         gradleVersion: GradleVersion,
         agpVersion: String,
@@ -343,10 +347,11 @@ class KotlinAndroidMppIT : KGPBaseTest() {
 
     @DisplayName("Sources publication can be disabled")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testDisableSourcesPublication(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "new-mpp-android",
@@ -506,7 +511,8 @@ class KotlinAndroidMppIT : KGPBaseTest() {
         ) {
             settingsGradle.replaceText("include ':app', ':lib'", "include ':lib'")
             includeOtherProjectAsIncludedBuild("lib", "new-mpp-android", "libFromIncluded")
-            subProject("lib").buildGradleKts.appendText("""
+            subProject("lib").buildGradleKts.appendText(
+                """
                 
                 kotlin { 
                   sourceSets.getByName("androidLibMain").dependencies {
@@ -531,6 +537,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
 
     @DisplayName("android app can depend on mpp lib")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testAndroidWithNewMppApp(
         gradleVersion: GradleVersion,
         agpVersion: String,
@@ -633,6 +640,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
 
     @DisplayName("KT-27714: custom attributes are copied to android compilation configurations")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testCustomAttributesInAndroidTargets(
         gradleVersion: GradleVersion,
         agpVersion: String,
@@ -772,6 +780,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
 
     @DisplayName("MPP allTests task depending on Android unit tests")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testMppAllTests(
         gradleVersion: GradleVersion,
         agpVersion: String,
@@ -796,6 +805,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
      */
     @DisplayName("KT-49798: com.android.build.api.attributes.AgpVersionAttr is not published")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testKT49798AgpVersionAttrNotPublished(
         gradleVersion: GradleVersion,
         agpVersion: String,
@@ -833,7 +843,7 @@ class KotlinAndroidMppIT : KGPBaseTest() {
         gradleVersion: GradleVersion,
         agpVersion: String,
         jdkVersion: JdkVersions.ProvidedJdk,
-        @TempDir tempDir: Path
+        @TempDir tempDir: Path,
     ) {
         project(
             "new-mpp-android-agp-compatibility",
@@ -918,54 +928,13 @@ class KotlinAndroidMppIT : KGPBaseTest() {
         }
     }
 
-    @GradleAndroidTest
-    fun mppAndroidRenameDiagnosticReportedOnKts(
-        gradleVersion: GradleVersion,
-        agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk,
-    ) = testAndroidRenameReported(gradleVersion, agpVersion, jdkVersion, "mppAndroidRenameKts")
-
-    @GradleAndroidTest
-    fun mppAndroidRenameDiagnosticReportedOnGroovy(
-        gradleVersion: GradleVersion,
-        agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk,
-    ) = testAndroidRenameReported(gradleVersion, agpVersion, jdkVersion, "mppAndroidRenameGroovy")
-
-    private fun testAndroidRenameReported(
-        gradleVersion: GradleVersion,
-        agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk,
-        projectName: String
-    ) {
-        project(
-            projectName,
-            gradleVersion,
-            buildOptions = defaultBuildOptions.copy(androidVersion = agpVersion),
-            buildJdk = jdkVersion.location
-        ) {
-            val assertions: BuildResult.() -> Unit = {
-                val errors = output.lines().filter { it.startsWith("e:") }.toSet()
-                assert(
-                    errors.any { error -> error.contains("androidTarget") }
-                )
-            }
-
-            if (buildGradleKts.exists()) {
-                buildAndFail("tasks", assertions = assertions)
-            } else {
-                build("tasks", assertions = assertions)
-            }
-        }
-    }
-
-
     // https://youtrack.jetbrains.com/issue/KT-48436
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun testUnusedSourceSetsReportAndroid(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "new-mpp-android", gradleVersion,
@@ -978,38 +947,13 @@ class KotlinAndroidMppIT : KGPBaseTest() {
         }
     }
 
-    @GradleAndroidTest
-    fun smokeTestWithIcerockMobileMultiplatformGradlePlugin(
-        gradleVersion: GradleVersion,
-        agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
-    ) {
-        project(
-            "kgp-with-icerock-mobile-multiplatform", gradleVersion,
-            defaultBuildOptions.copy(androidVersion = agpVersion),
-            buildJdk = jdkVersion.location
-        ) {
-            settingsGradleKts.replaceText(
-                "resolutionStrategy {",
-                """
-                    resolutionStrategy {
-                        eachPlugin {
-                            if (requested.id.id.startsWith("dev.icerock.mobile.multiplatform")) {
-                                useModule("dev.icerock:mobile-multiplatform:0.14.2")
-                            }
-                        }
-                """.trimIndent()
-            )
-            build("assemble", "-Pmobile.multiplatform.useIosShortcut=false")
-        }
-    }
-
     @DisplayName("KT-63753: K2 File \"does not belong to any module\" when it is generated by `registerJavaGeneratingTask` in AGP")
     @GradleAndroidTest
+    @BrokenOnMacosTest
     fun sourceGenerationTaskAddedToAndroidVariant(
         gradleVersion: GradleVersion,
         agpVersion: String,
-        jdkVersion: JdkVersions.ProvidedJdk
+        jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         project(
             "new-mpp-android", gradleVersion,

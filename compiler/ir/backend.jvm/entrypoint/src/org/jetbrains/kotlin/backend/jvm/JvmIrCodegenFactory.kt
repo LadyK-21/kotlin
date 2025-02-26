@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.isBytecodeGenerationSuppressed
 import org.jetbrains.kotlin.backend.common.ir.isJvmBuiltin
 import org.jetbrains.kotlin.backend.common.linkage.issues.checkNoUnboundSymbols
+import org.jetbrains.kotlin.backend.common.phaser.PhaseEngine
 import org.jetbrains.kotlin.backend.common.serialization.DescriptorByIdSignatureFinderImpl
 import org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen
 import org.jetbrains.kotlin.backend.jvm.codegen.EnumEntriesIntrinsicMappingsCacheImpl
@@ -28,7 +29,7 @@ import org.jetbrains.kotlin.codegen.loadCompiledModule
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.config.phaser.PhaseConfig
-import org.jetbrains.kotlin.config.phaser.invokeToplevel
+import org.jetbrains.kotlin.config.phaser.PhaserState
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
@@ -143,6 +144,11 @@ class JvmIrCodegenFactory(
         )
     }
 
+    private val Project.filteredExtensions: List<IrGenerationExtension>
+        get() = IrGenerationExtension.getInstances(this)
+            .filter { !ideCodegenSettings.doNotLoadDependencyModuleHeaders || it is IrGeneratorExtensionMarkerForExpressionEvaluation }
+
+
     @OptIn(ObsoleteDescriptorBasedAPI::class)
     fun convertToIr(
         project: Project,
@@ -189,11 +195,8 @@ class JvmIrCodegenFactory(
         // Built-ins deduplication must be enabled immediately so that there is no chance for duplicate built-in symbols to occur. For
         // example, the creation of `IrPluginContextImpl` might already lead to duplicate built-in symbols via `BuiltinSymbolsBase`.
         if (symbolTable is SymbolTableWithBuiltInsDeduplication) {
-            @OptIn(InternalSymbolFinderAPI::class)
-            (psi2irContext.irBuiltIns as? IrBuiltInsOverDescriptors)?.let { symbolTable.bindSymbolFinder(it.symbolFinder) }
+            symbolTable.bindBuiltIns(psi2irContext.moduleDescriptor.builtIns)
         }
-
-        val pluginExtensions = IrGenerationExtension.getInstances(project)
 
         val stubGenerator =
             DeclarationStubGeneratorImpl(
@@ -226,10 +229,7 @@ class JvmIrCodegenFactory(
             messageCollector,
             diagnosticReporter
         )
-        val skipRegularPlugins = ideCodegenSettings.doNotLoadDependencyModuleHeaders
-        for (extension in pluginExtensions) {
-            if (skipRegularPlugins && extension !is IrGeneratorExtensionMarkerForExpressionEvaluation) continue
-
+        for (extension in project.filteredExtensions) {
             if (!psi2irContext.configuration.generateBodies &&
                 !@OptIn(FirIncompatiblePluginAPI::class) extension.shouldAlsoBeAppliedInKaptStubGenerationMode
             ) continue
@@ -337,11 +337,11 @@ class JvmIrCodegenFactory(
             backendExtension, irSerializer, JvmIrDeserializerImpl(), irProviders, irPluginContext
         )
         if (evaluatorFragmentInfoForPsi2Ir != null) {
-            context.evaluatorData = JvmEvaluatorData(mutableMapOf())
+            context.evaluatorData = JvmEvaluatorData(mutableMapOf(), evaluatorFragmentInfoForPsi2Ir.methodIR)
         }
-        val generationExtensions = IrGenerationExtension.getInstances(state.project)
+        val generationExtensions = state.project.filteredExtensions
             .mapNotNull { it.getPlatformIntrinsicExtension(context) as? JvmIrIntrinsicExtension }
-        val intrinsics by lazy { IrIntrinsicMethods(irBuiltIns, context.ir.symbols) }
+        val intrinsics by lazy { IrIntrinsicMethods(irBuiltIns, context.symbols) }
         context.getIntrinsic = { symbol: IrFunctionSymbol ->
             intrinsics.getIntrinsic(symbol) ?: generationExtensions.firstNotNullOfOrNull { it.getIntrinsic(symbol) }
         }
@@ -356,7 +356,10 @@ class JvmIrCodegenFactory(
         val allBuiltins = irModuleFragment.files.filter { it.isJvmBuiltin }
         irModuleFragment.files.removeIf { it.isBytecodeGenerationSuppressed }
 
-        jvmLoweringPhases.invokeToplevel(state.configuration.phaseConfig ?: PhaseConfig(), context, irModuleFragment)
+        val engine = PhaseEngine(state.configuration.phaseConfig ?: PhaseConfig(), PhaserState(), context)
+        for (phase in jvmLoweringPhases) {
+            engine.runPhase(phase, irModuleFragment)
+        }
 
         return CodegenInput(state, context, irModuleFragment, allBuiltins)
     }

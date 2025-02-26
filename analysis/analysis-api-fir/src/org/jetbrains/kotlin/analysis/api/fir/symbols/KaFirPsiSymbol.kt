@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -15,10 +15,10 @@ import org.jetbrains.kotlin.analysis.api.fir.annotations.KaFirAnnotationListForD
 import org.jetbrains.kotlin.analysis.api.fir.utils.withSymbolAttachment
 import org.jetbrains.kotlin.analysis.api.getModule
 import org.jetbrains.kotlin.analysis.api.impl.base.annotations.KaBaseEmptyAnnotationList
+import org.jetbrains.kotlin.analysis.api.impl.base.symbols.pointers.KaBasePsiSymbolPointer
 import org.jetbrains.kotlin.analysis.api.lifetime.withValidityAssertion
 import org.jetbrains.kotlin.analysis.api.projectStructure.KaLibrarySourceModule
 import org.jetbrains.kotlin.analysis.api.symbols.*
-import org.jetbrains.kotlin.analysis.api.symbols.pointers.KaPsiSymbolPointerCreator
 import org.jetbrains.kotlin.analysis.api.symbols.pointers.KaSymbolPointer
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.low.level.api.fir.api.resolveToFirSymbolOfType
@@ -128,7 +128,9 @@ internal fun KaFirKtBasedSymbol<KtAnnotated, *>.psiOrSymbolAnnotationList(): KaA
 }
 
 internal fun KaFirKtBasedSymbol<KtCallableDeclaration, FirCallableSymbol<*>>.createContextReceivers(): List<KaContextReceiver> {
-    if (backingPsi?.contextReceivers?.isEmpty() == true) return emptyList()
+    val psi = backingPsi
+    if (psi != null && (psi !is KtTypeParameterListOwnerStub<*> || psi.contextReceiverList == null)) return emptyList()
+
     return firSymbol.createContextReceivers(builder)
 }
 
@@ -222,7 +224,7 @@ internal inline fun <R> KaFirPsiSymbol<*, *>.ifSource(action: () -> R): R? {
 internal inline fun <reified S : KaSymbol> KaFirKtBasedSymbol<*, *>.psiBasedSymbolPointerOfTypeIfSource(): KaSymbolPointer<S>? {
     return ifSource {
         backingPsi?.let {
-            KaPsiSymbolPointerCreator.symbolPointerOfType(it, this as S)
+            KaBasePsiSymbolPointer(it, S::class, this as S)
         }
     }
 }
@@ -255,6 +257,17 @@ internal fun KaFirKtBasedSymbol<KtCallableDeclaration, *>.createKaValueParameter
     ifNotLibrarySource {
         with(analysisSession) {
             backingPsi?.valueParameters?.map { it.symbol as KaValueParameterSymbol }
+        }
+    }
+
+internal fun KaFirKtBasedSymbol<KtCallableDeclaration, *>.createKaContextParameters(): List<KaContextParameterSymbol>? =
+    ifNotLibrarySource {
+        val psi = backingPsi as? KtTypeParameterListOwnerStub<*> ?: return null // no psi
+        val list = psi.contextReceiverList ?: return emptyList() // no context receivers/parameters
+        with(analysisSession) {
+            list.contextParameters().map { it.symbol as KaContextParameterSymbol }.ifEmpty {
+                list.contextReceivers().map { it.symbol }
+            }
         }
     }
 

@@ -158,6 +158,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
     }
 
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testJsIrIncrementalInParallel(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             gradleProperties.appendText(
@@ -174,6 +175,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("Only changed files synced during JS IR build")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testJsIrOnlyChangedFilesSynced(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
 
@@ -293,6 +295,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("generated typescript declarations validation")
     @GradleTest
+    @BrokenOnMacosTest
     fun testGeneratedTypeScriptDeclarationsValidation(gradleVersion: GradleVersion) {
         project("js-ir-validate-ts", gradleVersion) {
             buildGradleKts.appendText(
@@ -328,6 +331,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("klib compilation with the declarations name clash")
     @GradleTest
+    @TestMetadata("kotlin-js-invalid-project-with-exported-clash")
     fun testProjectWithExportedNamesClash(gradleVersion: GradleVersion) {
         project("kotlin-js-invalid-project-with-exported-clash", gradleVersion) {
             build("compileKotlinJs") {
@@ -419,6 +423,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("webpack must consider changes in dependencies in up-to-date")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testWebpackConsiderChangesInDependencies(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
 
@@ -442,6 +447,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("K1/JS IR implementation dependency")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testK1JsIrImplementationDependency(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
 
@@ -457,6 +463,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("K2/JS IR implementation dependency")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testK2JsIrImplementationDependency(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             buildGradleKts.append(
@@ -552,6 +559,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("Webpack works with ES modules")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testWebpackWorksWithEsModules(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             subProject("app").buildGradleKts.modify { originalScript ->
@@ -587,12 +595,13 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("package json contains correct extension for ES-modules")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testPackageJsonWithEsModules(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             subProject("app").buildGradleKts.modify {
                 it + """
                     |
-                    |kotlin.target.useEsModules()
+                    |kotlin.js().useEsModules()
                     |
                 """.trimMargin()
             }
@@ -613,12 +622,13 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("public package json contains correct extension for ES-modules")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testPublicPackageJsonWithEsModules(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             subProject("app").buildGradleKts.modify {
                 it + """
                     |
-                    |kotlin.target.useEsModules()
+                    |kotlin.js().useEsModules()
                     |
                 """.trimMargin()
             }
@@ -694,6 +704,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("Custom plugin applying Kotlin/JS plugin")
     @GradleTest
+    @BrokenOnMacosTest
     fun customPluginApplyingKotlinJsPlugin(gradleVersion: GradleVersion) {
         project("js-custom-build-src-plugin", gradleVersion) {
             build("checkConfigurationsResolve") {
@@ -896,6 +907,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("smoke test of org.jetbrains.kotlin.js plugin")
     @GradleTest
+    @TestMetadata("kotlin-js-plugin-project")
     fun testNewKotlinJsPlugin(gradleVersion: GradleVersion) {
         project("kotlin-js-plugin-project", gradleVersion) {
             build("publish", "assemble", "test", "compileBenchmarkKotlinJs") {
@@ -928,6 +940,8 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("yarn is set up")
     @GradleTest
+    @BrokenOnMacosTest
+    @TestMetadata("yarn-setup")
     fun testYarnSetup(gradleVersion: GradleVersion) {
         project("yarn-setup", gradleVersion) {
             build("yarnFolderRemove")
@@ -942,7 +956,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
             buildGradleKts.appendText(
                 """
                 |
-                |yarn.version = "1.9.3"
+                |the<YarnRootEnvSpec>().version.set("1.9.3")
                 """.trimMargin()
             )
 
@@ -957,6 +971,8 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("yarn is set up from local archive")
     @GradleTest
+    @TestMetadata("yarn-setup")
+    @BrokenOnMacosTest(expectedToFailOnlyAfterGradle8 = false)
     fun testYarnSetupFromLocalArchive(gradleVersion: GradleVersion) {
         project("yarn-setup", gradleVersion) {
             build("yarnFolderRemove")
@@ -964,10 +980,11 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
             buildGradleKts.appendText(
                 """
                 |
-                |project.rootProject.extensions.findByType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>()?.apply {
-                |    downloadBaseUrl = projectDir.toURI().toString()
-                |    version = "1.22.22"
+                |rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+                |   the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().version.set("1.22.22")
+                |   the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().downloadBaseUrl.set(projectDir.toURI().toString())
                 |}
+                |
                 """.trimMargin()
             )
 
@@ -977,6 +994,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("NPM dependencies are installed")
     @GradleTest
+    @TestMetadata("npm-dependencies")
     fun testNpmDependencies(gradleVersion: GradleVersion) {
         project("npm-dependencies", gradleVersion) {
             build("build") {
@@ -990,6 +1008,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("public NPM dependencies are included into package.json")
     @GradleTest
+    @TestMetadata("npm-dependencies")
     fun testPackageJsonWithPublicNpmDependencies(gradleVersion: GradleVersion) {
         project(
             "npm-dependencies",
@@ -1091,6 +1110,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("browser distribution is generated")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testBrowserDistribution(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
 
@@ -1125,6 +1145,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("package.json custom fields")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testPackageJsonCustomField(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
 
@@ -1162,6 +1183,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("no dependencies from other modules are declared")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testNoUnintendedDevDependencies(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
 
@@ -1236,6 +1258,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("webpack-config-d directory created during the build is not ignored")
     @GradleTest
+    @BrokenOnMacosTest
     fun testDynamicWebpackConfigD(gradleVersion: GradleVersion) {
         project("js-dynamic-webpack-config-d", gradleVersion) {
             build("build") {
@@ -1247,6 +1270,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("task configuration avoidance on browser project when help is requested")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testBrowserNoTasksConfigurationOnHelp(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             buildGradleKts.appendText(
@@ -1267,6 +1291,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("task configuration avoidance on nodejs project when help is requested")
     @GradleTest
+    @TestMetadata("kotlin-js-nodejs-project")
     fun testNodeJsNoTasksConfigurationOnHelp(gradleVersion: GradleVersion) {
         project("kotlin-js-nodejs-project", gradleVersion) {
             buildGradle.appendText(
@@ -1369,6 +1394,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("smoothly fail npm install")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testFailNpmInstall(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             buildGradleKts.modify { originalScript ->
@@ -1411,6 +1437,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("nodejs up-to-date check works")
     @GradleTest
+    @BrokenOnMacosTest
     fun testNodeJsAndYarnDownload(gradleVersion: GradleVersion) {
         project("cleanTask", gradleVersion) {
             build("checkDownloadedFolder")
@@ -1435,12 +1462,12 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
                 it + "\n" +
                         """
                         rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-                            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "unspecified"
-                            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().download = false
+                            the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().version.set("unspecified")
+                            the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download.set(false)
                         }
                         rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-                            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().version = "unspecified"
-                            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().download = false
+                            the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().version.set("unspecified")
+                            the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
                         }
                         """
             }
@@ -1473,6 +1500,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
     }
 
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testJsIrWholeProgram(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             gradleProperties.appendText(
@@ -1596,11 +1624,11 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
                 it + """
                     
                     rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-                        rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().download = false
+                        the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download.set(false)
                     }
 
                     rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-                        rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().download = false
+                        the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
                     }
                 """.trimIndent()
             }
@@ -1664,6 +1692,7 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("Check source map config of webpack")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testWebpackSourceMapConfig(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             build("assemble") {
@@ -1720,14 +1749,15 @@ class Kotlin2JsIrGradlePluginIT : KGPBaseTest() {
 
     @DisplayName("Changed output module name")
     @GradleTest
+    @TestMetadata("kotlin-js-browser-project")
     fun testChangedOutputModuleName(gradleVersion: GradleVersion) {
         project("kotlin-js-browser-project", gradleVersion) {
             val moduleName = "hello"
             subProject("app").buildGradleKts.modify {
                 it.replace(
-                    "target {",
+                    "js {",
                     """
-                        target {
+                        js {
                             outputModuleName.set("$moduleName")
                     """.trimIndent()
                 )

@@ -67,6 +67,8 @@ import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.references.Abstrac
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.references.AbstractReferenceImportAliasTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.references.AbstractReferenceShortenerForWholeFileTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.references.AbstractReferenceShortenerTest
+import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.restrictedAnalysis.AbstractRestrictedAnalysisExceptionWrappingTest
+import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.restrictedAnalysis.AbstractRestrictedAnalysisRejectionTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.session.*
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.symbols.*
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.types.*
@@ -272,6 +274,16 @@ private fun AnalysisApiTestGroup.generateAnalysisApiNonComponentsTests() {
         group("references") {
             test<AbstractIsReferenceToTest>(filter = frontendIs(FrontendKind.Fir)) {
                 model(it, "isReferenceTo")
+            }
+        }
+
+        group("restrictedAnalysis", filter = analysisSessionModeIs(AnalysisSessionMode.Normal)) {
+            test<AbstractRestrictedAnalysisExceptionWrappingTest> {
+                model(it, "exceptionWrapping")
+            }
+
+            test<AbstractRestrictedAnalysisRejectionTest> {
+                model(it, "restriction")
             }
         }
 

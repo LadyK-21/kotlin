@@ -4867,6 +4867,12 @@ public class IrCompileKotlinAgainstInlineKotlinTestGenerated extends AbstractIrC
     }
 
     @Test
+    @TestMetadata("trivialSmap.kt")
+    public void testTrivialSmap() {
+      runTest("compiler/testData/codegen/boxInline/smap/trivialSmap.kt");
+    }
+
+    @Test
     @TestMetadata("tryFinally1.kt")
     public void testTryFinally1() {
       runTest("compiler/testData/codegen/boxInline/smap/tryFinally1.kt");
@@ -5896,24 +5902,6 @@ public class IrCompileKotlinAgainstInlineKotlinTestGenerated extends AbstractIrC
     @TestMetadata("propertyModifiers.kt")
     public void testPropertyModifiers() {
       runTest("compiler/testData/codegen/boxInline/syntheticAccessors/propertyModifiers.kt");
-    }
-
-    @Test
-    @TestMetadata("superCall.kt")
-    public void testSuperCall() {
-      runTest("compiler/testData/codegen/boxInline/syntheticAccessors/superCall.kt");
-    }
-
-    @Test
-    @TestMetadata("superCallFromMultipleSubclasses.kt")
-    public void testSuperCallFromMultipleSubclasses() {
-      runTest("compiler/testData/codegen/boxInline/syntheticAccessors/superCallFromMultipleSubclasses.kt");
-    }
-
-    @Test
-    @TestMetadata("superProperty.kt")
-    public void testSuperProperty() {
-      runTest("compiler/testData/codegen/boxInline/syntheticAccessors/superProperty.kt");
     }
 
     @Nested

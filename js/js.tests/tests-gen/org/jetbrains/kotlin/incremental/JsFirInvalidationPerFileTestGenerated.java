@@ -43,6 +43,12 @@ public class JsFirInvalidationPerFileTestGenerated extends AbstractJsFirInvalida
   }
 
   @Test
+  @TestMetadata("associatedObjectKey")
+  public void testAssociatedObjectKey() {
+    runTest("js/js.translator/testData/incremental/invalidation/associatedObjectKey/");
+  }
+
+  @Test
   @TestMetadata("circleExportsUpdate")
   public void testCircleExportsUpdate() {
     runTest("js/js.translator/testData/incremental/invalidation/circleExportsUpdate/");
@@ -364,6 +370,12 @@ public class JsFirInvalidationPerFileTestGenerated extends AbstractJsFirInvalida
   @TestMetadata("jsExportReexport")
   public void testJsExportReexport() {
     runTest("js/js.translator/testData/incremental/invalidation/jsExportReexport/");
+  }
+
+  @Test
+  @TestMetadata("jsExportWithClass")
+  public void testJsExportWithClass() {
+    runTest("js/js.translator/testData/incremental/invalidation/jsExportWithClass/");
   }
 
   @Test

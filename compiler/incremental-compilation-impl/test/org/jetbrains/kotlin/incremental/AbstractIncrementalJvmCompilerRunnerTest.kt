@@ -78,28 +78,29 @@ abstract class AbstractIncrementalJvmCompilerRunnerTest : AbstractIncrementalCom
 
             val compiler =
                 if (k2Mode && args.useFirIC && args.useFirLT /* TODO by @Ilya.Chernikov: move LT check into runner */) {
+                    val snapshotsDir = File(workingDir, "classpath-snapshots").apply { mkdirs() }
+
                     IncrementalFirJvmCompilerTestRunner(
                         cachesDir,
                         buildReporter,
-                        buildHistoryFile,
                         outputDirs = null,
-                        EmptyModulesApiHistory,
+                        makeEmptyClasspathChangesForSingleModuleTests(snapshotsDir),
                         kotlinExtensions,
-                        ClasspathChanges.ClasspathSnapshotDisabled,
-                        testLookupTracker
+                        testLookupTracker = testLookupTracker
                     )
                 } else {
                     val verifiedPreciseJavaTracking = args.disablePreciseJavaTrackingIfK2(usePreciseJavaTrackingByDefault = true)
                     IncrementalJvmCompilerTestRunner(
                         cachesDir,
                         buildReporter,
-                        // Use precise setting in case of non-Gradle build
-                        usePreciseJavaTracking = verifiedPreciseJavaTracking,
                         buildHistoryFile = buildHistoryFile,
                         outputDirs = null,
                         modulesApiHistory = EmptyModulesApiHistory,
                         kotlinSourceFilesExtensions = kotlinExtensions,
-                        classpathChanges = ClasspathChanges.ClasspathSnapshotDisabled,
+                        icFeatures = IncrementalCompilationFeatures(
+                            withAbiSnapshot = false,
+                            usePreciseJavaTracking = verifiedPreciseJavaTracking
+                        ),
                         testLookupTracker = testLookupTracker
                     )
                 }

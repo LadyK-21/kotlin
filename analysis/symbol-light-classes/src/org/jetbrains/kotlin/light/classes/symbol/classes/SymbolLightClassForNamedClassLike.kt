@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -11,12 +11,12 @@ import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
 import org.jetbrains.kotlin.analysis.api.symbols.*
 import org.jetbrains.kotlin.analysis.api.symbols.pointers.KaSymbolPointer
 import org.jetbrains.kotlin.asJava.classes.getParentForLocalDeclaration
-import org.jetbrains.kotlin.asJava.classes.lazyPub
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.light.classes.symbol.annotations.hasJvmStaticAnnotation
 import org.jetbrains.kotlin.light.classes.symbol.fields.SymbolLightField
 import org.jetbrains.kotlin.light.classes.symbol.fields.SymbolLightFieldForObject
 import org.jetbrains.kotlin.light.classes.symbol.isConstOrJvmField
+import org.jetbrains.kotlin.light.classes.symbol.methods.SymbolLightAccessorMethod.Companion.createPropertyAccessors
 import org.jetbrains.kotlin.light.classes.symbol.modifierLists.GranularModifiersBox
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.utils.addToStdlib.applyIf
@@ -46,9 +46,7 @@ internal abstract class SymbolLightClassForNamedClassLike : SymbolLightClassForC
         manager = manager
     )
 
-    protected val isLocal: Boolean by lazyPub {
-        classOrObjectDeclaration?.isLocal ?: withClassSymbol { it.isLocal }
-    }
+    protected val isLocal: Boolean get() = withClassSymbol { it.isLocal }
 
     override fun getParent(): PsiElement? {
         if (isLocal) {
@@ -84,11 +82,9 @@ internal abstract class SymbolLightClassForNamedClassLike : SymbolLightClassForC
             }
     }
 
-    private val isInner: Boolean
-        get() = classOrObjectDeclaration?.hasModifier(KtTokens.INNER_KEYWORD) ?: withClassSymbol { it.isInner }
+    private val isInner: Boolean get() = withClassSymbol { it.isInner }
 
-    internal val isSealed: Boolean
-        get() = classOrObjectDeclaration?.hasModifier(KtTokens.SEALED_KEYWORD) ?: withClassSymbol { it.modality == KaSymbolModality.SEALED }
+    internal val isSealed: Boolean get() = withClassSymbol { it.modality == KaSymbolModality.SEALED }
 
     internal fun KaSession.addFieldsFromCompanionIfNeeded(
         result: MutableList<PsiField>,

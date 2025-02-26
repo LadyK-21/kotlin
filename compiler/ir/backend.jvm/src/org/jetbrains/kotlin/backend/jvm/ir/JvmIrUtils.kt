@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.deserialization.PLATFORM_DEPENDENT_ANNOTATION_FQ_NAME
 import org.jetbrains.kotlin.ir.IrBuiltIns
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
@@ -32,8 +31,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.declarations.lazy.IrLazyClass
-import org.jetbrains.kotlin.ir.declarations.lazy.IrMaybeDeserializedClass
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
@@ -53,11 +50,7 @@ import org.jetbrains.kotlin.load.java.JavaDescriptorVisibilities
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.load.kotlin.FacadeClassSource
 import org.jetbrains.kotlin.load.kotlin.JvmPackagePartSource
-import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.JvmStandardClassIds.JVM_DEFAULT_FQ_NAME
-import org.jetbrains.kotlin.name.JvmStandardClassIds.JVM_DEFAULT_NO_COMPATIBILITY_FQ_NAME
-import org.jetbrains.kotlin.name.JvmStandardClassIds.JVM_DEFAULT_WITH_COMPATIBILITY_FQ_NAME
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -65,6 +58,7 @@ import org.jetbrains.kotlin.resolve.jvm.AsmTypes
 import org.jetbrains.kotlin.resolve.multiplatform.OptionalAnnotationUtil
 import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.utils.DFS
+import org.jetbrains.kotlin.utils.addToStdlib.assignFrom
 import org.jetbrains.org.objectweb.asm.Type
 import org.jetbrains.org.objectweb.asm.commons.Method
 import java.io.File
@@ -80,30 +74,6 @@ fun IrDeclaration.getJvmNameFromAnnotation(): String? {
         else -> value
     }
 }
-
-fun IrFunction.isSimpleFunctionCompiledToJvmDefault(jvmDefaultMode: JvmDefaultMode): Boolean {
-    return (this as? IrSimpleFunction)?.isCompiledToJvmDefault(jvmDefaultMode) == true
-}
-
-fun IrSimpleFunction.isCompiledToJvmDefault(jvmDefaultMode: JvmDefaultMode): Boolean {
-    assert(!isFakeOverride && parentAsClass.isInterface && modality != Modality.ABSTRACT) {
-        "`isCompiledToJvmDefault` should be called on non-fakeoverrides and non-abstract methods from interfaces ${ir2string(this)}"
-    }
-    if (origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB) return false
-    if (hasJvmDefault()) return true
-    when (val klass = parentAsClass) {
-        is IrLazyClass -> klass.classProto?.let {
-            return JvmProtoBufUtil.isNewPlaceForBodyGeneration(it)
-        }
-        is IrMaybeDeserializedClass -> return klass.isNewPlaceForBodyGeneration
-    }
-    return jvmDefaultMode.isEnabled
-}
-
-fun IrFunction.hasJvmDefault(): Boolean = propertyIfAccessor.hasAnnotation(JVM_DEFAULT_FQ_NAME)
-fun IrClass.hasJvmDefaultNoCompatibilityAnnotation(): Boolean = hasAnnotation(JVM_DEFAULT_NO_COMPATIBILITY_FQ_NAME)
-fun IrClass.hasJvmDefaultWithCompatibilityAnnotation(): Boolean = hasAnnotation(JVM_DEFAULT_WITH_COMPATIBILITY_FQ_NAME)
-fun IrFunction.hasPlatformDependent(): Boolean = propertyIfAccessor.hasAnnotation(PLATFORM_DEPENDENT_ANNOTATION_FQ_NAME)
 
 fun IrFunction.getJvmVisibilityOfDefaultArgumentStub() =
     when {
@@ -191,7 +161,7 @@ fun createDelegatingCallWithPlaceholderTypeArguments(
 fun IrMemberAccessExpression<IrFunctionSymbol>.copyFromWithPlaceholderTypeArguments(
     existingCall: IrMemberAccessExpression<IrFunctionSymbol>, irBuiltIns: IrBuiltIns
 ) {
-    copyValueArgumentsFrom(existingCall, this.symbol.owner, receiversAsArguments = true, argumentsAsReceivers = false)
+    arguments.assignFrom(existingCall.arguments)
     var offset = 0
     existingCall.symbol.owner.parentAsClass.typeParameters.forEach { _ ->
         typeArguments[offset++] = createPlaceholderAnyNType(irBuiltIns)
@@ -385,31 +355,18 @@ fun IrDeclarationParent.getCallableReferenceOwnerKClassType(context: JvmBackendC
         // For built-in members (i.e. top level `toString`) we generate reference to an internal class for an owner.
         // This allows kotlin-reflect to understand that this is a built-in intrinsic which has no real declaration,
         // and construct a special KCallable object.
-        context.ir.symbols.intrinsicsKotlinClass.defaultType
+        context.symbols.intrinsicsKotlinClass.defaultType
     }
 
 fun IrDeclaration.getCallableReferenceTopLevelFlag(): Int =
     if (parent.let { it is IrClass && it.isFileClass }) 1 else 0
 
-// Based on KotlinTypeMapper.findSuperDeclaration.
-fun findSuperDeclaration(function: IrSimpleFunction, isSuperCall: Boolean, jvmDefaultMode: JvmDefaultMode): IrSimpleFunction {
+fun findSuperDeclaration(function: IrSimpleFunction): IrSimpleFunction {
     var current = function
     while (current.isFakeOverride) {
-        // TODO: probably isJvmInterface instead of isInterface, here and in KotlinTypeMapper
-        val classCallable = current.overriddenSymbols.firstOrNull { !it.owner.parentAsClass.isInterface }?.owner
-        if (classCallable != null) {
-            current = classCallable
-            continue
-        }
-        if (isSuperCall && !current.parentAsClass.isInterface) {
-            val overridden = current.resolveFakeOverride()
-            if (overridden != null && (overridden.isMethodOfAny() || !overridden.isCompiledToJvmDefault(jvmDefaultMode))) {
-                return current
-            }
-        }
-
-        current = current.overriddenSymbols.firstOrNull()?.owner
-            ?: error("Fake override should have at least one overridden descriptor: ${current.render()}")
+        current = current.overriddenSymbols.firstOrNull { !it.owner.parentAsClass.isInterface }?.owner
+            ?: current.overriddenSymbols.firstOrNull()?.owner
+                    ?: error("Fake override should have at least one overridden descriptor: ${current.render()}")
     }
     return current
 }

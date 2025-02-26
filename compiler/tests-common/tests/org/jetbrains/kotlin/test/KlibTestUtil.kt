@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.resolve.CompilerDeserializationConfiguration
 import org.jetbrains.kotlin.resolve.CompilerEnvironment
 import org.jetbrains.kotlin.resolve.PlatformDependentAnalyzerServices
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
+import org.jetbrains.kotlin.cli.common.disposeRootInWriteAction
 import org.jetbrains.kotlin.util.DummyLogger
 import java.io.File
 import java.io.IOException
@@ -114,7 +115,7 @@ object KlibTestUtil {
 
             analysisResult.moduleDescriptor
         } finally {
-            Disposer.dispose(rootDisposable)
+            disposeRootInWriteAction(rootDisposable)
         }
 
         serializeCommonModuleToKlib(module, libraryName, klibFile)
@@ -125,7 +126,7 @@ object KlibTestUtil {
 
         val serializer = KlibMetadataMonolithicSerializer(
             languageVersionSettings = LanguageVersionSettingsImpl.DEFAULT,
-            metadataVersion = KlibMetadataVersion.INSTANCE,
+            metadataVersion = KLIB_LEGACY_METADATA_VERSION,
             exportKDoc = false,
             skipExpects = false,
             project = null,
@@ -142,7 +143,7 @@ object KlibTestUtil {
             versions = KotlinLibraryVersioning(
                 compilerVersion = null,
                 abiVersion = null,
-                metadataVersion = KlibMetadataVersion.INSTANCE.toString(),
+                metadataVersion = KLIB_LEGACY_METADATA_VERSION,
             ),
             builtInsPlatform = BuiltInsPlatform.COMMON,
             nativeTargets = emptyList(),

@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.fir.declarations.utils.modality
 import org.jetbrains.kotlin.fir.declarations.utils.visibility
 import org.jetbrains.kotlin.fir.diagnostics.ConeDiagnosticWithNullability
 import org.jetbrains.kotlin.fir.diagnostics.ConeRecursiveTypeParameterDuringErasureError
+import org.jetbrains.kotlin.fir.expressions.ExplicitTypeArgumentIfMadeFlexibleSyntheticallyTypeAttribute
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.substitution.substitutorByMap
 import org.jetbrains.kotlin.fir.resolve.substitution.wrapProjection
@@ -231,7 +232,9 @@ fun <T : ConeKotlinType> T.withNullability(
     preserveAttributes: Boolean = false,
 ): T {
     val theAttributes = attributes.butIf(!preserveAttributes) {
-        val withoutEnhanced = it.remove(CompilerConeAttributes.EnhancedNullability)
+        val withoutEnhanced = it
+            .remove(CompilerConeAttributes.EnhancedNullability)
+            .remove(ExplicitTypeArgumentIfMadeFlexibleSyntheticallyTypeAttribute::class)
         withoutEnhanced.transformTypesWith { t -> t.withNullability(nullable, typeContext) } ?: withoutEnhanced
     }
 
@@ -329,7 +332,7 @@ fun FirTypeRef.withReplacedReturnType(newType: ConeKotlinType?): FirTypeRef {
     require(this is FirResolvedTypeRef || newType == null)
     if (newType == null) return this
 
-    return resolvedTypeFromPrototype(newType)
+    return resolvedTypeFromPrototype(newType, fallbackSource = null)
 }
 
 fun FirTypeRef.withReplacedConeType(
@@ -348,7 +351,7 @@ fun FirTypeRef.withReplacedConeType(
     return withReplacedSourceAndType(newSource, newType)
 }
 
-internal fun FirResolvedTypeRef.withReplacedSourceAndType(newSource: KtSourceElement?, newType: ConeKotlinType): FirResolvedTypeRef {
+fun FirResolvedTypeRef.withReplacedSourceAndType(newSource: KtSourceElement?, newType: ConeKotlinType): FirResolvedTypeRef {
     return when {
         newType is ConeErrorType -> {
             buildErrorTypeRef {
@@ -393,7 +396,7 @@ fun shouldApproximateAnonymousTypesOfNonLocalDeclaration(containingCallableVisib
 fun FirDeclaration.visibilityForApproximation(container: FirDeclaration?): Visibility {
     if (this !is FirMemberDeclaration) return Visibilities.Local
     val containerVisibility =
-        if (container == null || container is FirFile || container is FirScript) Visibilities.Public
+        if (container == null || container is FirFile || container is FirScript || container is FirReplSnippet) Visibilities.Public
         else (container as? FirRegularClass)?.visibility ?: Visibilities.Local
     if (containerVisibility == Visibilities.Local) return Visibilities.Local
     return visibility

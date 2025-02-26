@@ -480,25 +480,15 @@ They should be a subset of sources passed as free arguments."""
             field = value
         }
 
-    @Argument(
-        value = "-Xcheck-sticky-phase-conditions",
-        description = "Run sticky condition checks on subsequent phases. Implicitly enables '-Xcheck-phase-conditions'."
-    )
-    var checkStickyPhaseConditions = false
-        set(value) {
-            checkFrozen()
-            field = value
-        }
-
     @GradleDeprecatedOption(
         message = "Compiler flag -Xuse-k2 is deprecated; please use language version 2.0 instead",
-        level = DeprecationLevel.ERROR,
-        removeAfter = LanguageVersion.KOTLIN_2_1,
+        level = DeprecationLevel.HIDDEN,
+        removeAfter = LanguageVersion.KOTLIN_2_2,
     )
     @GradleOption(
         DefaultValue.BOOLEAN_FALSE_DEFAULT,
         gradleInputType = GradleInputTypes.INPUT,
-        shouldGenerateDeprecatedKotlinOptions = true,
+        shouldGenerateDeprecatedKotlinOptions = false,
     )
     @Argument(
         value = "-Xuse-k2",
@@ -612,17 +602,6 @@ This flag partially enables functionality of `-Xexplicit-api` flag, so please do
                 "Warning: This is temporary solution (see KT-63712) intended to be used only for stdlib build."
     )
     var suppressApiVersionGreaterThanLanguageVersionError: Boolean = false
-        set(value) {
-            checkFrozen()
-            field = value
-        }
-
-    @Argument(
-        value = "-Xextended-compiler-checks",
-        description = """Enable additional compiler checks that might provide verbose diagnostic information for certain errors.
-Warning: This mode is not backward compatible and might cause compilation errors in previously compiled code."""
-    )
-    var extendedCompilerChecks = false
         set(value) {
             checkFrozen()
             field = value
@@ -843,9 +822,23 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
     @Argument(
         value = "-Xsuppress-warning",
         valueDescription = "<WARNING_NAME>",
-        description = "Suppress specified warning module-wide."
+        description = """Suppress specified warning module-wide. This option is deprecated in favor of "-Xwarning-level" flag"""
     )
     var suppressedDiagnostics: Array<String>? = null
+        set(value) {
+            checkFrozen()
+            field = value
+        }
+
+    @Argument(
+        value = "-Xwarning-level",
+        valueDescription = "<WARNING_NAME>:(error|warning|disabled)",
+        description = """Set the severity of the given warning.
+- `error` level raises the severity of a warning to error level (similar to -Werror but more granular)
+- `disabled` level suppresses reporting of a warning (similar to -nowarn but more granular)
+- `warning` level overrides -nowarn and -Werror for this specific warning (the warning will be reported/won't be considered as an error)"""
+    )
+    var warningLevels: Array<String>? = null
         set(value) {
             checkFrozen()
             field = value
@@ -910,14 +903,53 @@ default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1
                 CompilerMessageSeverity.ERROR,
                 "Unknown value for parameter -XXexplicit-return-types: '$explicitReturnTypes'. Value should be one of ${ExplicitApiMode.availableValues()}"
             )
-            put(AnalysisFlags.extendedCompilerChecks, extendedCompilerChecks)
             put(AnalysisFlags.allowKotlinPackage, allowKotlinPackage)
             put(AnalysisFlags.stdlibCompilation, stdlibCompilation)
             put(AnalysisFlags.muteExpectActualClassesWarning, expectActualClasses)
             put(AnalysisFlags.allowFullyQualifiedNameInKClass, true)
             put(AnalysisFlags.dontWarnOnErrorSuppression, dontWarnOnErrorSuppression)
-            put(AnalysisFlags.globallySuppressedDiagnostics, suppressedDiagnostics?.toList().orEmpty())
+            fillWarningLevelMap(collector)
         }
+    }
+
+    private fun HashMap<AnalysisFlag<*>, Any>.fillWarningLevelMap(collector: MessageCollector) {
+        val result = buildMap {
+            suppressedDiagnostics.orEmpty().associateWithTo(this) { WarningLevel.Disabled }
+            if (suppressedDiagnostics.orEmpty().isNotEmpty()) {
+                val replacement = "-Xwarning-level=${suppressedDiagnostics!!.first()}:disabled"
+                val suffix = if (suppressedDiagnostics!!.size > 1) " (and the same for other warnings)" else ""
+                collector.report(
+                    CompilerMessageSeverity.STRONG_WARNING,
+                    """Argument "-Xsuppress-warning" is deprecated. Use "$replacement" instead$suffix"""
+                )
+            }
+            for (rawArgument in warningLevels.orEmpty()) {
+                val split = rawArgument.split(":", limit = 2)
+                if (split.size < 2) {
+                    collector.report(
+                        CompilerMessageSeverity.ERROR,
+                        "Invalid argument for -Xwarning-level=$rawArgument"
+                    )
+                    continue
+                }
+                val (name, rawLevel) = split
+                val level = WarningLevel.fromString(rawLevel) ?: run {
+                    collector.report(
+                        CompilerMessageSeverity.ERROR,
+                        "Incorrect value for warning level: $rawLevel. Available values are: ${WarningLevel.entries.joinToString { it.cliOption }}"
+                    )
+                    continue
+                }
+                val existing = put(name, level)
+                if (existing != null) {
+                    collector.report(
+                        CompilerMessageSeverity.ERROR,
+                        "-Xwarning-level is duplicated for warning $name"
+                    )
+                }
+            }
+        }
+        put(AnalysisFlags.warningLevels, result)
     }
 
     open fun configureLanguageFeatures(collector: MessageCollector): MutableMap<LanguageFeature, LanguageFeature.State> =
@@ -1038,9 +1070,6 @@ default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1
         checkOutdatedVersions(languageVersion, apiVersion, collector)
         checkProgressiveMode(languageVersion, collector)
 
-        checkIrSupport(languageVersionSettings, collector)
-
-        checkPlatformSpecificSettings(languageVersionSettings, collector)
         checkExplicitApiAndExplicitReturnTypesAtTheSameTime(collector)
 
         return languageVersionSettings
@@ -1118,16 +1147,6 @@ default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1
         }
     }
 
-    protected open fun defaultLanguageVersion(collector: MessageCollector): LanguageVersion =
-        LanguageVersion.LATEST_STABLE
-
-    protected open fun checkPlatformSpecificSettings(languageVersionSettings: LanguageVersionSettings, collector: MessageCollector) {
-    }
-
-    protected open fun checkIrSupport(languageVersionSettings: LanguageVersionSettings, collector: MessageCollector) {
-        // backend-specific
-    }
-
     private fun checkExplicitApiAndExplicitReturnTypesAtTheSameTime(collector: MessageCollector) {
         if (explicitApi == ExplicitApiMode.DISABLED.state || explicitReturnTypes == ExplicitApiMode.DISABLED.state) return
         if (explicitApi != explicitReturnTypes) {
@@ -1158,7 +1177,7 @@ default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1
         }
 
         // If only "-api-version" is specified, language version is assumed to be the latest stable
-        return parseVersion(collector, languageVersion, "language") ?: defaultLanguageVersion(collector)
+        return parseVersion(collector, languageVersion, "language") ?: LanguageVersion.LATEST_STABLE
     }
 
     private fun parseVersion(collector: MessageCollector, value: String?, versionOf: String): LanguageVersion? =

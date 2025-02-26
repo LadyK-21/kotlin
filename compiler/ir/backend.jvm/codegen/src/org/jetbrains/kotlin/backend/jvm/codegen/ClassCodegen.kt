@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.backend.jvm.codegen
 
 import org.jetbrains.kotlin.backend.common.lower.ANNOTATION_IMPLEMENTATION
 import org.jetbrains.kotlin.backend.jvm.*
+import org.jetbrains.kotlin.backend.jvm.codegen.AnnotationCodegen.Companion.annotationClass
 import org.jetbrains.kotlin.backend.jvm.extensions.descriptorOrigin
 import org.jetbrains.kotlin.backend.jvm.ir.*
 import org.jetbrains.kotlin.backend.jvm.mapping.IrTypeMapper
@@ -81,22 +82,19 @@ class ClassCodegen private constructor(
     private val config: JvmBackendConfig = context.config
 
     private val innerClasses = mutableSetOf<IrClass>()
-    val typeMapper =
-        if (context.config.oldInnerClassesLogic)
-            context.defaultTypeMapper
-        else object : IrTypeMapper(context) {
-            override fun mapType(type: IrType, mode: TypeMappingMode, sw: JvmSignatureWriter?, materialized: Boolean): Type {
-                var t = type
-                while (t.isArray()) {
-                    t = t.getArrayElementType(context.irBuiltIns)
-                }
-                // Only record inner class info for types that are materialized in the class file.
-                if (materialized) {
-                    t.classOrNull?.owner?.let(::addInnerClassInfo)
-                }
-                return super.mapType(type, mode, sw, materialized)
+    val typeMapper = object : IrTypeMapper(context) {
+        override fun mapType(type: IrType, mode: TypeMappingMode, sw: JvmSignatureWriter?, materialized: Boolean): Type {
+            var t = type
+            while (t.isArray()) {
+                t = t.getArrayElementType(context.irBuiltIns)
             }
+            // Only record inner class info for types that are materialized in the class file.
+            if (materialized) {
+                t.classOrNull?.owner?.let(::addInnerClassInfo)
+            }
+            return super.mapType(type, mode, sw, materialized)
         }
+    }
 
     val methodSignatureMapper = MethodSignatureMapper(context, typeMapper)
 
@@ -182,7 +180,11 @@ class ClassCodegen private constructor(
 
         generateAnnotations()
 
-        visitor.visitSMAP(smap, !config.languageVersionSettings.supportsFeature(LanguageFeature.CorrectSourceMappingSyntax))
+        visitor.visitSMAP(
+            smap,
+            !config.languageVersionSettings.supportsFeature(LanguageFeature.CorrectSourceMappingSyntax),
+            parentFunction != null && parentFunction.isInline
+        )
 
         reifiedTypeParametersUsages.mergeAll(irClass.reifiedTypeParameters)
 
@@ -277,6 +279,7 @@ class ClassCodegen private constructor(
             facadeClassName != null -> KotlinClassHeader.Kind.MULTIFILE_CLASS_PART
             metadata is MetadataSource.Class -> KotlinClassHeader.Kind.CLASS
             metadata is MetadataSource.Script -> KotlinClassHeader.Kind.CLASS
+            metadata is MetadataSource.ReplSnippet -> KotlinClassHeader.Kind.CLASS
             metadata is MetadataSource.File -> KotlinClassHeader.Kind.FILE_FACADE
             metadata is MetadataSource.Function -> KotlinClassHeader.Kind.SYNTHETIC_CLASS
             entry is MultifileFacadeFileEntry -> KotlinClassHeader.Kind.MULTIFILE_CLASS
@@ -314,7 +317,12 @@ class ClassCodegen private constructor(
 
         writeKotlinMetadata(visitor, context.config, kind, isPublicAbi, extraFlags) { av ->
             if (metadata != null) {
-                metadataSerializer.serialize(metadata)?.let { (proto, stringTable) ->
+                val containingFile = when (val containingFileMetadata = irClass.file.metadata) {
+                    is MetadataSource.File -> containingFileMetadata
+                    is MetadataSource.CodeFragment -> null
+                    else -> error("Cannot serialize class metadata without containing file: ${irClass.render()}")
+                }
+                metadataSerializer.serialize(metadata, containingFile)?.let { (proto, stringTable) ->
                     DescriptorAsmUtil.writeAnnotationData(av, proto, stringTable)
                 }
             }
@@ -388,8 +396,17 @@ class ClassCodegen private constructor(
         }
 
         if (irClass.hasAnnotation(JVM_RECORD_ANNOTATION_FQ_NAME) && !field.isStatic) {
-            // TODO: Write annotations to the component
-            visitor.addRecordComponent(fieldName, fieldType.descriptor, fieldSignature)
+            val rcv = visitor.addRecordComponent(fieldName, fieldType.descriptor, fieldSignature)
+            val annotationCodegen = object : AnnotationCodegen(this@ClassCodegen) {
+                override fun visitAnnotation(descr: String, visible: Boolean): AnnotationVisitor {
+                    return rcv.visitAnnotation(descr, visible)
+                }
+            }
+            val recordAnnotations = field.annotations.filter { annotation ->
+                val applicableTargets = annotation.annotationClass.applicableJavaTargetSet()
+                applicableTargets == null || "RECORD_COMPONENT" in applicableTargets
+            }
+            annotationCodegen.genAnnotations(field, recordAnnotations)
         }
     }
 

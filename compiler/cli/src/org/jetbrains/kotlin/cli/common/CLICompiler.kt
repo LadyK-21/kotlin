@@ -36,10 +36,14 @@ import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
+import org.jetbrains.kotlin.platform.TargetPlatform
+import org.jetbrains.kotlin.platform.isCommon
 import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.progress.IncrementalNextRoundException
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus
+import org.jetbrains.kotlin.util.PerformanceManager
+import org.jetbrains.kotlin.util.PerformanceManagerImpl
 import org.jetbrains.kotlin.utils.KotlinPaths
 import org.jetbrains.kotlin.utils.PathUtil
 import java.io.File
@@ -50,13 +54,16 @@ import java.util.function.Predicate
 import kotlin.system.exitProcess
 
 abstract class CLICompiler<A : CommonCompilerArguments> {
+    abstract val platform: TargetPlatform
 
-    abstract val defaultPerformanceManager: CommonCompilerPerformanceManager
+    open val defaultPerformanceManager: PerformanceManager by lazy {
+        PerformanceManagerImpl(platform, "Kotlin to ${if (platform.isCommon()) "Metadata" else platform.first().platformName} compiler")
+    }
 
     var isReadingSettingsFromEnvironmentAllowed: Boolean =
         this::class.java.classLoader.getResource(LanguageVersionSettings.RESOURCE_NAME_TO_ALLOW_READING_FROM_ENVIRONMENT) != null
 
-    protected open fun createPerformanceManager(arguments: A, services: Services): CommonCompilerPerformanceManager =
+    protected open fun createPerformanceManager(arguments: A, services: Services): PerformanceManager =
         defaultPerformanceManager
 
     // Used in CompilerRunnerUtil#invokeExecMethod, in Eclipse plugin (KotlinCLICompiler) and in kotlin-gradle-plugin (GradleCompilerRunner)
@@ -76,14 +83,15 @@ abstract class CLICompiler<A : CommonCompilerArguments> {
     }
 
     private fun execImpl(messageCollector: MessageCollector, services: Services, arguments: A): ExitCode {
-        if (shouldRunK2(messageCollector, arguments)) {
+        val shouldRunK2 = shouldRunK2(messageCollector, arguments)
+        if (shouldRunK2) {
             val code = doExecutePhased(arguments, services, messageCollector)
             if (code != null) return code
         }
 
         val performanceManager = createPerformanceManager(arguments, services)
         if (arguments.reportPerf || arguments.dumpPerf != null) {
-            performanceManager.enableCollectingPerformanceStatistics()
+            performanceManager.enableCollectingPerformanceStatistics(isK2 = shouldRunK2)
         }
 
         val configuration = CompilerConfiguration()
@@ -115,8 +123,8 @@ abstract class CLICompiler<A : CommonCompilerArguments> {
                 performanceManager.notifyCompilationFinished()
                 if (arguments.reportPerf) {
                     collector.report(LOGGING, "PERF: " + performanceManager.getTargetInfo())
-                    for (measurement in performanceManager.getMeasurementResults()) {
-                        collector.report(LOGGING, "PERF: " + measurement.render(), null)
+                    for (measurement in performanceManager.measurements) {
+                        collector.report(LOGGING, "PERF: " + measurement.render(performanceManager.lines), null)
                     }
                 }
 
@@ -137,7 +145,7 @@ abstract class CLICompiler<A : CommonCompilerArguments> {
                     throw e
                 }
             } finally {
-                Disposer.dispose(rootDisposable)
+                disposeRootInWriteAction(rootDisposable)
             }
         } catch (e: CompilationErrorException) {
             return COMPILATION_ERROR
@@ -189,7 +197,12 @@ abstract class CLICompiler<A : CommonCompilerArguments> {
 
     protected abstract fun MutableList<String>.addPlatformOptions(arguments: A)
 
-    protected fun loadPlugins(paths: KotlinPaths?, arguments: A, configuration: CompilerConfiguration): ExitCode {
+    protected fun loadPlugins(
+        paths: KotlinPaths?,
+        arguments: A,
+        configuration: CompilerConfiguration,
+        parentDisposable: Disposable,
+    ): ExitCode {
         val pluginClasspaths = arguments.pluginClasspaths.orEmpty().toMutableList()
         val pluginOptions = arguments.pluginOptions.orEmpty().toMutableList()
         val pluginConfigurations = arguments.pluginConfigurations.orEmpty().toMutableList()
@@ -233,7 +246,7 @@ abstract class CLICompiler<A : CommonCompilerArguments> {
         pluginClasspaths.addAll(scriptingPluginClasspath)
         pluginOptions.addAll(scriptingPluginOptions)
 
-        return PluginCliParser.loadPluginsSafe(pluginClasspaths, pluginOptions, pluginConfigurations, configuration)
+        return PluginCliParser.loadPluginsSafe(pluginClasspaths, pluginOptions, pluginConfigurations, configuration, parentDisposable)
     }
 
     private fun tryLoadScriptingPluginFromCurrentClassLoader(
