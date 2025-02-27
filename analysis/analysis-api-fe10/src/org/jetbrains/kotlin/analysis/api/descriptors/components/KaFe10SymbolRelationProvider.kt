@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -18,14 +18,10 @@ import org.jetbrains.kotlin.analysis.api.descriptors.symbols.KaFe10PackageSymbol
 import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.KaFe10DescSamConstructorSymbol
 import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.KaFe10DynamicFunctionDescValueParameterSymbol
 import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.base.*
-import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.base.getDescriptor
-import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.base.getSymbolDescriptor
-import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.base.toKtCallableSymbol
-import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.base.toKtClassifierSymbol
-import org.jetbrains.kotlin.analysis.api.descriptors.symbols.descriptorBased.base.toKtSymbol
 import org.jetbrains.kotlin.analysis.api.getModule
 import org.jetbrains.kotlin.analysis.api.impl.base.components.KaBaseSessionComponent
 import org.jetbrains.kotlin.analysis.api.lifetime.withValidityAssertion
+import org.jetbrains.kotlin.analysis.api.platform.projectStructure.KaModuleBase
 import org.jetbrains.kotlin.analysis.api.projectStructure.KaLibraryModule
 import org.jetbrains.kotlin.analysis.api.projectStructure.KaLibrarySourceModule
 import org.jetbrains.kotlin.analysis.api.projectStructure.KaModule
@@ -160,7 +156,7 @@ internal class KaFe10SymbolRelationProvider(
             }
         } ?: TODO(descriptor::class.java.name)
         val libraryPath = Paths.get(library)
-        return object : KaLibraryModule {
+        return object : KaLibraryModule, KaModuleBase() {
             override val libraryName: String = libraryPath.fileName.toString().substringBeforeLast(".")
             override val librarySources: KaLibrarySourceModule? = null
             override val isSdk: Boolean = false
@@ -172,7 +168,7 @@ internal class KaFe10SymbolRelationProvider(
             override val directDependsOnDependencies: List<KaModule> = emptyList()
             override val transitiveDependsOnDependencies: List<KaModule> = emptyList()
             override val directFriendDependencies: List<KaModule> = emptyList()
-            override val contentScope: GlobalSearchScope = ProjectScope.getLibrariesScope(project)
+            override val baseContentScope: GlobalSearchScope = ProjectScope.getLibrariesScope(project)
             override val targetPlatform: TargetPlatform
                 get() = descriptor.platform!!
             override val project: Project
@@ -266,17 +262,11 @@ internal class KaFe10SymbolRelationProvider(
         }
 }
 
-internal fun computeContainingSymbolOrSelf(symbol: KaSymbol, analysisSession: KaSession): KaSymbol {
-    with(analysisSession) {
-        return when (symbol) {
-            is KaValueParameterSymbol -> {
-                symbol.containingDeclaration as? KaFunctionSymbol ?: symbol
-            }
-            is KaPropertyAccessorSymbol -> {
-                symbol.containingDeclaration as? KaPropertySymbol ?: symbol
-            }
-            is KaBackingFieldSymbol -> symbol.owningProperty
-            else -> symbol
-        }
+internal fun computeContainingSymbolOrSelf(symbol: KaSymbol, analysisSession: KaSession): KaSymbol = with(analysisSession) {
+    when (symbol) {
+        is KaParameterSymbol -> symbol.containingDeclaration as? KaCallableSymbol ?: symbol
+        is KaPropertyAccessorSymbol -> symbol.containingDeclaration as? KaPropertySymbol ?: symbol
+        is KaBackingFieldSymbol -> symbol.owningProperty
+        else -> symbol
     }
 }

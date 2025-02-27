@@ -6,7 +6,6 @@
 package org.jetbrains.kotlin.ir.backend.js
 
 import org.jetbrains.kotlin.backend.common.compilationException
-import org.jetbrains.kotlin.backend.common.ir.Ir
 import org.jetbrains.kotlin.backend.common.linkage.partial.createPartialLinkageSupportForLowerings
 import org.jetbrains.kotlin.backend.common.lower.InnerClassesSupport
 import org.jetbrains.kotlin.backend.common.reportWarning
@@ -59,7 +58,7 @@ import java.util.*
 class JsIrBackendContext(
     val module: ModuleDescriptor,
     override val irBuiltIns: IrBuiltIns,
-    val symbolTable: SymbolTable,
+    override val symbolTable: SymbolTable,
     val additionalExportedDeclarationNames: Set<FqName>,
     keep: Set<String>,
     override val configuration: CompilerConfiguration, // TODO: remove configuration from backend context
@@ -152,7 +151,9 @@ class JsIrBackendContext(
             if (rhsType == null)
                 candidates.singleOrNull()
             else
-                candidates.singleOrNull { it.owner.valueParameters[0].type.classifierOrNull == rhsType.classifier }
+                candidates.singleOrNull { candidate ->
+                    candidate.owner.parameters.first { it.kind == IrParameterKind.Regular }.type.classifierOrNull == rhsType.classifier
+                }
         }
 
     override val jsPromiseSymbol: IrClassSymbol?
@@ -164,10 +165,9 @@ class JsIrBackendContext(
         .let { symbolTable.descriptorExtension.referenceSimpleFunction(it!!) }
 
     override val symbols = JsSymbols(irBuiltIns, irFactory.stageController, intrinsics)
-    override val ir = object : Ir() {
-        override val symbols = this@JsIrBackendContext.symbols
-        override fun shouldGenerateHandlerParameterForDefaultBodyFun() = true
-    }
+
+    override val shouldGenerateHandlerParameterForDefaultBodyFun: Boolean
+        get() = true
 
     // classes forced to be loaded
 
@@ -195,11 +195,6 @@ class JsIrBackendContext(
     )
 
 
-    val newThrowableSymbol = symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("newThrowable"))
-    val extendThrowableSymbol = symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("extendThrowable"))
-    val setPropertiesToThrowableInstanceSymbol =
-        symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("setPropertiesToThrowableInstance"))
-
     override val suiteFun = getFunctions(FqName("kotlin.test.suite")).singleOrNull()?.let {
         symbolTable.descriptorExtension.referenceSimpleFunction(it)
     }
@@ -207,10 +202,17 @@ class JsIrBackendContext(
         symbolTable.descriptorExtension.referenceSimpleFunction(it)
     }
 
+    val newThrowableSymbol = symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("newThrowable"))
+    val extendThrowableSymbol = symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("extendThrowable"))
+    val setupCauseParameterSymbol = symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("setupCauseParameter"))
+    val setPropertiesToThrowableInstanceSymbol = symbolTable.descriptorExtension.referenceSimpleFunction(getJsInternalFunction("setPropertiesToThrowableInstance"))
+
     val throwableConstructors by lazy(LazyThreadSafetyMode.NONE) {
         throwableClass.owner.declarations.filterIsInstance<IrConstructor>().map { it.symbol }
     }
-    val defaultThrowableCtor by lazy(LazyThreadSafetyMode.NONE) { throwableConstructors.single { !it.owner.isPrimary && it.owner.valueParameters.size == 0 } }
+    val defaultThrowableCtor by lazy(LazyThreadSafetyMode.NONE) {
+        throwableConstructors.single { !it.owner.isPrimary && it.owner.parameters.isEmpty() }
+    }
 
     val kpropertyBuilder = getFunctions(FqName("kotlin.js.getPropertyCallableRef")).single().let {
         symbolTable.descriptorExtension.referenceSimpleFunction(it)
@@ -255,7 +257,7 @@ class JsIrBackendContext(
     private fun parseJsFromAnnotation(declaration: IrDeclaration, annotationClassId: ClassId): Pair<IrConstructorCall, JsFunction>? {
         val annotation = declaration.getAnnotation(annotationClassId.asSingleFqName())
             ?: return null
-        val jsCode = annotation.getValueArgument(0)
+        val jsCode = annotation.arguments[0]
             ?: compilationException("@${annotationClassId.shortClassName} annotation must contain the JS code argument", annotation)
         val statements = translateJsCodeIntoStatementList(jsCode, declaration)
             ?: compilationException("Could not parse JS code", annotation)
@@ -275,7 +277,7 @@ class JsIrBackendContext(
 
         parseJsFromAnnotation(originalSymbol.owner, JsStandardClassIds.Annotations.JsOutlinedFunction)
             ?.let { (annotation, parsedJsFunction) ->
-                val sourceMap = (annotation.getValueArgument(1) as? IrConst)?.value as? String
+                val sourceMap = (annotation.arguments[1] as? IrConst)?.value as? String
                 val parsedSourceMap = sourceMap?.let { parseSourceMap(it, originalSymbol.owner.fileOrNull, annotation) }
                 if (parsedSourceMap != null) {
                     val remapper = SourceMapLocationRemapper(parsedSourceMap)
@@ -319,4 +321,6 @@ class JsIrBackendContext(
         irBuiltIns,
         configuration.messageCollector
     )
+
+    internal var nextAssociatedObjectKey = 0
 }

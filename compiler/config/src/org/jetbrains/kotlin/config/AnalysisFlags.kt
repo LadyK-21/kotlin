@@ -62,9 +62,6 @@ object AnalysisFlags {
     val libraryToSourceAnalysis by AnalysisFlag.Delegates.Boolean
 
     @JvmStatic
-    val extendedCompilerChecks by AnalysisFlag.Delegates.Boolean
-
-    @JvmStatic
     val allowKotlinPackage by AnalysisFlag.Delegates.Boolean
 
     @JvmStatic
@@ -90,7 +87,7 @@ object AnalysisFlags {
     @JvmStatic
     val expandTypeAliasesInTypeResolution by AnalysisFlag.Delegates.Boolean(defaultValue = true)
 
-    val globallySuppressedDiagnostics by AnalysisFlag.Delegates.ListOfStrings
+    val warningLevels by AnalysisFlag.Delegates.WarningLevelMap
 }
 
 @Deprecated(

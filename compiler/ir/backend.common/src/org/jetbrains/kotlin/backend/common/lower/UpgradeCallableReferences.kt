@@ -106,7 +106,7 @@ open class UpgradeCallableReferences(
             return element
         }
 
-        // IrElementTransformer defines this to not calling visitElement, which leads to incorrect parent creation
+        // IrTransformer defines this to not calling visitElement, which leads to incorrect parent creation
         override fun visitDeclaration(declaration: IrDeclarationBase, data: IrDeclarationParent): IrStatement {
             return visitElement(declaration, data) as IrStatement
         }
@@ -118,8 +118,8 @@ open class UpgradeCallableReferences(
         private fun IrType.arrayDepth(): Int {
             if (this !is IrSimpleType) return 0
             return when (classOrNull) {
-                context.ir.symbols.array -> 1 + (arguments[0].typeOrNull?.arrayDepth() ?: 0)
-                in context.ir.symbols.arrays -> 1
+                context.symbols.array -> 1 + (arguments[0].typeOrNull?.arrayDepth() ?: 0)
+                in context.symbols.arrays -> 1
                 else -> 0
             }
         }
@@ -190,7 +190,7 @@ open class UpgradeCallableReferences(
                 return argument.apply {
                     type = expression.typeOperand
                     overriddenFunctionSymbol = selectSAMOverriddenFunction(expression.typeOperand)
-                }
+                }.copyWithOffsets(expression.startOffset, expression.endOffset)
             }
             return super.visitTypeOperator(expression, data)
         }
@@ -354,10 +354,10 @@ open class UpgradeCallableReferences(
             ) { parameters ->
                 // Unfortunately, some plugins sometimes generate the wrong number of arguments in references
                 // we already have such klib, so need to handle it. We just ignore extra type parameters
-                val cleanedTypeArgumentCount = minOf(typeArgumentsCount, referencedFunction.typeParameters.size)
+                val cleanedTypeArgumentCount = minOf(typeArguments.size, referencedFunction.typeParameters.size)
                 val exprToReturn = irCallWithSubstitutedType(
                     referencedFunction.symbol,
-                    typeArguments = (0 until cleanedTypeArgumentCount).map { getTypeArgument(it) ?: context.irBuiltIns.anyNType },
+                    typeArguments = (0 until cleanedTypeArgumentCount).map { typeArguments[it] ?: context.irBuiltIns.anyNType },
                 ).apply {
                     val bound = captured.map { it.first }.toSet()
                     val (boundParameters, unboundParameters) = referencedFunction.parameters.partition { it in bound }

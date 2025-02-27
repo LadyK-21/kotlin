@@ -15,13 +15,18 @@ import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilat
 import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilationResult
 import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilationResult.Companion.assertSuccess
 import org.jetbrains.kotlin.konan.test.blackbox.support.group.FirPipeline
+import org.jetbrains.kotlin.konan.test.blackbox.support.group.ClassicPipeline
+import org.jetbrains.kotlin.konan.test.blackbox.support.settings.Allocator
 import org.jetbrains.kotlin.konan.test.blackbox.targets
 import org.jetbrains.kotlin.konan.test.blackbox.toOutput
+import org.jetbrains.kotlin.konan.test.klib.KlibCrossCompilationOutputTest.Companion.DEPRECATED_K1_LANGUAGE_VERSIONS_DIAGNOSTIC_REGEX
 import org.jetbrains.kotlin.library.*
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.TestMetadata
 import org.jetbrains.kotlin.test.services.JUnit5Assertions.assertTrue
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
+import org.junit.jupiter.api.Assumptions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -41,6 +46,13 @@ private const val TEST_DATA_ROOT = "native/native.tests/testData/klib/cross-comp
 @Tag("klib")
 @TestDataPath("\$PROJECT_ROOT/$TEST_DATA_ROOT")
 abstract class ManifestWritingTest : AbstractNativeSimpleTest() {
+    @BeforeEach
+    fun assumeNotMimalloc() {
+        // Mimalloc is deprecated and will emit a warning, when enabled.
+        // These tests check compiler output, and so will fail because of the extra warning.
+        Assumptions.assumeFalse(testRunSettings.get<Allocator>() == Allocator.MIMALLOC)
+    }
+
     @Test
     @TestMetadata("simpleManifest")
     fun testSimpleManifest(testInfo: TestInfo) {
@@ -79,9 +91,16 @@ abstract class ManifestWritingTest : AbstractNativeSimpleTest() {
         )
 
         val expectedOutput = rootDir.resolve("output.txt")
-        KotlinTestUtils.assertEqualsToFile(expectedOutput, compilationResult.toOutput())
+        KotlinTestUtils.assertEqualsToFile(expectedOutput, compilationResult.toOutput().sanitizeCompilationOutput())
 
         compareManifests(compilationResult, rootDir.resolve("manifest"))
+    }
+
+    fun String.sanitizeCompilationOutput(): String = lines().joinToString(separator = "\n") { line ->
+        when {
+            DEPRECATED_K1_LANGUAGE_VERSIONS_DIAGNOSTIC_REGEX.matches(line) -> ""
+            else -> line
+        }
     }
 
     companion object {
@@ -147,11 +166,11 @@ abstract class ManifestWritingTest : AbstractNativeSimpleTest() {
     }
 }
 
+@ClassicPipeline()
 @EnforcedProperty(ClassLevelProperty.COMPILER_OUTPUT_INTERCEPTOR, "NONE")
 class ClassicFEManifestWritingTest : ManifestWritingTest()
 
 @FirPipeline
-@Tag("frontend-fir")
 @EnforcedProperty(ClassLevelProperty.COMPILER_OUTPUT_INTERCEPTOR, "NONE")
 class FirFEManifestWritingTest : ManifestWritingTest() {
 }

@@ -290,7 +290,10 @@ class VariantAwareDependenciesMppIT : KGPBaseTest() {
                 |
                 |configurations.create("custom")
                 |dependencies { custom("org.jetbrains.kotlinx:atomicfu:${TestVersions.ThirdPartyDependencies.KOTLINX_ATOMICFU}") }
-                |tasks.register("resolveCustom") { doLast { println("###" + configurations.custom.toList()) } }
+                |tasks.register("resolveCustom") {
+                |    def resolvedFiles = project.provider { configurations.custom.resolve() }
+                |    doLast { println("###" + resolvedFiles.get().toList()) }
+                |}
                 |
                 """.trimMargin()
             )

@@ -60,6 +60,11 @@ fun IrFile.dumpTreesFromLineNumber(lineNumber: Int, options: DumpIrTreeOptions =
  * @property renderOriginForExternalDeclarations If `true`, we only print a declaration's origin if it is not
  * [IrDeclarationOrigin.DEFINED]. If `false`, we don't print the [IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB] origin as well.
  * @property printSignatures Whether to print signatures for nodes that have public signatures
+ * @property printAnnotationsWithSourceRetention If annotations with SOURCE retention should be printed.
+ * @property printAnnotationsInFakeOverrides If annotations in fake override functions/properties should be printed.
+ *   Note: The main goal of introducing this flag is an attempt to work around the problem with incorrect offsets
+ *   in annotations, which should be finally fixed in KT-74938.
+ *   TODO: Drop this flag in KT-74938.
  * @property printDispatchReceiverTypeInFakeOverrides If the dispatch receiver type should be printed.
  *   Otherwise, it will be substituted with some fixed placeholder value.
  * @property printParameterNamesInOverriddenSymbols If names of value parameters should be printed in overridden function symbols.
@@ -67,6 +72,8 @@ fun IrFile.dumpTreesFromLineNumber(lineNumber: Int, options: DumpIrTreeOptions =
  * @property replaceImplicitSetterParameterNameWith If not null, them implicit value parameter name [IMPLICIT_SET_PARAMETER] would be
  *   replaced by the given value.
  * @property isHiddenDeclaration The filter that can be used to exclude some declarations from printing.
+ * @property filePathRenderer allows to post-process the rendered IrFile name
+ * @property printSourceOffsets If source offsets of elements should be printed.
  */
 data class DumpIrTreeOptions(
     val normalizeNames: Boolean = false,
@@ -81,12 +88,15 @@ data class DumpIrTreeOptions(
     val printModuleName: Boolean = true,
     val printFilePath: Boolean = true,
     val printExpectDeclarations: Boolean = true,
-    val printSourceRetentionAnnotations: Boolean = true,
+    val printAnnotationsWithSourceRetention: Boolean = true,
+    val printAnnotationsInFakeOverrides: Boolean = true,
     val printDispatchReceiverTypeInFakeOverrides: Boolean = true,
     val printParameterNamesInOverriddenSymbols: Boolean = true,
     val printSealedSubclasses: Boolean = true,
     val replaceImplicitSetterParameterNameWith: Name? = null,
     val isHiddenDeclaration: (IrDeclaration) -> Boolean = { false },
+    val filePathRenderer: (IrFile, String) -> String = { _, name -> name },
+    val printSourceOffsets: Boolean = false,
 ) {
     /**
      * A customizable filter to exclude some (or all) flags for declarations or declaration references.
@@ -155,7 +165,7 @@ class DumpIrTreeVisitor(
 ) : IrVisitor<Unit, String>() {
 
     private val printer = Printer(out, "  ")
-    private val elementRenderer = RenderIrElementVisitor(options)
+    private val elementRenderer = RenderIrElementVisitor(options, isUsedForIrDump = true)
     private fun IrType.render() = elementRenderer.renderType(this)
 
     private fun List<IrDeclaration>.ordered(): List<IrDeclaration> = if (options.stableOrder) stableOrdered() else this
@@ -198,7 +208,7 @@ class DumpIrTreeVisitor(
             runIf(options.printSealedSubclasses) {
                 declaration.sealedSubclasses.dumpItems("sealedSubclasses") { it.dump() }
             }
-            declaration.thisReceiver?.accept(this, "\$this")
+            declaration.thisReceiver?.accept(this, "thisReceiver")
             declaration.typeParameters.dumpElements()
             declaration.declarations.ordered().dumpElements()
         }
@@ -223,19 +233,13 @@ class DumpIrTreeVisitor(
         if (declaration.isHidden()) return
         if (declaration.isExpect && !options.printExpectDeclarations) return
         declaration.dumpLabeledElementWith(data) {
-            dumpAnnotations(declaration)
+            declaration.typeParameters.dumpElements()
+            declaration.parameters.dumpElements()
+            if (options.printAnnotationsInFakeOverrides || !declaration.isFakeOverride) {
+                dumpAnnotations(declaration)
+            }
             declaration.correspondingPropertySymbol?.dumpInternal("correspondingProperty")
             declaration.overriddenSymbols.dumpFakeOverrideSymbols()
-            declaration.typeParameters.dumpElements()
-            declaration.dispatchReceiverParameter?.accept(this, "\$this")
-
-            val contextReceiverParametersCount = declaration.contextReceiverParametersCount
-            if (contextReceiverParametersCount > 0) {
-                printer.println("contextReceiverParametersCount: $contextReceiverParametersCount")
-            }
-
-            declaration.extensionReceiverParameter?.accept(this, "\$receiver")
-            declaration.valueParameters.dumpElements()
             declaration.body?.accept(this, "")
         }
     }
@@ -256,10 +260,9 @@ class DumpIrTreeVisitor(
     override fun visitConstructor(declaration: IrConstructor, data: String) {
         if (declaration.isHidden()) return
         declaration.dumpLabeledElementWith(data) {
-            dumpAnnotations(declaration)
             declaration.typeParameters.dumpElements()
-            declaration.dispatchReceiverParameter?.accept(this, "\$outer")
-            declaration.valueParameters.dumpElements()
+            declaration.parameters.dumpElements()
+            dumpAnnotations(declaration)
             declaration.body?.accept(this, "")
         }
     }
@@ -267,7 +270,9 @@ class DumpIrTreeVisitor(
     override fun visitProperty(declaration: IrProperty, data: String) {
         if (declaration.isHidden()) return
         declaration.dumpLabeledElementWith(data) {
-            dumpAnnotations(declaration)
+            if (options.printAnnotationsInFakeOverrides || !declaration.isFakeOverride) {
+                dumpAnnotations(declaration)
+            }
             declaration.overriddenSymbols.dumpFakeOverrideSymbols()
             declaration.backingField?.accept(this, "")
             declaration.getter?.accept(this, "")
@@ -306,47 +311,19 @@ class DumpIrTreeVisitor(
     override fun visitMemberAccess(expression: IrMemberAccessExpression<*>, data: String) {
         expression.dumpLabeledElementWith(data) {
             dumpTypeArguments(expression)
-            expression.dispatchReceiver?.accept(this, "\$this")
-            expression.extensionReceiver?.accept(this, "\$receiver")
             val valueParameterNames = expression.getValueParameterNamesForDebug(options)
-            for (index in 0 until expression.valueArgumentsCount) {
-                expression.getValueArgument(index)?.accept(this, valueParameterNames[index])
+            for ((index, value) in expression.arguments.withIndex()) {
+                value?.accept(this, "ARG ${valueParameterNames[index]}")
             }
-        }
-    }
-
-    override fun visitConstructorCall(expression: IrConstructorCall, data: String) {
-        expression.dumpLabeledElementWith(data) {
-            dumpTypeArguments(expression)
-            expression.outerClassReceiver?.accept(this, "\$outer")
-            dumpConstructorValueArguments(expression)
-        }
-    }
-
-    private fun dumpConstructorValueArguments(expression: IrConstructorCall) {
-        val valueParameterNames = expression.getValueParameterNamesForDebug(options)
-        for (index in 0 until expression.valueArgumentsCount) {
-            expression.getValueArgument(index)?.accept(this, valueParameterNames[index])
         }
     }
 
     private fun dumpTypeArguments(expression: IrMemberAccessExpression<*>) {
         val typeParameterNames = expression.getTypeParameterNames(expression.typeArguments.size)
         for (index in 0 until expression.typeArguments.size) {
-            printer.println("<${typeParameterNames[index]}>: ${expression.renderTypeArgument(index)}")
-        }
-    }
-
-    private fun dumpTypeArguments(expression: IrConstructorCall) {
-        val typeParameterNames = expression.getTypeParameterNames(expression.typeArguments.size)
-        for (index in 0 until expression.typeArguments.size) {
             val typeParameterName = typeParameterNames[index]
-            val parameterLabel =
-                if (index < expression.classTypeArgumentsCount)
-                    "class: $typeParameterName"
-                else
-                    typeParameterName
-            printer.println("<$parameterLabel>: ${expression.renderTypeArgument(index)}")
+            val prefix = if (expression is IrConstructorCall && index < expression.classTypeArgumentsCount) "(of class) " else ""
+            printer.println("TYPE_ARG $prefix$typeParameterName: ${expression.renderTypeArgument(index)}")
         }
     }
 
@@ -397,10 +374,11 @@ class DumpIrTreeVisitor(
 
     override fun visitRichFunctionReference(expression: IrRichFunctionReference, data: String) {
         expression.dumpLabeledElementWith(data) {
-            val names = expression.invokeFunction.getValueParameterNamesForDebug(expression.boundValues.size, options)
             expression.overriddenFunctionSymbol.dumpInternal("overriddenFunctionSymbol")
+            val parameterNames = getValueParameterNamesForDebug(expression.invokeFunction, expression.boundValues.size, options)
             expression.boundValues.forEachIndexed { index, value ->
-                value.accept(this, "bound ${names[index]}")
+                val name = parameterNames[index]
+                value.accept(this, "bound $name")
             }
             expression.invokeFunction.accept(this, "invoke")
         }
@@ -408,9 +386,10 @@ class DumpIrTreeVisitor(
 
     override fun visitRichPropertyReference(expression: IrRichPropertyReference, data: String) {
         expression.dumpLabeledElementWith(data) {
-            val names = expression.getterFunction.getValueParameterNamesForDebug(expression.boundValues.size, options)
+            val parameterNames = getValueParameterNamesForDebug(expression.getterFunction, expression.boundValues.size, options)
             expression.boundValues.forEachIndexed { index, value ->
-                value.accept(this, "bound ${names[index]}")
+                val name = parameterNames[index]
+                value.accept(this, "bound $name")
             }
             expression.getterFunction.accept(this, "getter")
             expression.setterFunction?.accept(this, "setter")
@@ -485,7 +464,7 @@ class DumpIrTreeVisitor(
     override fun visitConstantObject(expression: IrConstantObject, data: String) {
         expression.dumpLabeledElementWith(data) {
             for ((index, argument) in expression.valueArguments.withIndex()) {
-                argument.accept(this, expression.constructor.owner.valueParameters[index].name.toString())
+                argument.accept(this, expression.constructor.owner.parameters[index].name.toString())
             }
         }
     }
@@ -570,24 +549,15 @@ class DumpTreeFromSourceLineVisitor(
 }
 
 internal fun IrMemberAccessExpression<*>.getValueParameterNamesForDebug(options: DumpIrTreeOptions): List<String> {
-    val expectedCount = valueArgumentsCount
-    if (symbol.isBound) {
-        val owner = symbol.owner
-        if (owner is IrFunction) {
-            return owner.getValueParameterNamesForDebug(expectedCount, options)
-        }
-    }
-    return getPlaceholderParameterNames(expectedCount)
+    val function = if (symbol.isBound) symbol.owner as? IrFunction else null
+    return getValueParameterNamesForDebug(function, arguments.size, options)
 }
 
-private fun IrFunction.getValueParameterNamesForDebug(
-    expectedCount: Int,
-    options: DumpIrTreeOptions,
-): List<String> = (0 until expectedCount).map {
-    if (it < valueParameters.size)
-        valueParameters[it].renderValueParameterName(options)
-    else
-        "${it + 1}"
+internal fun getValueParameterNamesForDebug(function: IrFunction?, amount: Int, options: DumpIrTreeOptions): List<String> {
+    return (0..<amount).map { index ->
+        val param = function?.parameters?.getOrNull(index)
+        param?.renderValueParameterName(options, disambiguate = true) ?: "${index + 1}"
+    }
 }
 
 internal fun getPlaceholderParameterNames(expectedCount: Int) =

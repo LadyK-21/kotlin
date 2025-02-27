@@ -218,6 +218,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeWithLatestLanguageVersionT
   }
 
   @Test
+  @TestMetadata("errorProneAtomicReferencePrimitivesInKMP.kt")
+  public void testErrorProneAtomicReferencePrimitivesInKMP() {
+    runTest("compiler/testData/diagnostics/tests/multiplatform/errorProneAtomicReferencePrimitivesInKMP.kt");
+  }
+
+  @Test
   @TestMetadata("expectAbstractToString.kt")
   public void testExpectAbstractToString() {
     runTest("compiler/testData/diagnostics/tests/multiplatform/expectAbstractToString.kt");
@@ -647,6 +653,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeWithLatestLanguageVersionT
     }
 
     @Test
+    @TestMetadata("annotationArgRendering.kt")
+    public void testAnnotationArgRendering() {
+      runTest("compiler/testData/diagnostics/tests/multiplatform/actualAnnotationsNotMatchExpect/annotationArgRendering.kt");
+    }
+
+    @Test
     @TestMetadata("annotationArgumentsConstExpressions.kt")
     public void testAnnotationArgumentsConstExpressions() {
       runTest("compiler/testData/diagnostics/tests/multiplatform/actualAnnotationsNotMatchExpect/annotationArgumentsConstExpressions.kt");
@@ -890,22 +902,6 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeWithLatestLanguageVersionT
     @TestMetadata("withOtherIncomatibilities.kt")
     public void testWithOtherIncomatibilities() {
       runTest("compiler/testData/diagnostics/tests/multiplatform/actualAnnotationsNotMatchExpect/withOtherIncomatibilities.kt");
-    }
-
-    @Nested
-    @TestMetadata("compiler/testData/diagnostics/tests/multiplatform/actualAnnotationsNotMatchExpect/lightTree")
-    @TestDataPath("$PROJECT_ROOT")
-    public class LightTree {
-      @Test
-      public void testAllFilesPresentInLightTree() {
-        KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/diagnostics/tests/multiplatform/actualAnnotationsNotMatchExpect/lightTree"), Pattern.compile("^(.*)\\.kts?$"), Pattern.compile("^(.+)\\.(reversed|fir|ll|latestLV)\\.kts?$"), TargetBackend.JVM_IR, true);
-      }
-
-      @Test
-      @TestMetadata("annotationArgRendering.kt")
-      public void testAnnotationArgRendering() {
-        runTest("compiler/testData/diagnostics/tests/multiplatform/actualAnnotationsNotMatchExpect/lightTree/annotationArgRendering.kt");
-      }
     }
   }
 
@@ -2162,6 +2158,12 @@ public class FirOldFrontendMPPDiagnosticsWithLightTreeWithLatestLanguageVersionT
     @TestMetadata("ambiguousActuals.kt")
     public void testAmbiguousActuals() {
       runTest("compiler/testData/diagnostics/tests/multiplatform/hmpp/ambiguousActuals.kt");
+    }
+
+    @Test
+    @TestMetadata("expectsHmppRedeclaration.kt")
+    public void testExpectsHmppRedeclaration() {
+      runTest("compiler/testData/diagnostics/tests/multiplatform/hmpp/expectsHmppRedeclaration.kt");
     }
 
     @Test

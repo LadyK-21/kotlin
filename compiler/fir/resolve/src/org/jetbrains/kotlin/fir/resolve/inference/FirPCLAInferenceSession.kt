@@ -107,13 +107,17 @@ class FirPCLAInferenceSession(
         outerCandidate.system.replaceContentWith(currentCommonSystem.currentStorage())
     }
 
+    // Currently used only from FirDelegatedPropertyInferenceSession.completeSessionOrPostponeIfNonRoot
     fun integrateChildSession(
         childCalls: Collection<ConeResolutionAtom>,
         childStorage: ConstraintStorage,
         onCompletionResultsWriting: (ConeSubstitutor) -> Unit,
     ) {
         outerCandidate.postponedPCLACalls += childCalls
-        currentCommonSystem.addOtherSystem(childStorage)
+        // When a delegated property belongs to a PCLA lambda, the delegate session is guaranteed either use
+        // - either a delegate call which is always a nested PCLA call with an outer CS
+        // - or it literally uses `currentCommonSystem` (see the definition of FirDelegatedPropertyInferenceSession.parentConstraintSystem)
+        currentCommonSystem.replaceContentWith(childStorage)
         outerCandidate.onPCLACompletionResultsWritingCallbacks += onCompletionResultsWriting
     }
 
@@ -230,7 +234,7 @@ class FirPCLAInferenceSession(
                 // We should integrate even simple calls into the PCLA tree, too
                 callInfo.resolutionMode.expectedType.containsNotFixedTypeVariables() -> return false
             }
-            is ResolutionMode.WithStatus, is ResolutionMode.LambdaResolution ->
+            is ResolutionMode.WithStatus ->
                 error("$this call should not be analyzed in ${callInfo.resolutionMode}")
 
             is ResolutionMode.AssignmentLValue,
@@ -335,7 +339,9 @@ class FirTypeVariablesAfterPCLATransformer(private val substitutor: ConeSubstitu
         // FirAnonymousFunctionExpression doesn't support replacing the type
         // since it delegates the getter to the underlying FirAnonymousFunction.
         // WrappedArgumentExpression delegates the type to the inner expression and doesn't need to be updated.
-        if (element is FirExpression && element !is FirAnonymousFunctionExpression && element !is FirWrappedArgumentExpression) {
+        if (element is FirExpression && element !is FirAnonymousFunctionExpression &&
+            element !is FirWrappedArgumentExpression && element !is FirErrorExpression
+        ) {
             element.resolvedType
                 .let(substitutor::substituteOrNull)
                 ?.let { element.replaceConeTypeOrNull(it) }

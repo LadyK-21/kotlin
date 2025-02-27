@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.backend.common.ir.isPure
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.backend.js.JsCommonBackendContext
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrBuilder
+import org.jetbrains.kotlin.ir.backend.js.objectInstanceField
 import org.jetbrains.kotlin.ir.backend.js.utils.isObjectInstanceField
 import org.jetbrains.kotlin.ir.backend.js.utils.isObjectInstanceGetter
 import org.jetbrains.kotlin.ir.backend.js.utils.primaryConstructorReplacement
@@ -23,8 +24,6 @@ import org.jetbrains.kotlin.ir.util.*
  * Optimization: make object instance getter functions pure whenever it's possible.
  */
 class PurifyObjectInstanceGettersLowering(val context: JsCommonBackendContext) : DeclarationTransformer {
-    private var IrClass.instanceField by context.mapping.objectToInstanceField
-
     override fun transformFlat(declaration: IrDeclaration): List<IrDeclaration>? {
         return when {
             (declaration is IrFunction && declaration.isObjectConstructor()) -> declaration.removeInstanceFieldInitializationIfPossible()
@@ -49,7 +48,7 @@ class PurifyObjectInstanceGettersLowering(val context: JsCommonBackendContext) :
 
         if (objectToCreate.isPureObject()) {
             val body = (body as? IrBlockBody) ?: return null
-            val instanceField = objectToCreate.instanceField ?: irError("Expect the object instance field to be created") {
+            val instanceField = objectToCreate.objectInstanceField ?: irError("Expect the object instance field to be created") {
                 withIrEntry("objectToCreate", objectToCreate)
                 withIrEntry("this", this@purifyObjectGetterIfPossible)
             }
@@ -99,7 +98,7 @@ class PurifyObjectInstanceGettersLowering(val context: JsCommonBackendContext) :
                 (this is IrReturn && value.isPureStatementForObjectInitialization(owner)) ||
                         // Only objects which don't have a class parent
                         (this is IrDelegatingConstructorCall && symbol.owner.parent == context.irBuiltIns.anyClass.owner) ||
-                        (this is IrExpression && isPure(anyVariable = true, checkFields = false, symbols = context.ir.symbols)) ||
+                        (this is IrExpression && isPure(anyVariable = true, checkFields = false, symbols = context.symbols)) ||
                         (this is IrContainerExpression && statements.all { it.isPureStatementForObjectInitialization(owner) }) ||
                         (this is IrVariable && (isEs6DelegatingConstructorCallReplacement || initializer?.isPureStatementForObjectInitialization(owner) != false)) ||
                         // Only fields of the objects are safe to not save an intermediate state of another class/object/global

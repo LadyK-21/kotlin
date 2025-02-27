@@ -179,6 +179,7 @@ class BuildCacheIT : KGPBaseTest() {
 
     @DisplayName("Restore from build cache should not break incremental compilation")
     @GradleTest
+    @BrokenOnMacosTest
     fun testIncrementalCompilationAfterCacheHit(gradleVersion: GradleVersion) {
         project("incrementalMultiproject", gradleVersion) {
             enableLocalBuildCache(localBuildCacheDir)
@@ -202,6 +203,7 @@ class BuildCacheIT : KGPBaseTest() {
 
     @DisplayName("Restore from build cache and consequent compilation error should not break incremental compilation")
     @GradleTest
+    @BrokenOnMacosTest
     fun testIncrementalCompilationAfterCacheHitAndCompilationError(gradleVersion: GradleVersion) {
         project("incrementalMultiproject", gradleVersion) {
             enableLocalBuildCache(localBuildCacheDir)
@@ -237,6 +239,7 @@ class BuildCacheIT : KGPBaseTest() {
 
     @DisplayName("A compilation error doesn't break kapt incremental compilation after restoring from build cache")
     @GradleTest
+    @BrokenOnMacosTest
     fun testKaptIncrementalCompilationAfterCacheHitAndCompilationError(gradleVersion: GradleVersion) {
         project("kapt2/kaptAvoidance", gradleVersion) {
             enableLocalBuildCache(localBuildCacheDir)

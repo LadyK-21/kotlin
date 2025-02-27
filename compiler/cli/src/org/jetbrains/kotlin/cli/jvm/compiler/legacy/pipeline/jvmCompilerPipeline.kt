@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.cli.common.LegacyK2CliPipeline
 import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.common.perfManager
 import org.jetbrains.kotlin.cli.jvm.compiler.*
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment.Companion.configureProjectEnvironment
 import org.jetbrains.kotlin.cli.jvm.config.*
@@ -59,6 +60,9 @@ import org.jetbrains.kotlin.load.kotlin.VirtualFileFinderFactory
 import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackagePartProvider
 import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.resolve.jvm.modules.JavaModuleResolver
+import org.jetbrains.kotlin.util.PhaseType
+import org.jetbrains.kotlin.util.PotentiallyIncorrectPhaseTimeMeasurement
+import org.jetbrains.kotlin.util.tryMeasurePhaseTime
 import java.io.File
 
 @LegacyK2CliPipeline
@@ -100,9 +104,6 @@ fun FirResult.convertToIrAndActualizeForJvm(
     diagnosticsReporter: BaseDiagnosticsCollector,
     irGeneratorExtensions: Collection<IrGenerationExtension>,
 ): Fir2IrActualizedResult {
-    val performanceManager = configuration[CLIConfigurationKeys.PERF_MANAGER]
-    performanceManager?.notifyIRTranslationStarted()
-
     val fir2IrConfiguration = Fir2IrConfiguration.forJvmCompilation(configuration, diagnosticsReporter)
 
     return convertToIrAndActualize(
@@ -126,7 +127,7 @@ fun FirResult.convertToIrAndActualizeForJvm(
                 )
             }
         }
-    ).also { performanceManager?.notifyIRTranslationFinished() }
+    )
 }
 
 @LegacyK2CliPipeline
@@ -155,31 +156,30 @@ fun generateCodeFromIr(
     )
 
     val performanceManager = input.configuration[CLIConfigurationKeys.PERF_MANAGER]
-    performanceManager?.notifyGenerationStarted()
-    performanceManager?.notifyIRLoweringStarted()
-    val backendInput = JvmIrCodegenFactory.BackendInput(
-        input.irModuleFragment,
-        input.pluginContext.irBuiltIns,
-        input.symbolTable,
-        input.components.irProviders,
-        input.extensions,
-        FirJvmBackendExtension(
-            input.components,
-            input.irActualizedResult?.actualizedExpectDeclarations?.extractFirDeclarations()
-        ),
-        input.pluginContext,
-    )
+    @OptIn(PotentiallyIncorrectPhaseTimeMeasurement::class)
+    performanceManager?.notifyCurrentPhaseFinishedIfNeeded() // It should be `notifyIRGenerationFinished`, but this phase not always started or already finished
+    lateinit var codegenFactory: JvmIrCodegenFactory
+    val codegenInput = performanceManager.tryMeasurePhaseTime(PhaseType.IrLowering) {
+        val backendInput = JvmIrCodegenFactory.BackendInput(
+            input.irModuleFragment,
+            input.pluginContext.irBuiltIns,
+            input.symbolTable,
+            input.components.irProviders,
+            input.extensions,
+            FirJvmBackendExtension(
+                input.components,
+                input.irActualizedResult?.actualizedExpectDeclarations?.extractFirDeclarations()
+            ),
+            input.pluginContext,
+        )
 
-    val codegenFactory = JvmIrCodegenFactory(input.configuration)
-    val codegenInput = codegenFactory.invokeLowerings(generationState, backendInput)
+        codegenFactory = JvmIrCodegenFactory(input.configuration)
+        codegenFactory.invokeLowerings(generationState, backendInput)
+    }
 
-    performanceManager?.notifyIRLoweringFinished()
-    performanceManager?.notifyIRGenerationStarted()
-
-    codegenFactory.invokeCodegen(codegenInput)
-
-    performanceManager?.notifyIRGenerationFinished()
-    performanceManager?.notifyGenerationFinished()
+    performanceManager.tryMeasurePhaseTime(PhaseType.Backend) {
+        codegenFactory.invokeCodegen(codegenInput)
+    }
 
     return ModuleCompilerOutput(generationState, builderFactory)
 }
@@ -301,12 +301,14 @@ fun createProjectEnvironment(
         }
     }
 
+    val perfManager = configuration.perfManager
+
     project.registerService(
         JavaModuleResolver::class.java,
         CliJavaModuleResolver(classpathRootsResolver.javaModuleGraph, javaModules, javaModuleFinder.systemModules.toList(), project)
     )
 
-    val fileFinderFactory = CliVirtualFileFinderFactory(rootsIndex, releaseTarget != null)
+    val fileFinderFactory = CliVirtualFileFinderFactory(rootsIndex, releaseTarget != null, perfManager)
     project.registerService(VirtualFileFinderFactory::class.java, fileFinderFactory)
     project.registerService(MetadataFinderFactory::class.java, CliMetadataFinderFactory(fileFinderFactory))
 
@@ -322,7 +324,8 @@ fun createProjectEnvironment(
             rootsIndex,
             it.packagePartProviders,
             SingleJavaFileRootsIndex(singleJavaFileRoots),
-            configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING)
+            configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING),
+            perfManager,
         )
     }
 }

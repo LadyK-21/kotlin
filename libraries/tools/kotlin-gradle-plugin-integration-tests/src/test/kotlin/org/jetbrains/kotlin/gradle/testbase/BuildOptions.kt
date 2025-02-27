@@ -30,6 +30,7 @@ data class BuildOptions(
     val stacktraceMode: String? = StacktraceOption.FULL_STACKTRACE_LONG_OPTION,
     val kotlinVersion: String = TestVersions.Kotlin.CURRENT,
     val warningMode: WarningMode = WarningMode.Fail,
+    val ignoreWarningModeSeverityOverride: Boolean? = null, // Do not change ToolingDiagnostic severity when warningMode is defined as Fail
     val configurationCache: ConfigurationCacheValue = ConfigurationCacheValue.AUTO,
     val isolatedProjects: IsolatedProjectsMode = IsolatedProjectsMode.DISABLED,
     val configurationCacheProblems: ConfigurationCacheProblems = ConfigurationCacheProblems.FAIL,
@@ -45,6 +46,7 @@ data class BuildOptions(
     val jsOptions: JsOptions? = JsOptions(),
     val buildReport: List<BuildReportType> = emptyList(),
     val usePreciseJavaTracking: Boolean? = null,
+    val useFirJvmRunner: Boolean? = null,
     val languageVersion: String? = null,
     val languageApiVersion: String? = null,
     val freeArgs: List<String> = emptyList(),
@@ -153,6 +155,7 @@ data class BuildOptions(
         val version: String? = System.getProperty("kotlinNativeVersion"),
         val cacheOrchestration: String? = null,
         val incremental: Boolean? = null,
+        val enableKlibsCrossCompilation: Boolean? = null,
     )
 
     fun toArguments(
@@ -241,6 +244,10 @@ data class BuildOptions(
             arguments.add("-Pkotlin.incremental.usePreciseJavaTracking=$usePreciseJavaTracking")
         }
 
+        if (useFirJvmRunner != null) {
+            arguments.add("-Pkotlin.incremental.jvm.fir=$useFirJvmRunner")
+        }
+
         if (statisticsForceValidation) {
             arguments.add("-Pkotlin_performance_profile_force_validation=true")
         }
@@ -283,6 +290,10 @@ data class BuildOptions(
 
         if (showDiagnosticsStacktrace != null) {
             arguments.add("-Pkotlin.internal.diagnostics.showStacktrace=$showDiagnosticsStacktrace")
+        }
+
+        if (ignoreWarningModeSeverityOverride != null) {
+            arguments.add("-Pkotlin.internal.diagnostics.ignoreWarningMode=$ignoreWarningModeSeverityOverride")
         }
 
         if (stacktraceMode != null) {
@@ -357,6 +368,10 @@ data class BuildOptions(
         nativeOptions.incremental?.let {
             arguments.add("-Pkotlin.incremental.native=${it}")
         }
+        nativeOptions.enableKlibsCrossCompilation?.let {
+            arguments.add("-Pkotlin.native.enableKlibsCrossCompilation=${it}")
+        }
+
     }
 
     enum class ConfigurationCacheProblems {

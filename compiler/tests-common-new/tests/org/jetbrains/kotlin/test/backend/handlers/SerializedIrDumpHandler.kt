@@ -6,29 +6,23 @@
 package org.jetbrains.kotlin.test.backend.handlers
 
 import org.jetbrains.kotlin.builtins.StandardNames.DEFAULT_VALUE_PARAMETER
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin.Companion.IR_EXTERNAL_DECLARATION_STUB
-import org.jetbrains.kotlin.ir.declarations.IrPossiblyExternalDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrDeclarationReference
 import org.jetbrains.kotlin.ir.util.DumpIrTreeOptions
 import org.jetbrains.kotlin.ir.util.dumpTreesFromLineNumber
-import org.jetbrains.kotlin.ir.util.isKFunction
-import org.jetbrains.kotlin.ir.util.isKSuspendFunction
 import org.jetbrains.kotlin.ir.util.resolveFakeOverride
 import org.jetbrains.kotlin.test.backend.ir.IrBackendInput
 import org.jetbrains.kotlin.test.directives.KlibBasedCompilerTestDirectives
 import org.jetbrains.kotlin.test.directives.KlibBasedCompilerTestDirectives.SKIP_IR_DESERIALIZATION_CHECKS
 import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
+import org.jetbrains.kotlin.test.model.FrontendKinds
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.TestServices
+import org.jetbrains.kotlin.test.services.defaultsProvider
 import org.jetbrains.kotlin.test.services.moduleStructure
 import org.jetbrains.kotlin.test.services.temporaryDirectoryManager
 import org.jetbrains.kotlin.test.utils.MultiModuleInfoDumper
-import org.jetbrains.kotlin.util.OperatorNameConventions.INVOKE
 import org.jetbrains.kotlin.utils.addToStdlib.applyIf
 import java.io.File
 
@@ -61,6 +55,8 @@ class SerializedIrDumpHandler(
     override fun processModule(module: TestModule, info: IrBackendInput) {
         if (module.isSkipped) return
 
+        val isFirFrontend = testServices.defaultsProvider.frontendKind == FrontendKinds.FIR
+
         val dumpOptions = DumpIrTreeOptions(
             /** Rename temporary local variables using a stable naming scheme. */
             normalizeNames = true,
@@ -84,7 +80,7 @@ class SerializedIrDumpHandler(
             declarationFlagsFilter = FlagsFilterImpl(isAfterDeserialization),
 
             /** Don't dump annotations having source retention such as [UnsafeVariance], [Suppress], [OptIn]. */
-            printSourceRetentionAnnotations = false,
+            printAnnotationsWithSourceRetention = false,
 
             /**
              * Fake overrides generation works slightly different for Fir2LazyIr and normal IR (either built
@@ -167,6 +163,32 @@ class SerializedIrDumpHandler(
                     false
                 }
             },
+
+            /**
+             * Render offsets, but only in case the FIR frontend is used.
+             * There are some known mismatches in offsets of fake overrides between K1 LazyIr and deserialized IR,
+             * which we don't care much.
+             */
+            printSourceOffsets = isFirFrontend,
+
+            /**
+             * A workaround for mismatched offsets in default value expressions in annotations of fake overrides,
+             * which is finally going to be fixed in KT-74938.
+             *
+             * Example:
+             * ```
+             * // Fir2LazyIr:
+             * FUN[138, 282] FAKE_OVERRIDE name:...
+             *   annotations:
+             *     Deprecated(message = "...", replaceWith = <null>, level = GET_ENUM[-1, -1] 'ENUM_ENTRY name:HIDDEN' type=kotlin.DeprecationLevel)
+             *
+             * // Deserialized IR:
+             * FUN[138, 282] FAKE_OVERRIDE name:...
+             *   annotations:
+             *     Deprecated(message = "...", replaceWith = <null>, level = GET_ENUM[1899, 1905] 'ENUM_ENTRY name:HIDDEN' type=kotlin.DeprecationLevel)
+             * ```
+             */
+            printAnnotationsInFakeOverrides = false,
         )
 
         val builder = dumper.builderForModule(module.name)
@@ -204,7 +226,6 @@ class SerializedIrDumpHandler(
 private class FlagsFilterImpl(private val isAfterDeserialization: Boolean) : DumpIrTreeOptions.FlagsFilter {
     override fun filterFlags(declaration: IrDeclaration, isReference: Boolean, flags: List<String>): List<String> = flags
         .removeExternalFlagInDeclarationReferences(isReference)
-        .removeFakeOverrideFlagInKotlinReflectKFunctionCalls(declaration, isReference)
         .removeDelegatedFlagFromPropertyFakeOverrides(declaration, isReference)
 
     /**
@@ -227,24 +248,6 @@ private class FlagsFilterImpl(private val isAfterDeserialization: Boolean) : Dum
      */
     private fun List<String>.removeExternalFlagInDeclarationReferences(isReference: Boolean): List<String> =
         applyIf(isReference) { this - "external" }
-
-    /**
-     * Remove 'fake_override' flag which is missing in the frontend-generated IR in IR calls of `kotlin.reflect.KFunction<N>.invoke()`
-     * and `kotlin.reflect.KSuspendFunction<N>.invoke()` functions.
-     */
-    private fun List<String>.removeFakeOverrideFlagInKotlinReflectKFunctionCalls(
-        declaration: IrDeclaration,
-        isReference: Boolean,
-    ): List<String> {
-        if (!isAfterDeserialization || !isReference) return this
-
-        if ((declaration as? IrSimpleFunction)?.name != INVOKE) return this
-
-        val parentClass = (declaration.parent as? IrClass) ?: return this
-        if (!parentClass.symbol.isKFunction() && !parentClass.symbol.isKSuspendFunction()) return this
-
-        return this - "fake_override"
-    }
 
     /**
      * Remove 'delegated' flag from property fake overrides and overridden symbols.

@@ -10,6 +10,7 @@ import com.intellij.openapi.util.text.StringUtil
 import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.cliArgument
+import org.jetbrains.kotlin.cli.common.arguments.parseCustomKotlinAbiVersion
 import org.jetbrains.kotlin.cli.common.config.addKotlinSourceRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.js.*
@@ -24,8 +25,8 @@ import org.jetbrains.kotlin.incremental.js.IncrementalNextRoundChecker
 import org.jetbrains.kotlin.incremental.js.IncrementalResultsConsumer
 import org.jetbrains.kotlin.ir.linkage.partial.setupPartialLinkageConfig
 import org.jetbrains.kotlin.js.config.*
-import org.jetbrains.kotlin.library.metadata.KlibMetadataVersion
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
+import org.jetbrains.kotlin.metadata.deserialization.MetadataVersion
 import org.jetbrains.kotlin.serialization.js.ModuleKind
 import org.jetbrains.kotlin.wasm.config.WasmConfigurationKeys
 import java.io.File
@@ -37,7 +38,7 @@ object WebConfigurationPhase : AbstractConfigurationPhase<K2JSCompilerArguments>
     configurationUpdaters = listOf(CommonWebConfigurationUpdater, JsConfigurationUpdater, WasmConfigurationUpdater)
 ) {
     override fun createMetadataVersion(versionArray: IntArray): BinaryVersion {
-        return KlibMetadataVersion(*versionArray)
+        return MetadataVersion(*versionArray)
     }
 }
 
@@ -75,6 +76,7 @@ object CommonWebConfigurationUpdater : ConfigurationUpdater<K2JSCompilerArgument
         configuration.granularity = arguments.granularity
         configuration.tsCompilationStrategy = arguments.dtsStrategy
         arguments.main?.let { configuration.callMainMode = it }
+        configuration.dce = arguments.irDce
 
         val zipAccessor = DisposableZipFileSystemAccessor(64)
         Disposer.register(rootDisposable, zipAccessor)
@@ -226,6 +228,8 @@ object CommonWebConfigurationUpdater : ConfigurationUpdater<K2JSCompilerArgument
         configuration.fakeOverrideValidator = arguments.fakeOverrideValidator
         configuration.dumpReachabilityInfoToFile = arguments.irDceDumpReachabilityInfoToFile
 
+        arguments.irDceRuntimeDiagnostic?.let { configuration.dceRuntimeDiagnostic = it }
+
         configuration.setupPartialLinkageConfig(
             mode = arguments.partialLinkageMode,
             logLevel = arguments.partialLinkageLogLevel,
@@ -254,12 +258,16 @@ object CommonWebConfigurationUpdater : ConfigurationUpdater<K2JSCompilerArgument
         configuration.klibNormalizeAbsolutePath = arguments.normalizeAbsolutePath
         configuration.produceKlibSignaturesClashChecks = arguments.enableSignatureClashChecks
 
-        configuration.noDoubleInlining = arguments.noDoubleInlining
         configuration.duplicatedUniqueNameStrategy = DuplicatedUniqueNameStrategy.parseOrDefault(
             arguments.duplicatedUniqueNameStrategy,
             default = DuplicatedUniqueNameStrategy.DENY
         )
-        val moduleName = arguments.irModuleName ?: arguments.moduleName!!
+        configuration.customKlibAbiVersion = parseCustomKotlinAbiVersion(arguments.customKlibAbiVersion, configuration.messageCollector)
+        val moduleName = arguments.irModuleName ?: arguments.moduleName ?: run {
+            val message = "Specify the module name via ${K2JSCompilerArguments::irModuleName.cliArgument} or ${K2JSCompilerArguments::moduleName.cliArgument}"
+            configuration.messageCollector.report(ERROR, message, location = null)
+            return
+        }
         configuration.moduleName = moduleName
         configuration.allowKotlinPackage = arguments.allowKotlinPackage
         configuration.renderDiagnosticInternalName = arguments.renderInternalDiagnosticNames

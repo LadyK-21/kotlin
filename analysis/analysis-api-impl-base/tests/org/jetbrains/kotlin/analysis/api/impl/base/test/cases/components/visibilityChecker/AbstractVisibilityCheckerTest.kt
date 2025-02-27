@@ -36,17 +36,26 @@ abstract class AbstractVisibilityCheckerTest : AbstractAnalysisApiBasedTest() {
         val actualText = analyseForTest(mainFile) {
             val declarationSymbol = getSingleTestTargetSymbolOfType<KaDeclarationSymbol>(testDataPath, mainFile)
 
-            val useSiteElement = testServices.expressionMarkerProvider.getElementOfTypeAtCaretOrNull<KtExpression>(mainFile)
+            val useSiteElement = testServices.expressionMarkerProvider.getBottommostElementOfTypeAtCaretOrNull<KtExpression>(mainFile)
                 ?: findFirstUseSiteElement(mainFile)
                 ?: error("Cannot find use-site element to check visibility at.")
 
             val useSiteFileSymbol = mainFile.symbol
 
-            val visible = isVisible(declarationSymbol, useSiteFileSymbol, null, useSiteElement)
+            val visibleByUseSiteVisibilityChecker =
+                createUseSiteVisibilityChecker(useSiteFileSymbol, null, useSiteElement).isVisible(declarationSymbol)
+
+            @Suppress("DEPRECATION")
+            val isVisibleByDeprecatedVisibilityFunction =
+                isVisible(declarationSymbol, useSiteFileSymbol, null, useSiteElement)
+
+            testServices.assertions.assertEquals(isVisibleByDeprecatedVisibilityFunction, visibleByUseSiteVisibilityChecker) {
+                "createUseSiteVisibilityChecker(..).isVisible(..) returning $visibleByUseSiteVisibilityChecker is inconsistent with isVisible(...) returning $isVisibleByDeprecatedVisibilityFunction"
+            }
             """
                 Declaration: ${declarationSymbol.render(KaDeclarationRendererForDebug.WITH_QUALIFIED_NAMES)}
                 At usage site: ${useSiteElement.text}
-                Is visible: $visible
+                Is visible: $visibleByUseSiteVisibilityChecker
             """.trimIndent()
         }
 

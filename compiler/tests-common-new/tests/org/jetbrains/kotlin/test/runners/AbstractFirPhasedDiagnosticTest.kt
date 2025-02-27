@@ -10,37 +10,40 @@ import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.backend.BlackBoxCodegenSuppressor.SuppressionChecker
 import org.jetbrains.kotlin.test.backend.handlers.NoFir2IrCompilationErrorsHandler
 import org.jetbrains.kotlin.test.backend.handlers.NoFirCompilationErrorsHandler
+import org.jetbrains.kotlin.test.backend.ir.BackendCliJvmFacade
 import org.jetbrains.kotlin.test.backend.ir.IrDiagnosticsHandler
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 import org.jetbrains.kotlin.test.builders.configureFirHandlersStep
 import org.jetbrains.kotlin.test.builders.configureIrHandlersStep
 import org.jetbrains.kotlin.test.builders.configureJvmArtifactsHandlersStep
 import org.jetbrains.kotlin.test.configuration.commonBackendHandlersForCodegenTest
-import org.jetbrains.kotlin.test.configuration.commonConfigurationForTest
+import org.jetbrains.kotlin.test.configuration.commonConfigurationForJvmTest
 import org.jetbrains.kotlin.test.configuration.configureCommonDiagnosticTestPaths
 import org.jetbrains.kotlin.test.configuration.setupHandlersForDiagnosticTest
 import org.jetbrains.kotlin.test.directives.LanguageSettingsDirectives.LANGUAGE
 import org.jetbrains.kotlin.test.directives.TestPhaseDirectives.LATEST_PHASE_IN_PIPELINE
 import org.jetbrains.kotlin.test.directives.configureFirParser
-import org.jetbrains.kotlin.test.frontend.fir.Fir2IrResultsConverter
-import org.jetbrains.kotlin.test.frontend.fir.FirFrontendFacade
+import org.jetbrains.kotlin.test.frontend.fir.Fir2IrCliJvmFacade
+import org.jetbrains.kotlin.test.frontend.fir.FirCliJvmFacade
+import org.jetbrains.kotlin.test.frontend.fir.handlers.NonSourceErrorMessagesHandler
 import org.jetbrains.kotlin.test.frontend.fir.handlers.PsiLightTreeMetaInfoProcessor
 import org.jetbrains.kotlin.test.model.FrontendKinds
 import org.jetbrains.kotlin.test.services.PhasedPipelineChecker
-import org.jetbrains.kotlin.test.services.TestPhaseLabel
+import org.jetbrains.kotlin.test.services.TestPhase
 import org.jetbrains.kotlin.utils.bind
 
 abstract class AbstractFirPhasedDiagnosticTest(val parser: FirParser) : AbstractKotlinCompilerWithTargetBackendTest(TargetBackend.JVM_IR) {
     override fun configure(builder: TestConfigurationBuilder) = with(builder) {
         defaultDirectives {
-            LATEST_PHASE_IN_PIPELINE with TestPhaseLabel.BACKEND
+            LATEST_PHASE_IN_PIPELINE with TestPhase.BACKEND
             LANGUAGE + "+EnableDfaWarningsInK2"
         }
 
-        commonConfigurationForTest(
+        commonConfigurationForJvmTest(
             targetFrontend = FrontendKinds.FIR,
-            frontendFacade = ::FirFrontendFacade,
-            frontendToBackendConverter = ::Fir2IrResultsConverter
+            frontendFacade = ::FirCliJvmFacade,
+            frontendToBackendConverter = ::Fir2IrCliJvmFacade,
+            backendFacade = ::BackendCliJvmFacade
         )
         configureFirParser(parser)
         configureCommonDiagnosticTestPaths()
@@ -58,11 +61,11 @@ abstract class AbstractFirPhasedDiagnosticTest(val parser: FirParser) : Abstract
         }
 
         configureJvmArtifactsHandlersStep {
-            commonBackendHandlersForCodegenTest()
+            commonBackendHandlersForCodegenTest(includeNoCompilationErrorsHandler = false)
         }
 
         useMetaInfoProcessors(::PsiLightTreeMetaInfoProcessor)
-        useAfterAnalysisCheckers(::PhasedPipelineChecker)
+        useAfterAnalysisCheckers(::PhasedPipelineChecker, ::NonSourceErrorMessagesHandler)
         enableMetaInfoHandler()
         useAdditionalService<SuppressionChecker>(::SuppressionChecker.bind(null))
     }

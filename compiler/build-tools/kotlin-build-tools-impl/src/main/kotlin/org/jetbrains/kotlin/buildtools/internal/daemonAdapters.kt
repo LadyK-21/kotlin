@@ -7,7 +7,6 @@ package org.jetbrains.kotlin.buildtools.internal
 
 import org.jetbrains.kotlin.build.report.metrics.BuildMetrics
 import org.jetbrains.kotlin.buildtools.api.KotlinLogger
-import org.jetbrains.kotlin.buildtools.api.SourcesChanges
 import org.jetbrains.kotlin.buildtools.api.jvm.ClasspathSnapshotBasedIncrementalCompilationApproachParameters
 import org.jetbrains.kotlin.buildtools.api.jvm.ClasspathSnapshotBasedIncrementalJvmCompilationConfiguration
 import org.jetbrains.kotlin.daemon.common.*
@@ -44,7 +43,6 @@ internal val JvmCompilationConfigurationImpl.asDaemonCompilationOptions: Compila
                     reportCategories = reportCategories,
                     reportSeverity = reportSeverity,
                     requestedCompilationResults = requestedCompilationResults,
-                    usePreciseJavaTracking = options.preciseJavaTrackingEnabled,
                     outputFiles = options.outputDirs,
                     multiModuleICSettings = null, // required only for the build history approach
                     modulesInfo = null, // required only for the build history approach
@@ -52,6 +50,7 @@ internal val JvmCompilationConfigurationImpl.asDaemonCompilationOptions: Compila
                     buildDir = options.buildDir,
                     kotlinScriptExtensions = ktsExtensionsAsArray,
                     icFeatures = options.extractIncrementalCompilationFeatures(),
+                    useJvmFirRunner = options.isUsingFirRunner,
                 )
             }
             else -> CompilationOptions(

@@ -111,17 +111,19 @@ enum class GradleBuildTime(private val parent: GradleBuildTime? = null, private 
                         COMPILER_PERFORMANCE(COMPILATION_ROUND, readableString = "Compiler time"),
                             COMPILER_INITIALIZATION(COMPILER_PERFORMANCE, "Compiler initialization time"),
                             CODE_ANALYSIS(COMPILER_PERFORMANCE, "Compiler code analysis"),
-                            IR_TRANSLATION(COMPILER_PERFORMANCE, "Compiler IR translation"),
+                            TRANSLATION_TO_IR(COMPILER_PERFORMANCE, "Compiler translation to IR"),
                             CODE_GENERATION(COMPILER_PERFORMANCE, "Compiler code generation"),
                                 IR_LOWERING(CODE_GENERATION, "Compiler IR lowering"),
-                                IR_GENERATION(CODE_GENERATION, "Compiler IR generation"),
+                                BACKEND(CODE_GENERATION, "Compiler backend"),
                     IC_WRITE_HISTORY_FILE(INCREMENTAL_COMPILATION_DAEMON, "Write history file"),
                     SHRINK_AND_SAVE_CURRENT_CLASSPATH_SNAPSHOT_AFTER_COMPILATION(INCREMENTAL_COMPILATION_DAEMON, "Shrink and save current classpath snapshot after compilation"),
                         INCREMENTAL_SHRINK_CURRENT_CLASSPATH_SNAPSHOT(SHRINK_AND_SAVE_CURRENT_CLASSPATH_SNAPSHOT_AFTER_COMPILATION, "Shrink current classpath snapshot incrementally"),
                             INCREMENTAL_LOAD_CURRENT_CLASSPATH_SNAPSHOT(INCREMENTAL_SHRINK_CURRENT_CLASSPATH_SNAPSHOT, "Load current classpath snapshot"),
+                                INCREMENTAL_REMOVE_DUPLICATE_CLASSES(INCREMENTAL_LOAD_CURRENT_CLASSPATH_SNAPSHOT, "Remove duplicate classes"),
                             INCREMENTAL_LOAD_SHRUNK_CURRENT_CLASSPATH_SNAPSHOT_AGAINST_PREVIOUS_LOOKUPS(INCREMENTAL_SHRINK_CURRENT_CLASSPATH_SNAPSHOT, "Load shrunk current classpath snapshot against previous lookups"),
                         NON_INCREMENTAL_SHRINK_CURRENT_CLASSPATH_SNAPSHOT(SHRINK_AND_SAVE_CURRENT_CLASSPATH_SNAPSHOT_AFTER_COMPILATION, "Shrink current classpath snapshot non-incrementally"),
                             NON_INCREMENTAL_LOAD_CURRENT_CLASSPATH_SNAPSHOT(NON_INCREMENTAL_SHRINK_CURRENT_CLASSPATH_SNAPSHOT, "Load current classpath snapshot"),
+                                NON_INCREMENTAL_REMOVE_DUPLICATE_CLASSES(NON_INCREMENTAL_LOAD_CURRENT_CLASSPATH_SNAPSHOT, "Remove duplicate classes"),
                         SAVE_SHRUNK_CURRENT_CLASSPATH_SNAPSHOT(SHRINK_AND_SAVE_CURRENT_CLASSPATH_SNAPSHOT_AFTER_COMPILATION, "Save shrunk current classpath snapshot"),
     TASK_FINISH_LISTENER_NOTIFICATION(readableString = "Task finish event notification"),
     CLASSPATH_ENTRY_SNAPSHOT_TRANSFORM(readableString = "Classpath entry snapshot transform"),
@@ -148,7 +150,7 @@ enum class GradleBuildTime(private val parent: GradleBuildTime? = null, private 
     override fun getName(): String = this.name
 
     companion object {
-        const val serialVersionUID = 2L
+        const val serialVersionUID = 3L
 
         val children by lazy {
             entries.filter { it.parent != null }.groupBy { it.parent }

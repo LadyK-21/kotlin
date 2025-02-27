@@ -40,6 +40,12 @@ public class FirOutOfContentRootLazyBodiesCalculatorTestGenerated extends Abstra
     }
 
     @Test
+    @TestMetadata("annotationOnContextParameters.kt")
+    public void testAnnotationOnContextParameters() {
+      runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/annotationOnContextParameters.kt");
+    }
+
+    @Test
     @TestMetadata("annotationOnDelegatedInterface.kt")
     public void testAnnotationOnDelegatedInterface() {
       runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/annotationOnDelegatedInterface.kt");
@@ -457,6 +463,12 @@ public class FirOutOfContentRootLazyBodiesCalculatorTestGenerated extends Abstra
     @TestMetadata("topLevelDestructuringWithAnnotation.kt")
     public void testTopLevelDestructuringWithAnnotation() {
       runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/topLevelDestructuringWithAnnotation.kt");
+    }
+
+    @Test
+    @TestMetadata("topLevelDestructuringWithoutInitializer.kt")
+    public void testTopLevelDestructuringWithoutInitializer() {
+      runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/topLevelDestructuringWithoutInitializer.kt");
     }
 
     @Test

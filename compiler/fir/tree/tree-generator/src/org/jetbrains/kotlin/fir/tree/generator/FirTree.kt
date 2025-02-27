@@ -345,7 +345,7 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(call)
 
         +field("operation", operationType)
-        +field("conversionTypeRef", typeRef, withTransform = true)
+        +field("conversionTypeRef", typeRef, withTransform = true, withReplace = true)
         +field("argFromStubType", boolean, withReplace = true)
     }
 
@@ -397,6 +397,7 @@ object FirTree : AbstractFirTreeBuilder() {
         +field("deprecationsProvider", deprecationsProviderType, withReplace = true) {
             isMutable = true
         }
+        +field("scopeProvider", firScopeProviderType)
     }
 
     val klass: Element by sealedElement(Declaration, name = "Class") {
@@ -411,7 +412,6 @@ object FirTree : AbstractFirTreeBuilder() {
             withTransform = true
         }
         +annotations
-        +field("scopeProvider", firScopeProviderType)
     }
 
     val regularClass: Element by element(Declaration) {
@@ -511,6 +511,8 @@ object FirTree : AbstractFirTreeBuilder() {
 
     val contractDescriptionOwner: Element by sealedElement(Declaration) {
         +field(contractDescription, withReplace = true, nullable = true, withTransform = true)
+        +field("body", block, nullable = true)
+        +listField("valueParameters", valueParameter)
     }
 
     val property: Element by element(Declaration) {
@@ -670,12 +672,13 @@ object FirTree : AbstractFirTreeBuilder() {
     val functionTypeParameter: Element by element(Other) {
         parent(rootElement)
 
+        +field("source", sourceElementType, nullable = false)
         +field("name", nameType, nullable = true)
         +field("returnTypeRef", typeRef)
     }
 
     val errorProperty: Element by element(Declaration) {
-        parent(variable)
+        parent(property)
         parent(diagnosticHolder)
 
         +declaredSymbol(errorPropertySymbolType)
@@ -737,6 +740,7 @@ object FirTree : AbstractFirTreeBuilder() {
             withTransform = true
             withReplace = true
         }
+        +field("source", sourceElementType, nullable = false)
         +declaredSymbol(scriptSymbolType)
         +listField("parameters", property, withTransform = true)
         +listField("receivers", scriptReceiverParameter, useMutableOrEmpty = true, withTransform = true)
@@ -757,6 +761,7 @@ object FirTree : AbstractFirTreeBuilder() {
         +FieldSets.name
         +declaredSymbol(replSnippetSymbolType)
 
+        +field("source", sourceElementType, nullable = false)
         +listField("receivers", scriptReceiverParameter, useMutableOrEmpty = true, withTransform = true)
         +field("body", block, nullable = false, withTransform = true, withReplace = true)
         +field("resultTypeRef", typeRef, withReplace = true, withTransform = true)
@@ -977,6 +982,7 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(expression)
 
         +field("expression", expression)
+        +field("usesFunctionKindConversion", boolean)
     }
 
     val resolvedQualifier: Element by element(Expression) {
@@ -1013,6 +1019,7 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(expression)
 
         +field("interpolationPrefix", string)
+        +field("isFoldedStrings", boolean)
     }
 
     val throwExpression: Element by element(Expression) {
@@ -1120,10 +1127,11 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(reference)
     }
 
-    val typeRef: Element by sealedElement(TypeRefElement) {
+    val typeRef: Element by element(TypeRefElement) {
         parent(annotationContainer)
 
         +annotations
+        +field("customRenderer", boolean)
     }
 
     val resolvedTypeRef: Element by element(TypeRefElement) {
@@ -1134,21 +1142,21 @@ object FirTree : AbstractFirTreeBuilder() {
         +field("delegatedTypeRef", typeRef, nullable = true, isChild = false)
     }
 
-    val typeRefWithNullability: Element by element(TypeRefElement) {
+    val unresolvedTypeRef: Element by sealedElement(TypeRefElement) {
         parent(typeRef)
 
+        +field("source", sourceElementType, nullable = false)
         +field("isMarkedNullable", boolean)
     }
 
     val userTypeRef: Element by element(TypeRefElement) {
-        parent(typeRefWithNullability)
+        parent(unresolvedTypeRef)
 
         +listField("qualifier", firQualifierPartType)
-        +field("customRenderer", boolean)
     }
 
     val functionTypeRef: Element by element(TypeRefElement) {
-        parent(typeRefWithNullability)
+        parent(unresolvedTypeRef)
 
         +field("receiverTypeRef", typeRef, nullable = true)
         +listField("parameters", functionTypeParameter)
@@ -1158,7 +1166,7 @@ object FirTree : AbstractFirTreeBuilder() {
     }
 
     val dynamicTypeRef: Element by element(TypeRefElement) {
-        parent(typeRefWithNullability)
+        parent(unresolvedTypeRef)
     }
 
     val implicitTypeRef: Element by element(TypeRefElement) {
@@ -1185,7 +1193,7 @@ object FirTree : AbstractFirTreeBuilder() {
     }
 
     val intersectionTypeRef: Element by element(TypeRefElement) {
-        parent(typeRefWithNullability)
+        parent(unresolvedTypeRef)
 
         +field("leftType", typeRef)
         +field("rightType", typeRef)
@@ -1211,8 +1219,7 @@ object FirTree : AbstractFirTreeBuilder() {
         parent(expression)
         parent(resolvable)
 
-        +field("subject", expression, nullable = true, withTransform = true)
-        +field("subjectVariable", variable, nullable = true)
+        +field("subjectVariable", variable, nullable = true, withTransform = true)
         +listField("branches", whenBranch, withTransform = true)
         +field("exhaustivenessStatus", exhaustivenessStatusType, nullable = true, withReplace = true)
         +field("usedAsExpression", boolean)

@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.sir.*
 
 val SirCallable.allParameters: List<SirParameter>
     get() = when (this) {
-        is SirFunction -> this.parameters
+        is SirFunction -> listOfNotNull(this.extensionReceiverParameter) + this.parameters
         is SirInit -> this.parameters
         is SirSetter -> listOf(SirParameter(parameterName = parameterName, type = this.valueType))
         is SirGetter -> listOf()
@@ -44,13 +44,16 @@ val SirType.isNever: Boolean get() = this is SirNominalType && this.typeDeclarat
 fun <T : SirDeclaration> SirMutableDeclarationContainer.addChild(producer: () -> T): T {
     val child = producer()
     child.parent = this
-    declarations += child
+    if (!declarations.contains(child)) {
+        declarations += child
+    }
     return child
 }
 
 val SirType.swiftName
     get(): String = when (this) {
-        is SirExistentialType -> "Any"
+        is SirExistentialType -> protocols.takeIf { it.isNotEmpty() }?.joinToString(prefix = "any ", separator = " & ") { it.swiftFqName }
+            ?: "Any"
         is SirNominalType -> listOfNotNull(
             parent?.swiftName?.let { "$it." },
             typeDeclaration.swiftFqName,
@@ -77,3 +80,6 @@ val SirFunction.swiftFqName: String
 
 val SirVariable.swiftFqName: String
     get() = swiftParentNamePrefix?.let { "$it.${name.swiftSanitizedName}" } ?: name.swiftSanitizedName
+
+val SirTypealias.expandedType: SirType
+    get() = ((type as? SirNominalType)?.typeDeclaration as? SirTypealias)?.expandedType ?: type

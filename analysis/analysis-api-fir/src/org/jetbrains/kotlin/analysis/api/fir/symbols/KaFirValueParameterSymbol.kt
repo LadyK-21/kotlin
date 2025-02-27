@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.fir.types.varargElementType
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 
 internal class KaFirValueParameterSymbol private constructor(
     override val backingPsi: KtParameter?,
@@ -93,7 +94,7 @@ internal class KaFirValueParameterSymbol private constructor(
     override val generatedPrimaryConstructorProperty: KaKotlinPropertySymbol?
         get() = withValidityAssertion {
             if (backingPsi != null) {
-                return if (backingPsi.hasValOrVar()) {
+                return if (backingPsi.hasValOrVar() && backingPsi.ownerFunction is KtPrimaryConstructor) {
                     KaFirKotlinPropertySymbol.create(backingPsi, analysisSession)
                 } else {
                     null
@@ -121,24 +122,10 @@ internal class KaFirValueParameterSymbol private constructor(
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other === this) return true
-
-        if (!lazyFirSymbol.isInitialized() || !firSymbol.isTypeAliasedConstructorParameter) {
-            return psiOrSymbolEquals(other)
-        }
-
-        if (other !is KaFirValueParameterSymbol) return false
-
-        // TODO remove manual comparison when KT-72929 is fixed
-        return typeAliasedConstructorParametersEqual(firSymbol, other.firSymbol)
+        return psiOrSymbolEquals(other)
     }
 
     override fun hashCode(): Int {
-        if (!lazyFirSymbol.isInitialized() || !firSymbol.isTypeAliasedConstructorParameter) {
-            return psiOrSymbolHashCode()
-        }
-
-        // TODO remove explicit hashing when KT-72929 is fixed
-        return firSymbol.hashCodeForTypeAliasedConstructorParameter()
+        return psiOrSymbolHashCode()
     }
 }

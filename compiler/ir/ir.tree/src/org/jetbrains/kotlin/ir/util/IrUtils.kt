@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.ir.visitors.IrVisitor
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.util.OperatorNameConventions
 import org.jetbrains.kotlin.utils.*
+import org.jetbrains.kotlin.utils.addToStdlib.assignFrom
 import java.io.StringWriter
 
 /**
@@ -175,6 +176,31 @@ val IrDeclarationContainer.properties: Sequence<IrProperty>
     get() = declarations.asSequence().filterIsInstance<IrProperty>()
 
 private fun Boolean.toInt(): Int = if (this) 1 else 0
+
+data class FunctionParameterShape(
+    val hasDispatchReceiver: Boolean,
+    val hasExtensionReceiver: Boolean,
+    val contextParameterCount: Int,
+    val regularParameterCount: Int,
+)
+
+fun IrFunction.getShapeOfParameters(): FunctionParameterShape {
+    var hasDispatchReceiver = false
+    var hasExtensionReceiver = false
+    var contextParameterCount = 0
+    var regularParameterCount = 0
+    for (param in parameters) {
+        when (param.kind) {
+            IrParameterKind.DispatchReceiver -> hasDispatchReceiver = true
+            IrParameterKind.ExtensionReceiver -> hasExtensionReceiver = true
+            IrParameterKind.Context -> contextParameterCount++
+            IrParameterKind.Regular -> regularParameterCount++
+        }
+    }
+
+    return FunctionParameterShape(hasDispatchReceiver, hasExtensionReceiver, contextParameterCount, regularParameterCount)
+}
+
 /**
  * [IrFunction.parameters], except [IrFunction.dispatchReceiverParameter], if present.
  */
@@ -368,6 +394,11 @@ fun IrDeclaration.hasInterfaceParent() =
 fun IrPossiblyExternalDeclaration.isEffectivelyExternal(): Boolean =
     this.isExternal
 
+fun <T : IrOverridableDeclaration<*>> T.overridesExternal(): Boolean {
+    if (this.isEffectivelyExternal()) return true
+    return overriddenSymbols.any { @Suppress("UNCHECKED_CAST") (it.owner as T).overridesExternal() }
+}
+
 fun IrDeclaration.isEffectivelyExternal(): Boolean =
     this is IrPossiblyExternalDeclaration && this.isExternal
 
@@ -415,14 +446,10 @@ fun ReferenceSymbolTable.referenceFunction(callable: CallableDescriptor): IrFunc
 
 /**
  * Create new call based on given [call] and [newSymbol]
- * [receiversAsArguments]: optionally convert call with dispatch receiver to static call
- * [argumentsAsDispatchers]: optionally convert static call to call with dispatch receiver
  */
 fun irConstructorCall(
     call: IrFunctionAccessExpression,
-    newSymbol: IrConstructorSymbol,
-    receiversAsArguments: Boolean = false,
-    argumentsAsDispatchers: Boolean = false
+    newSymbol: IrConstructorSymbol
 ): IrConstructorCall =
     call.run {
         IrConstructorCallImpl(
@@ -434,27 +461,19 @@ fun irConstructorCall(
             constructorTypeArgumentsCount = 0,
             origin = origin
         ).apply {
-            copyTypeAndValueArgumentsFrom(
-                call,
-                receiversAsArguments,
-                argumentsAsDispatchers
-            )
+            copyTypeAndValueArgumentsFrom(call)
         }
     }
 
 fun irCall(
     call: IrFunctionAccessExpression,
     newFunction: IrSimpleFunction,
-    receiversAsArguments: Boolean = false,
-    argumentsAsReceivers: Boolean = false,
     newSuperQualifierSymbol: IrClassSymbol? = null,
     newReturnType: IrType? = null
 ): IrCall =
     irCall(
         call,
         newFunction.symbol,
-        receiversAsArguments,
-        argumentsAsReceivers,
         newSuperQualifierSymbol,
         newReturnType
     )
@@ -462,8 +481,6 @@ fun irCall(
 fun irCall(
     call: IrFunctionAccessExpression,
     newSymbol: IrSimpleFunctionSymbol,
-    receiversAsArguments: Boolean = false,
-    argumentsAsReceivers: Boolean = false,
     newSuperQualifierSymbol: IrClassSymbol? = null,
     newReturnType: IrType? = null
 ): IrCall =
@@ -477,57 +494,13 @@ fun irCall(
             origin = origin,
             superQualifierSymbol = newSuperQualifierSymbol
         ).apply {
-            copyTypeAndValueArgumentsFrom(
-                call,
-                receiversAsArguments,
-                argumentsAsReceivers
-            )
+            copyTypeAndValueArgumentsFrom(call)
         }
     }
 
-fun IrMemberAccessExpression<IrFunctionSymbol>.copyTypeAndValueArgumentsFrom(
-    src: IrMemberAccessExpression<IrFunctionSymbol>,
-    receiversAsArguments: Boolean = false,
-    argumentsAsReceivers: Boolean = false
-) {
+fun IrMemberAccessExpression<IrFunctionSymbol>.copyTypeAndValueArgumentsFrom(src: IrMemberAccessExpression<IrFunctionSymbol>) {
     copyTypeArgumentsFrom(src)
-    copyValueArgumentsFrom(src, symbol.owner, receiversAsArguments, argumentsAsReceivers)
-}
-
-fun IrMemberAccessExpression<IrFunctionSymbol>.copyValueArgumentsFrom(
-    src: IrMemberAccessExpression<IrFunctionSymbol>,
-    destFunction: IrFunction,
-    receiversAsArguments: Boolean = false,
-    argumentsAsReceivers: Boolean = false
-) {
-    val srcFunction = src.symbol.owner
-
-    var srcArgumentIndex = 0
-    var dstArgumentIndex = 0
-    while (srcArgumentIndex < src.arguments.size && dstArgumentIndex < arguments.size) {
-        val srcParam = srcFunction.parameters.getOrNull(srcArgumentIndex)?.kind ?: break
-        val dstParam = destFunction.parameters.getOrNull(dstArgumentIndex)?.kind ?: break
-
-        if (srcParam != dstParam) {
-            val srcIsReceiver = srcParam == IrParameterKind.DispatchReceiver || srcParam == IrParameterKind.ExtensionReceiver
-            val dstIsReceiver = dstParam == IrParameterKind.DispatchReceiver || dstParam == IrParameterKind.ExtensionReceiver
-
-            if (srcIsReceiver && !dstIsReceiver && !receiversAsArguments) {
-                srcArgumentIndex++
-                continue
-            }
-            if (!srcIsReceiver && dstIsReceiver && !argumentsAsReceivers) {
-                dstArgumentIndex++
-                continue
-            }
-        }
-
-        // todo: Can be dropped after https://youtrack.jetbrains.com/issue/KT-70803
-        if (dstArgumentIndex >= arguments.size) break
-        if (srcArgumentIndex >= src.arguments.size) break
-
-        arguments[dstArgumentIndex++] = src.arguments[srcArgumentIndex++]
-    }
+    arguments.assignFrom(src.arguments)
 }
 
 val IrDeclaration.fileOrNull: IrFile?
@@ -1369,23 +1342,11 @@ fun IrFunction.hasShape(
     regularParameters: Int = 0,
     parameterTypes: List<IrType?> = emptyList(),
 ): Boolean {
-    var actuallyHasDispatchReceiver = false
-    var actuallyHasExtensionReceiver = false
-    var actualContextParameters = 0
-    var actualRegularParameters = 0
-    for (param in parameters) {
-        when (param.kind) {
-            IrParameterKind.DispatchReceiver -> actuallyHasDispatchReceiver = true
-            IrParameterKind.ExtensionReceiver -> actuallyHasExtensionReceiver = true
-            IrParameterKind.Context -> actualContextParameters++
-            IrParameterKind.Regular -> actualRegularParameters++
-        }
-    }
-
-    if (actuallyHasDispatchReceiver != dispatchReceiver) return false
-    if (actuallyHasExtensionReceiver != extensionReceiver) return false
-    if (actualContextParameters != contextParameters) return false
-    if (actualRegularParameters != regularParameters) return false
+    val actualShape = getShapeOfParameters()
+    if (actualShape.hasDispatchReceiver != dispatchReceiver) return false
+    if (actualShape.hasExtensionReceiver != extensionReceiver) return false
+    if (actualShape.contextParameterCount != contextParameters) return false
+    if (actualShape.regularParameterCount != regularParameters) return false
 
     for ((param, expectedType) in parameters zip parameterTypes) {
         if (expectedType != null && param.type != expectedType) return false
@@ -1527,11 +1488,31 @@ fun IrBlockImpl.inlineStatement(statement: IrStatement) {
     }
 }
 
+// TODO: KT-75196: please make `startOffset` and `endOffset` mutable, and remove this method
 fun IrConst.copyWithOffsets(startOffset: Int, endOffset: Int) =
     IrConstImpl(startOffset, endOffset, type, kind, value)
 
+// TODO: KT-75196: please make `startOffset` and `endOffset` mutable, and remove this method
 fun IrGetValue.copyWithOffsets(newStartOffset: Int, newEndOffset: Int): IrGetValue =
     IrGetValueImpl(newStartOffset, newEndOffset, type, symbol, origin)
+
+// TODO: KT-75196: please make `startOffset` and `endOffset` mutable, and remove this method
+fun IrRichFunctionReference.copyWithOffsets(newStartOffset: Int, newEndOffset: Int): IrRichFunctionReference =
+    IrRichFunctionReferenceImpl(
+        newStartOffset, newEndOffset,
+        type,
+        reflectionTargetSymbol,
+        overriddenFunctionSymbol,
+        invokeFunction,
+        origin,
+        hasUnitConversion,
+        hasSuspendConversion,
+        hasVarargConversion,
+        isRestrictedSuspension
+    ).apply {
+        copyAttributes(this@copyWithOffsets)
+        boundValues.addAll(this@copyWithOffsets.boundValues)
+    }
 
 fun IrModuleFragment.addFile(file: IrFile) {
     files.add(file)
@@ -1586,3 +1567,13 @@ val IrFunction.allParametersCount: Int
         is IrConstructor -> parameters.size + 1
         is IrSimpleFunction -> parameters.size
     }
+
+@DeprecatedForRemovalCompilerApi(CompilerVersionOfApiDeprecation._2_2_0, replaceWith = "arguments.assignFrom(src.arguments)")
+fun IrMemberAccessExpression<IrFunctionSymbol>.copyValueArgumentsFrom(
+    src: IrMemberAccessExpression<IrFunctionSymbol>,
+    destFunction: IrFunction,
+    receiversAsArguments: Boolean = false,
+    argumentsAsReceivers: Boolean = false,
+) {
+    arguments.assignFrom(src.arguments)
+}

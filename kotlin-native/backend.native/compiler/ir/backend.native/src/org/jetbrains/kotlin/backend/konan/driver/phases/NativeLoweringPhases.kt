@@ -7,15 +7,12 @@ package org.jetbrains.kotlin.backend.konan.driver.phases
 
 import org.jetbrains.kotlin.backend.common.BodyLoweringPass
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
-import org.jetbrains.kotlin.backend.common.LoweringContext
 import org.jetbrains.kotlin.backend.common.ir.Symbols
 import org.jetbrains.kotlin.backend.common.ir.isReifiable
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.backend.common.lower.coroutines.AddContinuationToNonLocalSuspendFunctionsLowering
-import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesExtractionFromInlineFunctionsLowering
-import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesInInlineFunctionsLowering
 import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesInInlineLambdasLowering
-import org.jetbrains.kotlin.backend.common.lower.inline.OuterThisInInlineFunctionsSpecialAccessorLowering
+import org.jetbrains.kotlin.backend.common.lower.optimizations.PropertyAccessorInlineLowering
 import org.jetbrains.kotlin.backend.common.lower.optimizations.LivenessAnalysis
 import org.jetbrains.kotlin.backend.common.phaser.*
 import org.jetbrains.kotlin.backend.common.runOnFilePostfix
@@ -26,9 +23,7 @@ import org.jetbrains.kotlin.backend.konan.ir.FunctionsWithoutBoundCheckGenerator
 import org.jetbrains.kotlin.backend.konan.lower.*
 import org.jetbrains.kotlin.backend.konan.lower.InitializersLowering
 import org.jetbrains.kotlin.backend.konan.optimizations.NativeForLoopsLowering
-import org.jetbrains.kotlin.config.KlibConfigurationKeys
 import org.jetbrains.kotlin.config.phaser.NamedCompilerPhase
-import org.jetbrains.kotlin.config.phaser.SimpleNamedCompilerPhase
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -36,10 +31,11 @@ import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrSuspensionPoint
 import org.jetbrains.kotlin.ir.inline.*
+import org.jetbrains.kotlin.backend.konan.lower.NativeAssertionWrapperLowering
 import org.jetbrains.kotlin.ir.interpreter.IrInterpreterConfiguration
 
 internal typealias LoweringList = List<NamedCompilerPhase<NativeGenerationState, IrFile, IrFile>>
-internal typealias ModuleLowering = SimpleNamedCompilerPhase<NativeGenerationState, IrModuleFragment, Unit>
+internal typealias ModuleLowering = NamedCompilerPhase<NativeGenerationState, IrModuleFragment, Unit>
 
 internal fun PhaseEngine<NativeGenerationState>.runLowerings(lowerings: LoweringList, modules: List<IrModuleFragment>) {
     for (module in modules) {
@@ -78,7 +74,7 @@ internal val validateIrAfterInliningOnlyPrivateFunctions = createSimpleNamedComp
                             inlineFunctionUseSite is IrFunctionReference && !inlineFunction.isReifiable() -> true // temporarily permitted
 
                             // Call sites of non-private functions are allowed at this stage.
-                            else -> !inlineFunction.isConsideredAsPrivateForInlining()
+                            else -> !inlineFunctionUseSite.symbol.isConsideredAsPrivateForInlining()
                         }
                     }
             ).lower(module)
@@ -142,20 +138,15 @@ private val annotationImplementationPhase = createFileLoweringPhase(
 )
 
 
-private val upgradeCallableReferencesFileWisePhase = createFileLoweringPhase(
+private val upgradeCallableReferencesPhase = createFileLoweringPhase(
         ::UpgradeCallableReferences,
-        name = "UpgradeCallableReferencesFileWisse",
-)
-
-private val upgradeCallableReferencesModuleWisePhase = makeIrModulePhase(
-        lowering = ::UpgradeCallableReferences,
-        name = "UpgradeCallableReferencesModuleWise"
+        name = "UpgradeCallableReferences",
 )
 
 private val arrayConstructorPhase = createFileLoweringPhase(
         ::ArrayConstructorLowering,
         name = "ArrayConstructor",
-        prerequisite = setOf(upgradeCallableReferencesFileWisePhase)
+        prerequisite = setOf(upgradeCallableReferencesPhase)
 )
 
 private val lateinitPhase = createFileLoweringPhase(
@@ -169,19 +160,8 @@ private val sharedVariablesPhase = createFileLoweringPhase(
         prerequisite = setOf(lateinitPhase)
 )
 
-private val outerThisSpecialAccessorInInlineFunctionsPhase = createFileLoweringPhase(
-        ::OuterThisInInlineFunctionsSpecialAccessorLowering,
-        name = "OuterThisInInlineFunctionsSpecialAccessorLowering",
-)
-
 private val extractLocalClassesFromInlineBodies = createFileLoweringPhase(
-        { context, irFile ->
-            LocalClassesInInlineLambdasLowering(context).lower(irFile)
-            if (!context.config.produce.isCache && context.config.configuration.getBoolean(KlibConfigurationKeys.NO_DOUBLE_INLINING)) {
-                LocalClassesInInlineFunctionsLowering(context).lower(irFile)
-                LocalClassesExtractionFromInlineFunctionsLowering(context).lower(irFile)
-            }
-        },
+        ::LocalClassesInInlineLambdasLowering,
         name = "ExtractLocalClassesFromInlineBodies",
         prerequisite = setOf(sharedVariablesPhase),
 )
@@ -293,6 +273,11 @@ private val testProcessorPhase = createFileLoweringPhase(
         name = "TestProcessor",
 )
 
+private val dumpTestsPhase = createFileLoweringPhase(
+        lowering = ::TestsDumper,
+        name = "TestsDumper",
+)
+
 private val delegatedPropertyOptimizationPhase = createFileLoweringPhase(
         lowering = ::DelegatedPropertyOptimizationLowering,
         name = "DelegatedPropertyOptimization",
@@ -305,8 +290,9 @@ private val propertyReferencePhase = createFileLoweringPhase(
         prerequisite = setOf(volatilePhase, delegatedPropertyOptimizationPhase)
 )
 
+
 private val functionReferencePhase = createFileLoweringPhase(
-        lowering = ::FunctionReferenceLowering,
+        lowering = ::NativeFunctionReferenceLowering,
         name = "FunctionReference",
 )
 
@@ -351,24 +337,30 @@ private val builtinOperatorPhase = createFileLoweringPhase(
  * The first phase of inlining (inline only private functions).
  */
 private val inlineOnlyPrivateFunctionsPhase = createFileLoweringPhase(
-        lowering = { context: Context ->
-            NativeIrInliner(context, inlineMode = InlineMode.PRIVATE_INLINE_FUNCTIONS)
+        lowering = { generationState: NativeGenerationState ->
+            NativeIrInliner(generationState, inlineMode = InlineMode.PRIVATE_INLINE_FUNCTIONS)
         },
         name = "InlineOnlyPrivateFunctions",
+)
+
+private val outerThisSpecialAccessorInInlineFunctionsPhase = createFileLoweringPhase(
+        ::OuterThisInInlineFunctionsSpecialAccessorLowering,
+        name = "OuterThisInInlineFunctionsSpecialAccessorLowering",
+        prerequisite = setOf(inlineOnlyPrivateFunctionsPhase)
 )
 
 private val syntheticAccessorGenerationPhase = createFileLoweringPhase(
         lowering = ::SyntheticAccessorLowering,
         name = "SyntheticAccessorGeneration",
-        prerequisite = setOf(inlineOnlyPrivateFunctionsPhase),
+        prerequisite = setOf(outerThisSpecialAccessorInInlineFunctionsPhase),
 )
 
 /**
  * The second phase of inlining (inline all functions).
  */
 internal val inlineAllFunctionsPhase = createFileLoweringPhase(
-        lowering = { context: Context ->
-            NativeIrInliner(context, inlineMode = InlineMode.ALL_INLINE_FUNCTIONS)
+        lowering = { generationState: NativeGenerationState ->
+            NativeIrInliner(generationState, inlineMode = InlineMode.ALL_INLINE_FUNCTIONS)
         },
         name = "InlineAllFunctions",
 )
@@ -376,7 +368,18 @@ internal val inlineAllFunctionsPhase = createFileLoweringPhase(
 private val interopPhase = createFileLoweringPhase(
         lowering = ::InteropLowering,
         name = "Interop",
-        prerequisite = setOf(inlineAllFunctionsPhase, localFunctionsPhase, functionReferencePhase)
+)
+
+private val specialInteropIntrinsicsPhase = createFileLoweringPhase(
+        lowering = ::SpecialInteropIntrinsicsLowering,
+        name = "SpecialInteropIntrinsics",
+        prerequisite = setOf(inlineAllFunctionsPhase)
+)
+
+internal val specialObjCValidationPhase = createFileLoweringPhase(
+        lowering = ::SpecialObjCValidationLowering,
+        name = "SpecialObjCValidation",
+        prerequisite = setOf(inlineAllFunctionsPhase)
 )
 
 private val varargPhase = createFileLoweringPhase(
@@ -498,7 +501,7 @@ internal val RedundantCoercionsCleaningPhase = createFileLoweringPhase(
 
 internal val PropertyAccessorInlinePhase = createFileLoweringPhase(
         name = "PropertyAccessorInline",
-        lowering = ::NativePropertyAccessorInlineLowering,
+        lowering = ::PropertyAccessorInlineLowering,
 )
 
 internal val UnboxInlinePhase = createFileLoweringPhase(
@@ -525,20 +528,15 @@ private val objectClassesPhase = createFileLoweringPhase(
         name = "ObjectClasses",
 )
 
-private val assertionWrapperFileWisePhase = createFileLoweringPhase(
+private val assertionWrapperPhase = createFileLoweringPhase(
         lowering = ::NativeAssertionWrapperLowering,
-        name = "AssertionWrapperLoweringFileWise",
-)
-
-private val assertionWrapperModuleWisePhase = makeIrModulePhase(
-        lowering = ::NativeAssertionWrapperLowering,
-        name = "AssertionWrapperLoweringModuleWise",
+        name = "AssertionWrapperLowering",
 )
 
 private val assertionRemoverPhase = createFileLoweringPhase(
         lowering = ::NativeAssertionRemoverLowering,
         name = "AssertionRemoverLowering",
-        prerequisite = setOf(assertionWrapperFileWisePhase),
+        prerequisite = setOf(assertionWrapperPhase),
 )
 
 internal val constEvaluationPhase = createFileLoweringPhase(
@@ -550,27 +548,27 @@ internal val constEvaluationPhase = createFileLoweringPhase(
         prerequisite = setOf(inlineAllFunctionsPhase)
 )
 
-internal val nativeLoweringsOfTheFirstPhase: List<SimpleNamedCompilerPhase<LoweringContext, IrModuleFragment, IrModuleFragment>> =
-        listOf(upgradeCallableReferencesModuleWisePhase, assertionWrapperModuleWisePhase) + loweringsOfTheFirstPhase
-
-internal fun KonanConfig.getLoweringsUpToAndIncludingSyntheticAccessors(): LoweringList = listOfNotNull(
-    upgradeCallableReferencesFileWisePhase,
-    assertionWrapperFileWisePhase,
-    lateinitPhase,
-    sharedVariablesPhase,
-    outerThisSpecialAccessorInInlineFunctionsPhase,
-    extractLocalClassesFromInlineBodies,
-    arrayConstructorPhase,
-    inlineOnlyPrivateFunctionsPhase.takeUnless { this.configuration.getBoolean(KlibConfigurationKeys.NO_DOUBLE_INLINING) },
-    syntheticAccessorGenerationPhase.takeUnless { this.configuration.getBoolean(KlibConfigurationKeys.NO_DOUBLE_INLINING) },
+internal fun getLoweringsUpToAndIncludingSyntheticAccessors(): LoweringList = listOfNotNull(
+        interopPhase,
+        testProcessorPhase,
+        upgradeCallableReferencesPhase,
+        assertionWrapperPhase,
+        lateinitPhase,
+        sharedVariablesPhase,
+        extractLocalClassesFromInlineBodies,
+        arrayConstructorPhase,
+        inlineOnlyPrivateFunctionsPhase,
+        outerThisSpecialAccessorInInlineFunctionsPhase,
+        syntheticAccessorGenerationPhase,
 )
 
 internal fun KonanConfig.getLoweringsAfterInlining(): LoweringList = listOfNotNull(
+        specialInteropIntrinsicsPhase,
+        dumpTestsPhase.takeIf { this.configuration.getNotNull(KonanConfigKeys.GENERATE_TEST_RUNNER) != TestRunnerKind.NONE },
         removeExpectDeclarationsPhase,
         stripTypeAliasDeclarationsPhase,
         assertionRemoverPhase,
         volatilePhase,
-        testProcessorPhase.takeIf { this.configuration.getNotNull(KonanConfigKeys.GENERATE_TEST_RUNNER) != TestRunnerKind.NONE },
         delegatedPropertyOptimizationPhase,
         propertyReferencePhase,
         functionReferencePhase,
@@ -597,7 +595,6 @@ internal fun KonanConfig.getLoweringsAfterInlining(): LoweringList = listOfNotNu
         finallyBlocksPhase,
         enumClassPhase,
         enumUsagePhase,
-        interopPhase,
         varargPhase,
         kotlinNothingValueExceptionPhase,
         coroutinesPhase,
@@ -621,7 +618,7 @@ private fun createFileLoweringPhase(
         name: String,
         lowering: (NativeGenerationState) -> FileLoweringPass,
         prerequisite: Set<NamedCompilerPhase<*, *, *>> = emptySet(),
-): SimpleNamedCompilerPhase<NativeGenerationState, IrFile, IrFile> = createSimpleNamedCompilerPhase(
+): NamedCompilerPhase<NativeGenerationState, IrFile, IrFile> = createSimpleNamedCompilerPhase(
         name,
         preactions = getDefaultIrActions(),
         postactions = getDefaultIrActions(),
@@ -637,7 +634,7 @@ private fun createFileLoweringPhase(
         lowering: (Context) -> FileLoweringPass,
         name: String,
         prerequisite: Set<NamedCompilerPhase<*, *, *>> = emptySet(),
-): SimpleNamedCompilerPhase<NativeGenerationState, IrFile, IrFile> = createSimpleNamedCompilerPhase(
+): NamedCompilerPhase<NativeGenerationState, IrFile, IrFile> = createSimpleNamedCompilerPhase(
         name,
         preactions = getDefaultIrActions(),
         postactions = getDefaultIrActions(),
@@ -653,7 +650,7 @@ private fun createFileLoweringPhase(
         op: (context: Context, irFile: IrFile) -> Unit,
         name: String,
         prerequisite: Set<NamedCompilerPhase<*, *, *>> = emptySet(),
-): SimpleNamedCompilerPhase<NativeGenerationState, IrFile, IrFile> = createSimpleNamedCompilerPhase(
+): NamedCompilerPhase<NativeGenerationState, IrFile, IrFile> = createSimpleNamedCompilerPhase(
         name,
         preactions = getDefaultIrActions(),
         postactions = getDefaultIrActions(),

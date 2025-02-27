@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -17,14 +17,18 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.KlibConfigurationKeys
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 import org.jetbrains.kotlin.config.languageVersionSettings
+import org.jetbrains.kotlin.config.messageCollector
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
+import org.jetbrains.kotlin.diagnostics.DiagnosticReporterFactory
+import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.ir.KtDiagnosticReporterWithImplicitIrBasedContext
+import org.jetbrains.kotlin.konan.library.KLIB_INTEROP_IR_PROVIDER_IDENTIFIER
 import org.jetbrains.kotlin.konan.library.impl.buildLibrary
 import org.jetbrains.kotlin.library.*
 import org.jetbrains.kotlin.library.metadata.KlibMetadataFactories
-import org.jetbrains.kotlin.library.metadata.KlibMetadataVersion
 import org.jetbrains.kotlin.library.metadata.NullFlexibleTypeDeserializer
+import org.jetbrains.kotlin.metadata.deserialization.MetadataVersion
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.test.backend.ir.IrBackendFacade
 import org.jetbrains.kotlin.test.backend.ir.IrBackendInput
@@ -37,11 +41,13 @@ import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.test.services.configuration.NativeEnvironmentConfigurator.Companion.getKlibArtifactFile
 import org.jetbrains.kotlin.test.services.configuration.nativeEnvironmentConfigurator
-import org.jetbrains.kotlin.util.metadataVersion
 
 abstract class AbstractNativeKlibSerializerFacade(
     testServices: TestServices
 ) : IrBackendFacade<BinaryArtifacts.KLib>(testServices, ArtifactKinds.KLib) {
+    override val additionalServices: List<ServiceRegistrationData>
+        get() = listOf(service(::ModuleDescriptorProvider))
+
     final override fun shouldTransform(module: TestModule): Boolean {
         return testServices.defaultsProvider.backendKind == inputKind && SKIP_GENERATING_KLIB !in module.directives
     }
@@ -52,10 +58,11 @@ abstract class AbstractNativeKlibSerializerFacade(
         }
 
         val configuration = testServices.compilerConfigurationProvider.getCompilerConfiguration(module)
+        val diagnosticReporter = DiagnosticReporterFactory.createReporter(configuration.messageCollector)
 
-        val serializerOutput = serialize(configuration, inputArtifact.usedLibrariesForManifest, module, inputArtifact)
+        val serializerOutput = serialize(configuration, inputArtifact.usedLibrariesForManifest, module, inputArtifact, diagnosticReporter)
 
-        val outputArtifact = BinaryArtifacts.KLib(getKlibArtifactFile(testServices, module.name), inputArtifact.diagnosticReporter)
+        val outputArtifact = BinaryArtifacts.KLib(getKlibArtifactFile(testServices, module.name), diagnosticReporter)
 
         buildLibrary(
             natives = emptyList(),
@@ -66,7 +73,7 @@ abstract class AbstractNativeKlibSerializerFacade(
             versions = KotlinLibraryVersioning(
                 abiVersion = KotlinAbiVersion.CURRENT,
                 compilerVersion = KotlinCompilerVersion.getVersion(),
-                metadataVersion = configuration.metadataVersion().toString(),
+                metadataVersion = KLIB_LEGACY_METADATA_VERSION,
             ),
             target = testServices.nativeEnvironmentConfigurator.getNativeTarget(module),
             output = outputArtifact.outputFile.path,
@@ -76,7 +83,7 @@ abstract class AbstractNativeKlibSerializerFacade(
             manifestProperties = null,
         )
 
-        updateTestConfiguration(configuration, module, outputArtifact)
+        updateTestConfiguration(configuration, module, inputArtifact, outputArtifact)
 
         return outputArtifact
     }
@@ -86,13 +93,36 @@ abstract class AbstractNativeKlibSerializerFacade(
         usedLibrariesForManifest: List<KotlinLibrary>,
         module: TestModule,
         inputArtifact: IrBackendInput.NativeAfterFrontendBackendInput,
+        diagnosticReporter: BaseDiagnosticsCollector,
     ): SerializerOutput<KotlinLibrary>
 
-    protected open fun updateTestConfiguration(
+    private fun updateTestConfiguration(
         configuration: CompilerConfiguration,
         module: TestModule,
+        inputArtifact: IrBackendInput.NativeAfterFrontendBackendInput,
         outputArtifact: BinaryArtifacts.KLib
-    ) = Unit
+    ) {
+        val nativeFactories = KlibMetadataFactories(::KonanBuiltIns, NullFlexibleTypeDeserializer)
+
+        val dependencyPaths = getAllNativeDependenciesPaths(module, testServices)
+
+        val library = resolveLibraries(
+            configuration, dependencyPaths + outputArtifact.outputFile.path, knownIrProviders = listOf(KLIB_INTEROP_IR_PROVIDER_IDENTIFIER),
+        ).last().library
+
+        val moduleDescriptor = nativeFactories.DefaultDeserializedDescriptorFactory.createDescriptorOptionalBuiltIns(
+            library,
+            configuration.languageVersionSettings,
+            LockBasedStorageManager("ModulesStructure"),
+            inputArtifact.irModuleFragment.descriptor.builtIns,
+            packageAccessHandler = null,
+            lookupTracker = LookupTracker.DO_NOTHING
+        )
+        moduleDescriptor.setDependencies(dependencyPaths.map { testServices.libraryProvider.getDescriptorByPath(it) as ModuleDescriptorImpl } + moduleDescriptor)
+
+        testServices.moduleDescriptorProvider.replaceModuleDescriptorForModule(module, moduleDescriptor)
+        testServices.libraryProvider.setDescriptorAndLibraryByName(outputArtifact.outputFile.path, moduleDescriptor, library)
+    }
 }
 
 /**
@@ -107,6 +137,7 @@ class ClassicNativeKlibSerializerFacade(testServices: TestServices) : AbstractNa
         usedLibrariesForManifest: List<KotlinLibrary>,
         module: TestModule,
         inputArtifact: IrBackendInput.NativeAfterFrontendBackendInput,
+        diagnosticReporter: BaseDiagnosticsCollector,
     ): SerializerOutput<KotlinLibrary> {
         testServices.assertions.assertTrue(inputArtifact.metadataSerializer == null) { "unexpected single-file metadata serializer" }
 
@@ -114,8 +145,8 @@ class ClassicNativeKlibSerializerFacade(testServices: TestServices) : AbstractNa
 
         val serializedMetadata = KlibMetadataMonolithicSerializer(
             configuration.languageVersionSettings,
-            metadataVersion = configuration[CommonConfigurationKeys.METADATA_VERSION] as? KlibMetadataVersion
-                ?: KlibMetadataVersion.INSTANCE,
+            metadataVersion = configuration[CommonConfigurationKeys.METADATA_VERSION] as? MetadataVersion
+                ?: KLIB_LEGACY_METADATA_VERSION,
             frontendOutput.project,
             exportKDoc = false,
             skipExpects = true,
@@ -129,7 +160,7 @@ class ClassicNativeKlibSerializerFacade(testServices: TestServices) : AbstractNa
                 sourceBaseDirs = configuration.getList(KlibConfigurationKeys.KLIB_RELATIVE_PATH_BASES),
                 shouldCheckSignaturesOnUniqueness = configuration.get(KlibConfigurationKeys.PRODUCE_KLIB_SIGNATURES_CLASH_CHECKS, true)
             ),
-            KtDiagnosticReporterWithImplicitIrBasedContext(inputArtifact.diagnosticReporter, configuration.languageVersionSettings),
+            KtDiagnosticReporterWithImplicitIrBasedContext(diagnosticReporter, configuration.languageVersionSettings),
             inputArtifact.irPluginContext.irBuiltIns,
         ).serializedIrModule(inputArtifact.irModuleFragment)
 
@@ -138,33 +169,6 @@ class ClassicNativeKlibSerializerFacade(testServices: TestServices) : AbstractNa
             serializerIr,
             neededLibraries = usedLibrariesForManifest,
         )
-    }
-
-    override fun updateTestConfiguration(
-        configuration: CompilerConfiguration,
-        module: TestModule,
-        outputArtifact: BinaryArtifacts.KLib
-    ) {
-        val nativeFactories = KlibMetadataFactories(::KonanBuiltIns, NullFlexibleTypeDeserializer)
-
-        val dependencyPaths = getAllNativeDependenciesPaths(module, testServices)
-
-        val library = resolveLibraries(
-            configuration, dependencyPaths + outputArtifact.outputFile.path,
-        ).last().library
-
-        val moduleDescriptor = nativeFactories.DefaultDeserializedDescriptorFactory.createDescriptorOptionalBuiltIns(
-            library,
-            configuration.languageVersionSettings,
-            LockBasedStorageManager("ModulesStructure"),
-            testServices.moduleDescriptorProvider.getModuleDescriptor(module).builtIns,
-            packageAccessHandler = null,
-            lookupTracker = LookupTracker.DO_NOTHING
-        )
-        moduleDescriptor.setDependencies(dependencyPaths.map { testServices.libraryProvider.getDescriptorByPath(it) as ModuleDescriptorImpl } + moduleDescriptor)
-
-        testServices.moduleDescriptorProvider.replaceModuleDescriptorForModule(module, moduleDescriptor)
-        testServices.libraryProvider.setDescriptorAndLibraryByName(outputArtifact.outputFile.path, moduleDescriptor, library)
     }
 }
 
@@ -177,12 +181,13 @@ class FirNativeKlibSerializerFacade(testServices: TestServices) : AbstractNative
         usedLibrariesForManifest: List<KotlinLibrary>,
         module: TestModule,
         inputArtifact: IrBackendInput.NativeAfterFrontendBackendInput,
+        diagnosticReporter: BaseDiagnosticsCollector,
     ) = serializeModuleIntoKlib(
         moduleName = inputArtifact.irModuleFragment.name.asString(),
         inputArtifact.irModuleFragment,
         inputArtifact.irPluginContext.irBuiltIns,
         configuration,
-        inputArtifact.diagnosticReporter,
+        diagnosticReporter,
         CompatibilityMode.CURRENT,
         cleanFiles = emptyList(),
         usedLibrariesForManifest,

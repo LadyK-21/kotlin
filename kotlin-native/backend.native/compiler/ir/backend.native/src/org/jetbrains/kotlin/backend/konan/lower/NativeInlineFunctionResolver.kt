@@ -5,33 +5,43 @@
 
 package org.jetbrains.kotlin.backend.konan.lower
 
-import org.jetbrains.kotlin.backend.common.DeclarationTransformer
 import org.jetbrains.kotlin.backend.common.getCompilerMessageLocation
 import org.jetbrains.kotlin.backend.common.lower.*
 import org.jetbrains.kotlin.backend.common.lower.inline.LocalClassesInInlineLambdasLowering
-import org.jetbrains.kotlin.backend.common.lower.inline.OuterThisInInlineFunctionsSpecialAccessorLowering
-import org.jetbrains.kotlin.backend.konan.*
-import org.jetbrains.kotlin.config.KlibConfigurationKeys
+import org.jetbrains.kotlin.backend.konan.Context
+import org.jetbrains.kotlin.backend.konan.NativeGenerationState
+import org.jetbrains.kotlin.backend.konan.ir.konanLibrary
+import org.jetbrains.kotlin.backend.konan.reportCompilationError
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.inline.*
+import org.jetbrains.kotlin.ir.irAttribute
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.library.isHeader
+
+private var IrFunction.wasLowered: Boolean? by irAttribute(followAttributeOwner = true)
 
 internal class NativeInlineFunctionResolver(
-        context: Context,
+        val generationState: NativeGenerationState,
         inlineMode: InlineMode,
-) : InlineFunctionResolverReplacingCoroutineIntrinsics<Context>(context, inlineMode) {
+) : InlineFunctionResolverReplacingCoroutineIntrinsics<Context>(generationState.context, inlineMode) {
     override fun getFunctionDeclaration(symbol: IrFunctionSymbol): IrFunction? {
         val function = super.getFunctionDeclaration(symbol) ?: return null
 
-        if (function.body != null) return function
+        if (function.body != null) {
+            // TODO this `if` check can be dropped after KT-72441
+            if (function.getPackageFragment().konanLibrary?.isHeader == true && function.wasLowered != true) {
+                lower(function)
+                function.wasLowered = true
+            }
+            return function
+        }
 
-        val moduleDeserializer = context.irLinker.getCachedDeclarationModuleDeserializer(function) ?: return null
-        moduleDeserializer.deserializeInlineFunction(function)
+        context.getInlineFunctionDeserializer(function).deserializeInlineFunction(function)
         lower(function)
 
         return function
@@ -40,7 +50,7 @@ internal class NativeInlineFunctionResolver(
     private fun lower(function: IrFunction) {
         val body = function.body ?: return
 
-        val doubleInliningEnabled = !context.config.configuration.getBoolean(KlibConfigurationKeys.NO_DOUBLE_INLINING)
+        InteropLowering(generationState).lower(body, function)
 
         UpgradeCallableReferences(context).lower(function)
 
@@ -50,24 +60,13 @@ internal class NativeInlineFunctionResolver(
 
         SharedVariablesLowering(context).lower(body, function)
 
-        OuterThisInInlineFunctionsSpecialAccessorLowering(context).lowerWithoutAddingAccessorsToParents(function)
-
         LocalClassesInInlineLambdasLowering(context).lower(body, function)
-        // Do not extract local classes off of inline functions from cached libraries.
-        // LocalClassesInInlineFunctionsLowering(context).lower(body, function)
-        // LocalClassesExtractionFromInlineFunctionsLowering(context).lower(body, function)
 
         ArrayConstructorLowering(context).lower(body, function)
 
-        if (doubleInliningEnabled) {
-            NativeIrInliner(context, inlineMode = InlineMode.PRIVATE_INLINE_FUNCTIONS).lower(body, function)
-            SyntheticAccessorLowering(context).lowerWithoutAddingAccessorsToParents(function)
-        }
-    }
-
-    private fun DeclarationTransformer.lowerWithLocalDeclarations(function: IrFunction) {
-        if (transformFlat(function) != null)
-            error("Unexpected transformation of function ${function.dump()}")
+        NativeIrInliner(generationState, inlineMode = InlineMode.PRIVATE_INLINE_FUNCTIONS).lower(body, function)
+        OuterThisInInlineFunctionsSpecialAccessorLowering(context).lowerWithoutAddingAccessorsToParents(function)
+        SyntheticAccessorLowering(context).lowerWithoutAddingAccessorsToParents(function)
     }
 
     override val callInlinerStrategy: CallInlinerStrategy = NativeCallInlinerStrategy()
@@ -75,7 +74,7 @@ internal class NativeInlineFunctionResolver(
     inner class NativeCallInlinerStrategy : CallInlinerStrategy {
         private lateinit var builder: NativeRuntimeReflectionIrBuilder
         override fun at(scope: Scope, expression: IrExpression) {
-            val symbols = this@NativeInlineFunctionResolver.context.ir.symbols
+            val symbols = this@NativeInlineFunctionResolver.context.symbols
             builder = context.createIrBuilder(scope.scopeOwnerSymbol, expression.startOffset, expression.endOffset)
                     .toNativeRuntimeReflectionBuilder(symbols) { message ->
                         this@NativeInlineFunctionResolver.context.reportCompilationError(message, getCompilerMessageLocation())

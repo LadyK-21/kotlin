@@ -46,6 +46,11 @@ public class RawFirBuilderLazyBodiesByAstTestGenerated extends AbstractRawFirBui
       runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/annotation.kt");
     }
 
+    @TestMetadata("annotationOnContextParameters.kt")
+    public void testAnnotationOnContextParameters() {
+      runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/annotationOnContextParameters.kt");
+    }
+
     @TestMetadata("annotationOnDelegatedInterface.kt")
     public void testAnnotationOnDelegatedInterface() {
       runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/annotationOnDelegatedInterface.kt");
@@ -414,6 +419,11 @@ public class RawFirBuilderLazyBodiesByAstTestGenerated extends AbstractRawFirBui
     @TestMetadata("topLevelDestructuringWithAnnotation.kt")
     public void testTopLevelDestructuringWithAnnotation() {
       runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/topLevelDestructuringWithAnnotation.kt");
+    }
+
+    @TestMetadata("topLevelDestructuringWithoutInitializer.kt")
+    public void testTopLevelDestructuringWithoutInitializer() {
+      runTest("compiler/fir/raw-fir/psi2fir/testData/rawBuilder/declarations/topLevelDestructuringWithoutInitializer.kt");
     }
 
     @TestMetadata("typeAliasWithGeneric.kt")

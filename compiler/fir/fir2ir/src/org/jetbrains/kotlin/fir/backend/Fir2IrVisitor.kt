@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.fir.backend
 
 import com.intellij.psi.tree.IElementType
 import org.jetbrains.kotlin.*
+import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.contracts.description.LogicOperationKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.isObject
@@ -67,8 +68,6 @@ class Fir2IrVisitor(
     private val c: Fir2IrComponents,
     private val conversionScope: Fir2IrConversionScope
 ) : Fir2IrComponents by c, FirDefaultVisitor<IrElement, Any?>() {
-    internal val implicitCastInserter = Fir2IrImplicitCastInserter(c)
-
     private val memberGenerator = ClassMemberGenerator(c, this, conversionScope)
 
     private val operatorGenerator = OperatorExpressionGenerator(c, this, conversionScope)
@@ -369,14 +368,13 @@ class Fir2IrVisitor(
             val origin = IrDeclarationOrigin.SCRIPT_IMPLICIT_RECEIVER
             receiver.convertWithOffsets { startOffset, endOffset ->
                 IrFactoryImpl.createValueParameter(
-                    startOffset, endOffset, origin, name, receiver.typeRef.toIrType(c), isAssignable = false,
+                    startOffset, endOffset, origin, IrParameterKind.Context, name, receiver.typeRef.toIrType(c), isAssignable = false,
                     IrValueParameterSymbolImpl(),
                     varargElementType = null, isCrossinline = false, isNoinline = false, isHidden = false
                 ).also {
                     it.parent = irSnippet
                     @OptIn(DelicateIrParameterIndexSetter::class)
                     it.indexInParameters = index
-                    it.kind = IrParameterKind.Context
                 }
             }
         }
@@ -528,22 +526,27 @@ class Fir2IrVisitor(
             }
         )
         if (initializer != null) {
-            irVariable.initializer =
-                convertToIrExpression(initializer)
-                    .insertImplicitCast(initializer, initializer.resolvedType, variable.returnTypeRef.coneType)
+            val convertedInitializer = convertToIrExpression(initializer)
+                .prepareExpressionForGivenExpectedType(initializer, initializer.resolvedType, variable.returnTypeRef.coneType)
+            // In FIR smart-casted types from initializers of variables are not saved to the types of the variables themselves.
+            // Ensuring the IrVariable's type of an implicit when-subject is as narrow as that of the initializer is important,
+            // for example, for `ieee754` comparisons of `Double`s.
+            if (irVariable.name == SpecialNames.WHEN_SUBJECT) {
+                irVariable.type = convertedInitializer.type
+            }
+            irVariable.initializer = convertedInitializer
         }
         annotationGenerator.generate(irVariable, variable)
         return irVariable
     }
 
-    private fun IrExpression.insertImplicitCast(
+    private fun IrExpression.prepareExpressionForGivenExpectedType(
         baseExpression: FirExpression,
         valueType: ConeKotlinType,
         expectedType: ConeKotlinType,
-    ) =
-        with(implicitCastInserter) {
-            this@insertImplicitCast.insertSpecialCast(baseExpression, valueType, expectedType)
-        }
+    ): IrExpression = prepareExpressionForGivenExpectedType(
+        this@Fir2IrVisitor, baseExpression, valueType, expectedType
+    )
 
     override fun visitProperty(property: FirProperty, data: Any?): IrElement = whileAnalysing(session, property) {
         if (property.isLocal) return visitLocalVariable(property)
@@ -746,6 +749,7 @@ class Fir2IrVisitor(
         when (val declarationSymbol = calleeReference.referencedMemberSymbol) {
             is FirClassSymbol -> generateThisReceiverAccessForClass(thisReceiverExpression, declarationSymbol)
             is FirScriptSymbol -> generateThisReceiverAccessForScript(thisReceiverExpression, declarationSymbol)
+            is FirReplSnippetSymbol -> generateThisReceiverAccessForReplSnippet(thisReceiverExpression, declarationSymbol)
             is FirCallableSymbol -> generateThisReceiverAccessForCallable(thisReceiverExpression, declarationSymbol)
             else -> null
         } ?: visitQualifiedAccessExpression(thisReceiverExpression, data)
@@ -811,7 +815,7 @@ class Fir2IrVisitor(
 
             if (constructorForCurrentlyGeneratedDelegatedConstructor != null) {
                 val constructorParameter =
-                    constructorForCurrentlyGeneratedDelegatedConstructor.valueParameters[contextParameterNumber]
+                    constructorForCurrentlyGeneratedDelegatedConstructor.parameters.filter { it.kind == IrParameterKind.Context }[contextParameterNumber]
                 IrGetValueImpl(startOffset, endOffset, constructorParameter.type, constructorParameter.symbol, origin)
             } else {
                 val contextReceivers =
@@ -851,6 +855,26 @@ class Fir2IrVisitor(
         }
     }
 
+    private fun generateThisReceiverAccessForReplSnippet(
+        thisReceiverExpression: FirThisReceiverExpression,
+        firSnippetSymbol: FirReplSnippetSymbol
+    ): IrElement {
+        val calleeReference = thisReceiverExpression.calleeReference
+        val firSnippet = firSnippetSymbol.fir
+        val origin = if (thisReceiverExpression.isImplicit) IrStatementOrigin.IMPLICIT_ARGUMENT else null
+        val irSnippet = declarationStorage.getCachedIrReplSnippet(firSnippet) ?: error("IrReplSnippet for ${firSnippet.name} not found")
+        val contextParameterNumber = firSnippetSymbol.fir.receivers.indexOf(calleeReference.boundSymbol?.fir)
+        val receiverParameter =
+            irSnippet.receiverParameters.find { it.indexInParameters == contextParameterNumber }
+        if (receiverParameter != null) {
+            return thisReceiverExpression.convertWithOffsets { startOffset, endOffset ->
+                IrGetValueImpl(startOffset, endOffset, receiverParameter.type, receiverParameter.symbol, origin)
+            }
+        } else {
+            error("Unexpected REPL snippet receiver")
+        }
+    }
+
     private fun generateThisReceiverAccessForCallable(
         thisReceiverExpression: FirThisReceiverExpression,
         firCallableSymbol: FirCallableSymbol<*>
@@ -873,9 +897,10 @@ class Fir2IrVisitor(
 
         val contextParameterNumber = firCallableSymbol.fir.contextParameters.indexOf(calleeReference.boundSymbol?.fir)
         val receiver = if (contextParameterNumber != -1) {
-            irFunction.valueParameters[contextParameterNumber]
+            // TODO(KT-72994) Remove when context receivers are removed
+            irFunction.parameters.filter { it.kind == IrParameterKind.Context }[contextParameterNumber]
         } else {
-            irFunction.extensionReceiverParameter
+            irFunction.parameters.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver }
         } ?: return null
 
         return thisReceiverExpression.convertWithOffsets { startOffset, endOffset ->
@@ -962,7 +987,7 @@ class Fir2IrVisitor(
         // These array literals normally have a type of Array<Any>,
         // so FIR2IR should instead use a type of corresponding property
         // See also KT-62598
-        expectedType: ConeKotlinType? = null,
+        expectedTypeForAnnotationArgument: ConeKotlinType? = null,
     ): IrExpression {
         return when (expression) {
             is FirBlock -> {
@@ -983,7 +1008,7 @@ class Fir2IrVisitor(
             else -> {
                 when (val unwrappedExpression = expression.unwrapArgument()) {
                     is FirCallableReferenceAccess -> convertCallableReferenceAccess(unwrappedExpression, isDelegate)
-                    is FirArrayLiteral -> convertToArrayLiteral(unwrappedExpression, expectedType)
+                    is FirArrayLiteral -> convertToArrayLiteral(unwrappedExpression, expectedTypeForAnnotationArgument)
                     else -> expression.accept(this, null) as IrExpression
                 }
             }
@@ -1133,7 +1158,7 @@ class Fir2IrVisitor(
         // To generate a proper assignment, the block may want to save `r` to a separate variable
         val operationReceiverReceiver = statements
             .findIsInstanceAnd<FirProperty> { it.name == SpecialNames.RECEIVER || it.name == SpecialNames.ARRAY }?.initializer
-            ?: (operationReceiver as? FirQualifiedAccessExpression)?.explicitReceiver
+            ?: operationReceiver.explicitReceiver
 
         // If `operationReceiver` is an array access, let's ignore its `<indexN>` arguments and
         // later manually convert them and put into the ir expression
@@ -1279,11 +1304,11 @@ class Fir2IrVisitor(
                         hasExtensionReceiver = false,
                         origin = IrStatementOrigin.EQEQ,
                     ).apply {
-                        putValueArgument(0, irGetLhsValue())
-                        putValueArgument(1, IrConstImpl.constNull(startOffset, endOffset, builtins.nothingNType))
+                        arguments[0] = irGetLhsValue()
+                        arguments[1] = IrConstImpl.constNull(startOffset, endOffset, builtins.nothingNType)
                     },
                     convertToIrExpression(elvisExpression.rhs)
-                        .insertImplicitCast(elvisExpression, elvisExpression.rhs.resolvedType, elvisExpression.resolvedType)
+                        .prepareExpressionForGivenExpectedType(elvisExpression, elvisExpression.rhs.resolvedType, elvisExpression.resolvedType)
                 ),
                 IrElseBranchImpl(
                     IrConstImpl.boolean(startOffset, endOffset, builtins.booleanType, true),
@@ -1292,7 +1317,7 @@ class Fir2IrVisitor(
                     } else {
                         Fir2IrImplicitCastInserter.implicitCastOrExpression(
                             irGetLhsValue(),
-                            originalType.toFirResolvedTypeRef().resolvedTypeFromPrototype(notNullType).toIrType(c)
+                            originalType.toFirResolvedTypeRef().resolvedTypeFromPrototype(notNullType, fallbackSource = null).toIrType(c)
                         )
                     }
                 )
@@ -1423,9 +1448,9 @@ class Fir2IrVisitor(
 
     private fun generateWhenSubjectVariable(whenExpression: FirWhenExpression): IrVariable? {
         val subjectVariable = whenExpression.subjectVariable
-        val subjectExpression = whenExpression.subject
+        val subjectExpression = whenExpression.subjectVariable?.initializer
         return when {
-            subjectVariable != null -> subjectVariable.accept(this, null) as IrVariable
+            subjectVariable != null && !subjectVariable.isImplicitWhenSubjectVariable -> subjectVariable.accept(this, null) as IrVariable
             subjectExpression != null ->
                 conversionScope.scope().createTemporaryVariable(convertToIrExpression(subjectExpression), "subject")
             else -> null
@@ -1433,13 +1458,18 @@ class Fir2IrVisitor(
     }
 
     private fun FirWhenBranch.toIrWhenBranch(whenExpressionType: ConeKotlinType): IrBranch {
-        return convertWithOffsets { startOffset, _ ->
+        return convertWithOffsets { startOffset, endOffset ->
             val condition = condition
-            val irResult = convertToIrExpression(result).insertImplicitCast(result, result.resolvedType, whenExpressionType)
+            val irResult = convertToIrExpression(result).prepareExpressionForGivenExpectedType(result, result.resolvedType, whenExpressionType)
             if (condition is FirElseIfTrueCondition) {
                 IrElseBranchImpl(IrConstImpl.boolean(irResult.startOffset, irResult.endOffset, builtins.booleanType, true), irResult)
             } else {
-                IrBranchImpl(startOffset, irResult.endOffset, convertToIrExpression(condition), irResult)
+                IrBranchImpl(
+                    startOffset = startOffset,
+                    endOffset = if (irResult.endOffset < 0) endOffset else irResult.endOffset,
+                    condition = convertToIrExpression(condition),
+                    result = irResult
+                )
             }
         }
     }
@@ -1684,7 +1714,7 @@ class Fir2IrVisitor(
                 origin = IrStatementOrigin.EXCLEXCL
             ).apply {
                 typeArguments[0] = checkNotNullCall.argument.resolvedType.toIrType(c).makeNotNull()
-                putValueArgument(0, convertToIrExpression(checkNotNullCall.argument))
+                arguments[0] =convertToIrExpression(checkNotNullCall.argument)
             }
         }
     }

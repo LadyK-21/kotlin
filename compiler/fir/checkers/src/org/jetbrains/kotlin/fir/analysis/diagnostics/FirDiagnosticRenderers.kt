@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.metadata.deserialization.VersionRequirement
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.types.model.TypeConstructorMarker
+import java.text.MessageFormat
 
 @Suppress("NO_EXPLICIT_RETURN_TYPE_IN_API_MODE_WARNING")
 object FirDiagnosticRenderers {
@@ -100,6 +101,23 @@ object FirDiagnosticRenderers {
             decoration + renderer.render(elements)
         }
     }
+
+    fun <Q> formatted(message: String, renderer: DiagnosticParameterRenderer<Q>): DiagnosticParameterRenderer<Q> =
+        ContextDependentRenderer { value, context ->
+            MessageFormat(message).format(arrayOf(renderer.render(value, context)))
+        }
+
+    fun <Q : Any> emptyStringIfNullOr(renderer: DiagnosticParameterRenderer<Q>): DiagnosticParameterRenderer<Q?> =
+        ContextDependentRenderer { value, context ->
+            value?.let { renderer.render(it, context) } ?: ""
+        }
+
+    /**
+     * Formats the formatted [message] if the value is not `null`.
+     * Returns an empty string otherwise.
+     */
+    fun <Q : Any> suggestIfNotNull(message: String, renderer: DiagnosticParameterRenderer<Q>): DiagnosticParameterRenderer<Q?> =
+        emptyStringIfNullOr(formatted(message, renderer))
 
     val SYMBOLS_ON_NEWLINE_WITH_INDENT = object : ContextIndependentParameterRenderer<Collection<FirCallableSymbol<*>>> {
         private val mode = MultiplatformDiagnosticRenderingMode()
@@ -369,6 +387,15 @@ object FirDiagnosticRenderers {
 
     val KOTLIN_TARGETS = Renderer { targets: Collection<KotlinTarget> ->
         targets.joinToString { it.description }
+    }
+
+    val STRING_TARGETS = Renderer { targets: Collection<String> ->
+        val quotedTargets = targets.joinToString { "'$it'" }
+        when (targets.size) {
+            0 -> "no targets"
+            1 -> "target $quotedTargets"
+            else -> "targets $quotedTargets"
+        }
     }
 }
 

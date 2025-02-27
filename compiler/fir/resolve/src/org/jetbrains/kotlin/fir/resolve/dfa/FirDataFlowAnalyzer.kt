@@ -468,7 +468,7 @@ abstract class FirDataFlowAnalyzer(
          *   right argument
          */
         val leftConst = when (leftOperand) {
-            is FirWhenSubjectExpression -> leftOperand.whenRef.value.subject
+            is FirWhenSubjectExpression -> leftOperand.whenRef.value.subjectVariable?.initializer
             else -> leftOperand
         } as? FirLiteralExpression
         val rightConst = rightOperand as? FirLiteralExpression
@@ -965,6 +965,9 @@ abstract class FirDataFlowAnalyzer(
         graphBuilder.exitStringConcatenationCall(call).mergeIncomingFlow()
     }
 
+    /**
+     * Receiver, value arguments, context arguments
+     */
     private fun FirStatement.orderedArguments(callee: FirFunction): Array<out FirExpression?>? {
         fun FirQualifiedAccessExpression.firstReceiver(): FirExpression? {
             val candidate = candidate()
@@ -975,25 +978,36 @@ abstract class FirDataFlowAnalyzer(
             return extensionReceiver ?: dispatchReceiver
         }
 
-        val receiver = when (this) {
-            is FirQualifiedAccessExpression -> firstReceiver()
-            is FirVariableAssignment -> (lValue as? FirQualifiedAccessExpression)?.firstReceiver()
-            else -> null
+        fun FirQualifiedAccessExpression.addContextArgumentsTo(target: MutableList<FirExpression?>) {
+            val candidate = candidate()
+            if (candidate != null) {
+                candidate.contextArguments?.forEach { target.add(it.expression) }
+            } else {
+                contextArguments.forEach { target.add(it) }
+            }
         }
 
-        return when (this) {
-            is FirFunctionCall -> {
-                // Processing case with a candidate might be necessary for PCLA, because even top-level calls might be not fully completed
+        return buildList {
+            val receiver = when (this@orderedArguments) {
+                is FirQualifiedAccessExpression -> firstReceiver()
+                is FirVariableAssignment -> (lValue as? FirQualifiedAccessExpression)?.firstReceiver()
+                else -> null
+            }
+            add(receiver)
+
+            if (this@orderedArguments is FirFunctionCall) {
                 val argumentToParameter = resolvedArgumentMapping ?: candidate()?.argumentMapping?.unwrapAtoms() ?: return null
                 val parameterToArgument = argumentToParameter.entries.associate { it.value to it.key.unwrapArgument() }
-                Array(callee.valueParameters.size + 1) { i ->
-                    if (i > 0) parameterToArgument[callee.valueParameters[i - 1]] else receiver
-                }
+                callee.valueParameters.forEach { add(parameterToArgument[it]) }
             }
-            is FirQualifiedAccessExpression -> arrayOf(receiver)
-            is FirVariableAssignment -> arrayOf(receiver, rValue)
-            else -> return null
-        }
+
+            if (this@orderedArguments is FirQualifiedAccessExpression) {
+                addContextArgumentsTo(this)
+            } else if (this@orderedArguments is FirVariableAssignment) {
+                val lValue = lValue as? FirQualifiedAccessExpression
+                lValue?.addContextArgumentsTo(this)
+            }
+        }.toTypedArray()
     }
 
     private fun processConditionalContract(
@@ -1123,7 +1137,12 @@ abstract class FirDataFlowAnalyzer(
         if (stability == SmartcastStability.STABLE_VALUE || stability == SmartcastStability.CAPTURED_VARIABLE) {
             val initializerVariable = flow.getVariableIfUsedOrReal(initializer)
             if (!hasExplicitType && initializerVariable is RealVariable &&
-                initializerVariable.getStability(flow, targetTypes = null) == SmartcastStability.STABLE_VALUE
+                // It's impossible to reference implicit when subjects.
+                // With explicit local variables, we want to give the user an option to
+                // choose whether they want to access the variable with smartcasts
+                // or the original expression without them.
+                (property.isImplicitWhenSubjectVariable ||
+                        initializerVariable.getStability(flow, targetTypes = null) == SmartcastStability.STABLE_VALUE)
             ) {
                 // val a = ...
                 // val b = a
@@ -1536,7 +1555,6 @@ abstract class FirDataFlowAnalyzer(
     // This method can be used to change the smart cast state to some node that is not the one at which the graph
     // builder is currently stopped. This is temporary: adding any more nodes to the graph will restart tracking
     // of the current position in the graph.
-    @OptIn(ImplicitValue.ImplicitValueInternals::class)
     private fun resetSmartCastPositionTo(flow: Flow?) {
         val previous = currentSmartCastPosition
         if (previous == flow) return

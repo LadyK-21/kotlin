@@ -76,14 +76,6 @@ class LLFirSessionCache(private val project: Project) : Disposable {
         return getCachedSession(module, sourceCache, factory = ::createSession)
     }
 
-    /**
-     * Returns a session without caching it.
-     * Note that session dependencies are still cached.
-     */
-    internal fun getSessionNoCaching(module: KaModule): LLFirSession {
-        return createSession(module)
-    }
-
     private fun getDanglingFileCachedSession(module: KaDanglingFileModule): LLFirSession {
         if (module.isStable) {
             return getCachedSession(module, danglingFileSessionCache, ::createSession)
@@ -92,7 +84,7 @@ class LLFirSessionCache(private val project: Project) : Disposable {
         checkCanceled()
 
         val session = unstableDanglingFileSessionCache.compute(module) { _, existingSession ->
-            if (existingSession is LLFirDanglingFileSession && existingSession.modificationStamp == module.file.modificationStamp) {
+            if (existingSession is LLFirDanglingFileSession && !existingSession.hasFileModifications) {
                 existingSession
             } else {
                 createSession(module)

@@ -147,13 +147,17 @@ interface KotlinHierarchyBuilder {
     /**
      * @suppress
      */
-    @Deprecated("Use 'excludeCompilations' instead", ReplaceWith("excludeCompilations(predicate)"))
+    @Deprecated("Use 'excludeCompilations' instead", ReplaceWith("excludeCompilations(predicate)"), level = DeprecationLevel.ERROR)
     fun withoutCompilations(predicate: (KotlinCompilation<*>) -> Boolean) = excludeCompilations(predicate)
 
     /**
      * @suppress
      */
-    @Deprecated("Use plain 'withoutCompilations(!predicate) instead'", ReplaceWith("withoutCompilations { !predicate(it) }"))
+    @Deprecated(
+        "Use plain 'withoutCompilations(!predicate) instead'. Scheduled for removal in Kotlin 2.3.",
+        ReplaceWith("withoutCompilations { !predicate(it) }"),
+        level = DeprecationLevel.ERROR
+    )
     fun filterCompilations(predicate: (KotlinCompilation<*>) -> Boolean) = excludeCompilations { !predicate(it) }
 
     /**
@@ -227,7 +231,11 @@ interface KotlinHierarchyBuilder {
     /**
      * @suppress
      */
-    @Deprecated("Renamed to 'withWasmJs''", replaceWith = ReplaceWith("withWasmJs()"))
+    @Deprecated(
+        "Renamed to 'withWasmJs'. Scheduled for removal in Kotlin 2.3.",
+        replaceWith = ReplaceWith("withWasmJs()"),
+        level = DeprecationLevel.ERROR
+    )
     fun withWasm()
 
     /**
@@ -244,12 +252,6 @@ interface KotlinHierarchyBuilder {
      * Only includes targets for Kotlin/JVM in this [group].
      */
     fun withJvm()
-
-    /**
-     * @suppress
-     */
-    @Deprecated("Renamed to 'withAndroidTarget''", replaceWith = ReplaceWith("withAndroidTarget()"))
-    fun withAndroid()
 
     /**
      * Only includes Kotlin's Android targets in this [group].
@@ -395,46 +397,4 @@ interface KotlinHierarchyBuilder {
      * For more information, see [Native targets overview](https://kotlinlang.org/docs/native-target-support.html).
      */
     fun withLinuxArm64()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(message = REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withIosArm32()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withWatchosX86()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withMingwX86()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withLinuxArm32Hfp()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withLinuxMips32()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withLinuxMipsel32()
-
-    /**
-     * @suppress
-     */
-    @Deprecated(REMOVED_TARGET_MESSAGE, level = DeprecationLevel.ERROR)
-    fun withWasm32()
 }

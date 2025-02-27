@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.build.report.metrics.GradleBuildPerformanceMetric
 import org.jetbrains.kotlin.cli.common.arguments.*
 import org.jetbrains.kotlin.compilerRunner.ArgumentUtils
 import org.jetbrains.kotlin.compilerRunner.isKonanIncrementalCompilationEnabled
+import org.jetbrains.kotlin.config.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonCompilerOptions
 import org.jetbrains.kotlin.gradle.dsl.KotlinNativeCompilerOptions
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
@@ -78,7 +79,7 @@ internal object CompilerArgumentMetrics : FusMetrics {
             is K2JVMCompilerArguments -> {
                 val args = K2JVMCompilerArguments()
                 parseCommandLineArguments(argsArray.toList(), args)
-                metricsConsumer.report(StringMetrics.JVM_DEFAULTS, args.jvmDefault)
+                metricsConsumer.report(StringMetrics.JVM_DEFAULTS, args.jvmDefaultStable ?: JvmDefaultMode.DISABLE.description)
 
                 val pluginPatterns = listOf(
                     Pair(BooleanMetrics.ENABLED_COMPILER_PLUGIN_ALL_OPEN, "kotlin-allopen-.*jar"),
@@ -162,7 +163,7 @@ internal object KotlinTaskExecutionMetrics : FusMetrics {
 
         val metricsMap = buildMetrics.buildPerformanceMetrics.asMap()
 
-        val linesOfCode = metricsMap[GradleBuildPerformanceMetric.ANALYZED_LINES_NUMBER]
+        val linesOfCode = metricsMap[GradleBuildPerformanceMetric.SOURCE_LINES_NUMBER]
         if (linesOfCode != null && linesOfCode > 0 && totalTimeMs > 0) {
             metricsConsumer.report(NumericalMetrics.COMPILED_LINES_OF_CODE, linesOfCode)
             metricsConsumer.report(NumericalMetrics.COMPILATION_LINES_PER_SECOND, linesOfCode * 1000 / totalTimeMs, null, linesOfCode)

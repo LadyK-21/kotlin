@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.fir.declarations.utils.isLocal
 import org.jetbrains.kotlin.fir.declarations.utils.memberDeclarationNameOrNull
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.psi
-import org.jetbrains.kotlin.fir.resolve.ResolutionMode
 import org.jetbrains.kotlin.fir.resolve.SessionHolder
 import org.jetbrains.kotlin.fir.resolve.SessionHolderImpl
 import org.jetbrains.kotlin.fir.resolve.calls.ImplicitValue
@@ -565,6 +564,10 @@ private class ContextCollectorVisitor(
         processList(anonymousObject.superTypeRefs)
     }
 
+    override fun visitErrorPrimaryConstructor(errorPrimaryConstructor: FirErrorPrimaryConstructor) {
+        visitConstructor(errorPrimaryConstructor)
+    }
+
     override fun visitConstructor(constructor: FirConstructor) = withProcessor(constructor) {
         dumpContext(constructor, ContextKind.SELF)
 
@@ -595,10 +598,10 @@ private class ContextCollectorVisitor(
                     context.forDelegatedConstructorCall(constructor, owningClass = null, holder) {
                         process(constructor.delegatedConstructor)
                     }
-                }
 
-                onActive {
-                    processChildren(constructor)
+                    onActive {
+                        processChildren(constructor)
+                    }
                 }
             }
         }
@@ -631,21 +634,33 @@ private class ContextCollectorVisitor(
             val holder = getSessionHolder(simpleFunction)
 
             context.withSimpleFunction(simpleFunction, holder.session) {
-                context.forFunctionBody(simpleFunction, holder) {
-                    processList(simpleFunction.valueParameters)
-
-                    dumpContext(simpleFunction, ContextKind.BODY)
-
-                    onActive {
-                        process(simpleFunction.body)
-                    }
+                processList(simpleFunction.typeParameters)
+                onActive {
+                    process(simpleFunction.receiverParameter)
                 }
 
-                onActive {
-                    processChildren(simpleFunction)
+                onActiveBody {
+                    context.forFunctionBody(simpleFunction, holder) {
+                        dumpContext(simpleFunction, ContextKind.BODY)
+
+                        processList(simpleFunction.contextParameters)
+                        processList(simpleFunction.valueParameters)
+
+                        onActive {
+                            process(simpleFunction.body)
+                        }
+                    }
+
+                    onActive {
+                        processChildren(simpleFunction)
+                    }
                 }
             }
         }
+    }
+
+    override fun visitErrorProperty(errorProperty: FirErrorProperty) {
+        visitProperty(errorProperty)
     }
 
     override fun visitProperty(property: FirProperty) = withProcessor(property) {
@@ -657,24 +672,37 @@ private class ContextCollectorVisitor(
             property.lazyResolveToPhase(FirResolvePhase.BODY_RESOLVE)
 
             context.withProperty(property) {
-                dumpContext(property, ContextKind.BODY)
-
+                processList(property.typeParameters)
                 onActive {
-                    context.forPropertyInitializerIfNonLocal(property) {
-                        process(property.initializer)
+                    process(property.receiverParameter)
+                }
 
-                        onActive {
-                            process(property.delegate)
-                        }
-
-                        onActive {
-                            process(property.backingField)
-                        }
-                    }
+                onActiveBody {
+                    dumpContext(property, ContextKind.BODY)
                 }
 
                 onActive {
-                    processChildren(property)
+                    context.withParameters(property, getSessionHolder(property)) {
+                        processList(property.contextParameters)
+                    }
+
+                    onActive {
+                        context.forPropertyInitializerIfNonLocal(property) {
+                            process(property.initializer)
+
+                            onActive {
+                                process(property.delegate)
+
+                                onActive {
+                                    process(property.backingField)
+                                }
+                            }
+                        }
+
+                        onActive {
+                            processChildren(property)
+                        }
+                    }
                 }
             }
         }
@@ -796,24 +824,39 @@ private class ContextCollectorVisitor(
         processSignatureAnnotations(anonymousFunction)
 
         onActiveBody {
-            context.withAnonymousFunction(anonymousFunction, bodyHolder, ResolutionMode.ContextIndependent) {
-                for (parameter in anonymousFunction.valueParameters) {
-                    process(parameter)
-                    context.storeVariable(parameter, bodyHolder.session)
+            @OptIn(PrivateForInline::class)
+            context.withTypeParametersOf(anonymousFunction) {
+                processList(anonymousFunction.typeParameters)
+                onActive {
+                    process(anonymousFunction.receiverParameter)
                 }
 
-                dumpContext(anonymousFunction, ContextKind.BODY)
+                onActiveBody {
+                    context.withAnonymousFunction(anonymousFunction, bodyHolder) {
+                        for (contextParameter in anonymousFunction.contextParameters) {
+                            context.storeValueParameterIfNeeded(contextParameter, bodyHolder.session)
+                        }
 
-                onActive {
-                    process(anonymousFunction.body)
-                }
+                        for (valueParameter in anonymousFunction.valueParameters) {
+                            context.storeValueParameterIfNeeded(valueParameter, bodyHolder.session)
+                        }
 
-                onActive {
-                    processChildren(anonymousFunction)
+                        dumpContext(anonymousFunction, ContextKind.BODY)
+
+                        processList(anonymousFunction.contextParameters)
+                        processList(anonymousFunction.valueParameters)
+
+                        onActive {
+                            process(anonymousFunction.body)
+                        }
+                    }
+
+                    onActive {
+                        processChildren(anonymousFunction)
+                    }
                 }
             }
         }
-
     }
 
     override fun visitAnonymousObject(anonymousObject: FirAnonymousObject) = withProcessor(anonymousObject) {

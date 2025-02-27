@@ -24,10 +24,13 @@ public class SirVisibilityCheckerImpl(
     private val unsupportedDeclarationReporter: UnsupportedDeclarationReporter,
 ) : SirVisibilityChecker {
 
+    @OptIn(KaExperimentalApi::class)
     override fun KaDeclarationSymbol.sirVisibility(ktAnalysisSession: KaSession): SirVisibility = with(ktAnalysisSession) {
         val ktSymbol = this@sirVisibility
 
         val isHidden = ktSymbol.deprecatedAnnotation?.level == DeprecationLevel.HIDDEN
+
+        val containsContextParameters = ktSymbol is KaCallableSymbol && ktSymbol.contextParameters.isNotEmpty()
 
         val isConsumable = isPublic() && when (ktSymbol) {
             is KaNamedClassSymbol -> {
@@ -45,16 +48,16 @@ public class SirVisibilityCheckerImpl(
                 ktSymbol.isConsumableBySirBuilder(ktSymbol.containingSymbol as? KaClassSymbol)
             }
             is KaVariableSymbol -> {
-                ktSymbol.isConsumableBySirBuilder() && !ktSymbol.hasHiddenAccessors
+                !ktSymbol.hasHiddenAccessors
             }
             is KaTypeAliasSymbol -> ktSymbol.expandedType.fullyExpandedType
                 .let {
-                    it.isPrimitive || it.isNothingType || it.isVisible(ktAnalysisSession)
+                    it.isPrimitive || it.isNothingType || it.isFunctionType || it.isVisible(ktAnalysisSession)
                 }
             else -> false
         }
 
-        return if (isConsumable && !isHidden) SirVisibility.PUBLIC else SirVisibility.PRIVATE
+        return if (isConsumable && !isHidden && !containsContextParameters) SirVisibility.PUBLIC else SirVisibility.PRIVATE
     }
 
     private fun KaNamedFunctionSymbol.isConsumableBySirBuilder(parent: KaClassSymbol?): Boolean {
@@ -81,24 +84,21 @@ public class SirVisibilityCheckerImpl(
         return true
     }
 
-    private fun KaVariableSymbol.isConsumableBySirBuilder(): Boolean {
-        if (isExtension) {
-            unsupportedDeclarationReporter.report(this@isConsumableBySirBuilder, "extension properties are not supported yet.")
-            return false
-        }
-        return true
-    }
-
     private fun KaNamedClassSymbol.isConsumableBySirBuilder(ktAnalysisSession: KaSession): Boolean =
         with(ktAnalysisSession) {
-            if (classKind != KaClassKind.CLASS && classKind != KaClassKind.OBJECT && classKind != KaClassKind.COMPANION_OBJECT && classKind != KaClassKind.ENUM_CLASS) {
+            if (
+                classKind != KaClassKind.CLASS &&
+                classKind != KaClassKind.OBJECT &&
+                classKind != KaClassKind.COMPANION_OBJECT &&
+                classKind != KaClassKind.ENUM_CLASS &&
+                classKind != KaClassKind.INTERFACE
+            ) {
                 unsupportedDeclarationReporter
                     .report(this@isConsumableBySirBuilder, "${classKind.name.lowercase()} classifiers are not supported yet.")
                 return@with false
             }
-            if (isInner) {
-                unsupportedDeclarationReporter.report(this@isConsumableBySirBuilder, "inner classes are not supported yet.")
-                return@with false
+            if (classKind == KaClassKind.INTERFACE && modality == KaSymbolModality.SEALED) {
+                return false
             }
             if (classKind == KaClassKind.ENUM_CLASS) {
                 return@with true

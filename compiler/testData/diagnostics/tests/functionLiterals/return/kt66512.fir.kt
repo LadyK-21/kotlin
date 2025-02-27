@@ -1,4 +1,5 @@
 // RUN_PIPELINE_TILL: FRONTEND
+// LATEST_LV_DIFFERENCE
 // ISSUE: KT-66512
 
 typealias MyUnit = Unit
@@ -16,6 +17,6 @@ val expectedMyUnitExplicitReturnString: () -> MyUnit = l@ {
 
 fun test() {
     run<MyUnit> l@ {
-        return@l <!ARGUMENT_TYPE_MISMATCH, RETURN_TYPE_MISMATCH!>""<!>
+        return@l <!RETURN_TYPE_MISMATCH, RETURN_TYPE_MISMATCH!>""<!>
     }
 }

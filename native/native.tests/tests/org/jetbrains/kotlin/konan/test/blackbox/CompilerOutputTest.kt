@@ -17,21 +17,29 @@ import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.LibraryCompi
 import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.ObjCFrameworkCompilation
 import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilationResult.Companion.assertSuccess
 import org.jetbrains.kotlin.konan.test.blackbox.support.group.FirPipeline
+import org.jetbrains.kotlin.konan.test.blackbox.support.group.ClassicPipeline
 import org.jetbrains.kotlin.konan.test.blackbox.support.runner.TestRunChecks
+import org.jetbrains.kotlin.konan.test.blackbox.support.settings.Allocator
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.CacheMode
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.PipelineType
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.Settings
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.Timeouts
-import org.jetbrains.kotlin.konan.test.blackbox.support.util.DEFAULT_MODULE_NAME
+import org.jetbrains.kotlin.konan.test.klib.KlibCrossCompilationOutputTest.Companion.DEPRECATED_K1_LANGUAGE_VERSIONS_DIAGNOSTIC_REGEX
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.junit.jupiter.api.Assumptions
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.test.assertIs
 
 abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
+    @BeforeEach
+    fun assumeNotMimalloc() {
+        // Mimalloc is deprecated and will emit a warning, when enabled.
+        // These tests check compiler output, and so will fail because of the extra warning.
+        Assumptions.assumeFalse(testRunSettings.get<Allocator>() == Allocator.MIMALLOC)
+    }
+
     @Test
     fun testReleaseCompilerAgainstPreReleaseLibrary() {
         val rootDir = File("native/native.tests/testData/compilerOutput/releaseCompilerAgainstPreReleaseLibrary")
@@ -47,7 +55,7 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
         val rootDir =
             File("compiler/testData/compileKotlinAgainstCustomBinaries/releaseCompilerAgainstPreReleaseLibraryJsSkipPrereleaseCheck")
 
-        doTestPreReleaseKotlinLibrary(rootDir, listOf("-Xskip-prerelease-check"))
+        doTestPreReleaseKotlinLibrary(rootDir, listOf("-Xskip-prerelease-check", "-Xsuppress-version-warnings"))
     }
 
     private fun doTestPreReleaseKotlinLibrary(rootDir: File, additionalOptions: List<String>) {
@@ -89,7 +97,7 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
         val compilationResult = doBuildObjCFrameworkWithNameCollisions(rootDir, listOf("-Xbinary=objcExportReportNameCollisions=true"))
         val goldenData = rootDir.resolve("output.txt")
 
-        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput())
+        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput().sanitizeCompilationOutput())
     }
 
     @Test
@@ -99,7 +107,7 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
         assertIs<TestCompilationResult.Failure>(compilationResult)
         val goldenData = rootDir.resolve("error.txt")
 
-        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput())
+        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput().sanitizeCompilationOutput())
     }
 
     @Test
@@ -125,7 +133,14 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
             if (testRunSettings.get<CacheMode>().useStaticCacheForDistributionLibraries) "logging_cache_warning.txt" else "empty.txt"
         )
 
-        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput())
+        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput().sanitizeCompilationOutput())
+    }
+
+    fun String.sanitizeCompilationOutput(): String = lines().joinToString(separator = "\n") { line ->
+        when {
+            DEPRECATED_K1_LANGUAGE_VERSIONS_DIAGNOSTIC_REGEX.matches(line) -> ""
+            else -> line
+        }
     }
 
     @Test
@@ -150,7 +165,7 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
         val compilationResult = compilation.result
         val goldenData = rootDir.resolve("logging_invalid_error.txt")
 
-        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput())
+        KotlinTestUtils.assertEqualsToFile(goldenData, compilationResult.toOutput().sanitizeCompilationOutput())
     }
 
     private fun doBuildObjCFrameworkWithNameCollisions(rootDir: File, additionalOptions: List<String>): TestCompilationResult<out TestCompilationArtifact.ObjCFramework> {
@@ -205,7 +220,7 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
             .replace("MyClassObjC\\d+".toRegex(), "MyClassObjC*")
         val goldenData = testClashingBindClassToObjCNameRootDir.resolve("${name}.output.txt")
 
-        KotlinTestUtils.assertEqualsToFile(goldenData, output)
+        KotlinTestUtils.assertEqualsToFile(goldenData, output.sanitizeCompilationOutput())
     }
 
     @Test
@@ -264,13 +279,13 @@ abstract class CompilerOutputTestBase : AbstractNativeSimpleTest() {
 }
 
 @Suppress("JUnitTestCaseWithNoTests")
+@ClassicPipeline()
 @TestDataPath("\$PROJECT_ROOT")
 @EnforcedProperty(ClassLevelProperty.COMPILER_OUTPUT_INTERCEPTOR, "NONE")
 class ClassicCompilerOutputTest : CompilerOutputTestBase()
 
 @Suppress("JUnitTestCaseWithNoTests")
 @FirPipeline
-@Tag("frontend-fir")
 @TestDataPath("\$PROJECT_ROOT")
 @EnforcedProperty(ClassLevelProperty.COMPILER_OUTPUT_INTERCEPTOR, "NONE")
 class FirCompilerOutputTest : CompilerOutputTestBase()

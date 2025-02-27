@@ -10,17 +10,16 @@ package org.jetbrains.kotlin.config.phaser
  * Phase configuration does not know anything about actual compiler pipeline upfront.
  */
 class PhaseConfig(
-    private val disabled: PhaseSet = PhaseSet.Enum(emptySet()),
-    val verbose: PhaseSet = PhaseSet.Enum(emptySet()),
-    val toDumpStateBefore: PhaseSet = PhaseSet.Enum(emptySet()),
-    val toDumpStateAfter: PhaseSet = PhaseSet.Enum(emptySet()),
-    private val toValidateStateBefore: PhaseSet = PhaseSet.Enum(emptySet()),
-    private val toValidateStateAfter: PhaseSet = PhaseSet.Enum(emptySet()),
+    private val disabled: PhaseSet = PhaseSet.Empty,
+    val verbose: PhaseSet = PhaseSet.Empty,
+    val toDumpStateBefore: PhaseSet = PhaseSet.Empty,
+    val toDumpStateAfter: PhaseSet = PhaseSet.Empty,
+    private val toValidateStateBefore: PhaseSet = PhaseSet.Empty,
+    private val toValidateStateAfter: PhaseSet = PhaseSet.Empty,
     val dumpToDirectory: String? = null,
     val dumpOnlyFqName: String? = null,
     val needProfiling: Boolean = false,
     val checkConditions: Boolean = false,
-    val checkStickyConditions: Boolean = false
 ) {
     fun isEnabled(phase: AnyNamedPhase): Boolean =
         phase !in disabled

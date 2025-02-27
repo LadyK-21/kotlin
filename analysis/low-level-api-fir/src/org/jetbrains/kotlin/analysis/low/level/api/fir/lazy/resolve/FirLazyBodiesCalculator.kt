@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.fir.references.FirResolvedNamedReference
 import org.jetbrains.kotlin.fir.references.builder.buildDelegateFieldReference
 import org.jetbrains.kotlin.fir.references.builder.buildImplicitThisReference
 import org.jetbrains.kotlin.fir.references.builder.buildResolvedNamedReference
-import org.jetbrains.kotlin.fir.scopes.impl.originalConstructorIfTypeAlias
+import org.jetbrains.kotlin.fir.scopes.impl.typeAliasConstructorInfo
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
@@ -80,9 +80,8 @@ internal object FirLazyBodiesCalculator {
         firElement.accept(LazyAnnotationCalculatorVisitor, firElement.moduleData.session)
     }
 
-    fun calculateLazyArgumentsForAnnotation(annotationCall: FirAnnotationCall, session: FirSession): FirArgumentList {
-        require(needCalculatingAnnotationCall(annotationCall))
-        return createArgumentsForAnnotation(annotationCall, session)
+    fun calculateAnnotation(annotationCall: FirAnnotationCall, session: FirSession) {
+        calculateAnnotationCallIfNeeded(annotationCall, session)
     }
 
     fun createArgumentsForAnnotation(annotationCall: FirAnnotationCall, session: FirSession): FirArgumentList {
@@ -197,7 +196,7 @@ private fun calculateLazyBodyForConstructor(designation: FirDesignation) {
     require(needCalculatingLazyBodyForConstructor(constructor))
 
     // TODO A temporary hack to avoid problems with lazy resolve of typealiased constructors; see KT-73481
-    val constructorPsi = (constructor.originalConstructorIfTypeAlias ?: constructor).psi
+    val constructorPsi = (constructor.typeAliasConstructorInfo?.originalConstructor ?: constructor).psi
 
     val newConstructor = revive<FirConstructor>(designation, constructorPsi)
 
@@ -663,7 +662,7 @@ private object LazyAnnotationCalculatorVisitor : NonLocalAnnotationVisitor<FirSe
 private fun calculateAnnotationCallIfNeeded(annotation: FirAnnotation, session: FirSession) {
     if (annotation !is FirAnnotationCall || !FirLazyBodiesCalculator.needCalculatingAnnotationCall(annotation)) return
 
-    val newArgumentList = FirLazyBodiesCalculator.calculateLazyArgumentsForAnnotation(annotation, session)
+    val newArgumentList = FirLazyBodiesCalculator.createArgumentsForAnnotation(annotation, session)
     annotation.replaceArgumentList(newArgumentList)
 }
 
@@ -723,6 +722,10 @@ private sealed class FirLazyBodiesCalculatorTransformer : FirTransformer<Persist
         }
 
         return property
+    }
+
+    override fun transformErrorProperty(errorProperty: FirErrorProperty, data: PersistentList<FirDeclaration>): FirStatement {
+        return transformProperty(errorProperty, data)
     }
 
     override fun transformEnumEntry(enumEntry: FirEnumEntry, data: PersistentList<FirDeclaration>): FirStatement {
@@ -881,5 +884,9 @@ private sealed class FirLazyContractsCalculatorTransformer : FirTransformer<Pers
         }
 
         return property
+    }
+
+    override fun transformErrorProperty(errorProperty: FirErrorProperty, data: PersistentList<FirDeclaration>): FirStatement {
+        return transformProperty(errorProperty, data)
     }
 }

@@ -28,7 +28,8 @@ kotlin {
                 "org.jetbrains.kotlin.gradle.DeprecatedTargetPresetApi",
                 "org.jetbrains.kotlin.buildtools.api.ExperimentalBuildToolsApi",
                 "org.jetbrains.kotlin.gradle.ComposeKotlinGradlePluginApi",
-                "org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl"
+                "org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl",
+                "org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation",
             )
         )
     }
@@ -102,13 +103,6 @@ val unpublishedCompilerRuntimeDependencies = listOf( // TODO: remove in KT-70247
     ":wasm:wasm.config", // for k/js task
 )
 
-val intellijRuntimeDependencies = listOf( // TODO: remove in KT-70252
-    intellijUtilRt(), // for kapt (PathUtil.getJdkClassesRoots)
-    intellijPlatformUtil(), // for kapt (JavaVersion), KotlinToolRunner (escapeStringCharacters)
-    intellijPlatformUtilBase(), // for kapt (PathUtil.getJdkClassesRoots)
-    commonDependency("org.jetbrains.intellij.deps.fastutil:intellij-deps-fastutil") // for kapt (PathUtil.getJdkClassesRoots)
-)
-
 dependencies {
     commonApi(platform(project(":kotlin-gradle-plugins-bom")))
     commonApi(project(":kotlin-gradle-plugin-api"))
@@ -149,12 +143,6 @@ dependencies {
     commonCompileOnly(libs.android.gradle.plugin.builder) { isTransitive = false }
     commonCompileOnly(libs.android.gradle.plugin.builder.model) { isTransitive = false }
     commonCompileOnly(libs.android.tools.common) { isTransitive = false }
-    commonCompileOnly(intellijPlatformUtil()) { // TODO: remove in KT-70252
-        isTransitive = false
-    }
-    commonCompileOnly(intellijUtilRt()) { // TODO: remove in KT-70252
-        isTransitive = false
-    }
     commonCompileOnly(commonDependency("org.jetbrains.teamcity:serviceMessages"))
     commonCompileOnly(libs.develocity.gradlePlugin)
     commonCompileOnly(commonDependency("com.google.code.gson:gson"))
@@ -173,14 +161,13 @@ dependencies {
     commonImplementation(project(":compiler:build-tools:kotlin-build-statistics"))
     commonImplementation(project(":kotlin-util-klib-metadata")) // TODO: consider removing in KT-70247
 
+    commonImplementation(project(":libraries:tools:abi-validation:abi-tools-api"))
+
     commonRuntimeOnly(project(":kotlin-compiler-runner")) { // TODO: consider removing in KT-70247
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-compiler-embeddable")
     }
     for (compilerRuntimeDependency in unpublishedCompilerRuntimeDependencies) {
         embedded(project(compilerRuntimeDependency)) { isTransitive = false }
-    }
-    for (compilerRuntimeDependency in intellijRuntimeDependencies) {
-        embedded(compilerRuntimeDependency) { isTransitive = false }
     }
 
     embedded(project(":kotlin-gradle-build-metrics"))
@@ -225,7 +212,7 @@ if (kotlinBuildProperties.isInJpsBuildIdeaSync) {
 /**
  * Security Advisory: Vulnerable Transitive Dependencies
  *
- * The dependency com.android.tools.build:gradle:8.7.2 introduces several transitive
+ * The dependency com.android.tools.build:gradle:8.8.1 introduces several transitive
  * dependencies with known security vulnerabilities. The following configuration
  * enforces safer versions of these dependencies.
  *
@@ -235,10 +222,10 @@ if (kotlinBuildProperties.isInJpsBuildIdeaSync) {
  * │   └── protobuf-java-util:3.22.3
  * ├── io.netty
  * │   ├── netty-buffer:*
- * │   ├── netty-codec-http:* → 4.1.115.Final
- * │   ├── netty-codec-http2:* → 4.1.115.Final
- * │   ├── netty-common:* → 4.1.115.Final
- * │   └── netty-handler:* → 4.1.115.Final
+ * │   ├── netty-codec-http:* → 4.1.118.Final
+ * │   ├── netty-codec-http2:* → 4.1.118.Final
+ * │   ├── netty-common:* → 4.1.118.Final
+ * │   └── netty-handler:* → 4.1.118.Final
  * ├── org.apache.commons
  * │   ├── commons-compress:* → 1.27.1
  * │   └── commons-io:* → 2.16.1
@@ -249,6 +236,7 @@ if (kotlinBuildProperties.isInJpsBuildIdeaSync) {
  *    - CVE-2024-7254: Potential security vulnerability
  *
  * 2. Netty Components
+ *    - CVE-2025-25193: Denial of Service Vulnerability
  *    - CVE-2024-47535: Network security vulnerability
  *    - CVE-2024-29025: Remote code execution risk
  *    - CVE-2023-4586: Information disclosure vulnerability
@@ -264,7 +252,7 @@ configurations.all {
     resolutionStrategy.eachDependency {
         // Google Protobuf
         if (requested.group == "com.google.protobuf" && requested.name == "protobuf-java") {
-            useVersion("3.25.5")
+            useVersion("3.25.6")
             because("CVE-2024-7254")
         }
 
@@ -276,13 +264,13 @@ configurations.all {
                 "netty-handler-proxy",
             ).contains(requested.name)
         ) {
-            useVersion("4.1.115.Final")
-            because("CVE-2024-47535, CVE-2024-29025, CVE-2023-4586, CVE-2023-34462")
+            useVersion("4.1.118.Final")
+            because("CVE-2025-25193, CVE-2024-47535, CVE-2024-29025, CVE-2023-4586, CVE-2023-34462")
         }
 
         // Bouncy Castle
         if (requested.group == "org.bouncycastle" && requested.name == "bcpkix-jdk18on") {
-            useVersion("1.79")
+            useVersion("1.80")
             because("CVE-2024-34447, CVE-2024-30172, CVE-2024-30171, CVE-2024-29857")
         }
     }
@@ -355,9 +343,9 @@ tasks {
             /*
              * This excludes .kotlin_module files for compiler modules from the fat jars.
              * These files are required only at compilation time, but we include the modules only for runtime
-             * Hack for not limiting LV to 1.5 for those modules. To be removed after KT-70247
+             * Hack for not limiting LV to 1.7 for those modules. To be removed after KT-70247
              */
-            pivotVersion = KotlinMetadataPivotVersion(1, 6, 0)
+            pivotVersion = KotlinMetadataPivotVersion(1, 8, 0)
         }
         asmDeprecation {
             val exclusions = listOf(
@@ -484,6 +472,11 @@ gradlePlugin {
 // Gradle plugins functional tests
 if (!kotlinBuildProperties.isInJpsBuildIdeaSync) {
 
+    // Workaround for KT-75550
+    tasks.named("gradle85Jar") {
+        enabled = false
+    }
+
     val gradlePluginVariantForFunctionalTests = GradlePluginVariant.GRADLE_85
     val functionalTestSourceSet = sourceSets.create("functionalTest") {
         val gradlePluginVariantSourceSet = sourceSets.getByName(gradlePluginVariantForFunctionalTests.sourceSetName)
@@ -563,8 +556,8 @@ if (!kotlinBuildProperties.isInJpsBuildIdeaSync) {
         val implementation = project.configurations.getByName(functionalTestSourceSet.implementationConfigurationName)
         val compileOnly = project.configurations.getByName(functionalTestSourceSet.compileOnlyConfigurationName)
 
-        implementation("com.android.tools.build:gradle:8.7.2")
-        implementation("com.android.tools.build:gradle-api:8.7.2")
+        implementation("com.android.tools.build:gradle:8.8.1")
+        implementation("com.android.tools.build:gradle-api:8.8.1")
         compileOnly("com.android.tools:common:31.7.2")
         implementation(gradleKotlinDsl())
         implementation(project(":kotlin-gradle-plugin-tcs-android"))

@@ -18,6 +18,7 @@ import org.gradle.api.tasks.*
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.util.PatternFilterable
+import org.gradle.internal.configuration.problems.taskPathFrom
 import org.gradle.work.Incremental
 import org.gradle.work.InputChanges
 import org.gradle.work.NormalizeLineEndings
@@ -59,7 +60,7 @@ abstract class KotlinCompile @Inject constructor(
     objectFactory: ObjectFactory,
 ) : AbstractKotlinCompile<K2JVMCompilerArguments>(objectFactory, workerExecutor),
     K2MultiplatformCompilationTask,
-    @Suppress("TYPEALIAS_EXPANSION_DEPRECATION") KotlinJvmCompileDsl {
+    @Suppress("TYPEALIAS_EXPANSION_DEPRECATION_ERROR") KotlinJvmCompileDsl {
 
     @Suppress("DEPRECATION")
     @Deprecated(KOTLIN_OPTIONS_DEPRECATION_MESSAGE)
@@ -69,7 +70,11 @@ abstract class KotlinCompile @Inject constructor(
     )
 
     @Suppress("DEPRECATION")
-    @Deprecated("Configure compilerOptions directly", replaceWith = ReplaceWith("compilerOptions"))
+    @Deprecated(
+        "Configure compilerOptions directly. Scheduled for removal in Kotlin 2.3.",
+        replaceWith = ReplaceWith("compilerOptions"),
+        level = DeprecationLevel.ERROR,
+    )
     override val parentKotlinOptions: Property<KotlinJvmOptions> = objectFactory
         .property(kotlinOptions)
         .chainedDisallowChanges()
@@ -96,12 +101,16 @@ abstract class KotlinCompile @Inject constructor(
     abstract override val libraries: ConfigurableFileCollection
 
     @get:Deprecated(
-        message = "Please migrate to compilerOptions.moduleName",
-        replaceWith = ReplaceWith("compilerOptions.moduleName")
+        message = "Please migrate to compilerOptions.moduleName. Scheduled for removal in Kotlin 2.3.",
+        replaceWith = ReplaceWith("compilerOptions.moduleName"),
+        level = DeprecationLevel.ERROR,
     )
     @get:Optional
     @get:Input
     abstract override val moduleName: Property<String>
+
+    @get:Input
+    internal val useFirRunner: Property<Boolean> = objectFactory.propertyWithConvention(false)
 
     @get:Nested
     abstract val classpathSnapshotProperties: ClasspathSnapshotProperties
@@ -244,6 +253,24 @@ abstract class KotlinCompile @Inject constructor(
             }
 
             explicitApiMode.orNull?.run { args.explicitApi = toCompilerValue() }
+
+            if (useFirRunner.get()) {
+                if (compilerOptions.languageVersion.orElse(KotlinVersion.DEFAULT).get() < KotlinVersion.KOTLIN_2_0) {
+                    reportDiagnostic(
+                        KotlinToolingDiagnostics.IcFirMisconfigurationLV(
+                            taskPath = path,
+                            languageVersion = compilerOptions.languageVersion.get()
+                        )
+                    )
+                }
+
+                if (!classpathSnapshotProperties.useClasspathSnapshot.get()) {
+                    reportDiagnostic(KotlinToolingDiagnostics.IcFirMisconfigurationRequireClasspathSnapshots(path))
+                }
+
+                args.useFirIC = true
+                args.useFirLT = true
+            }
         }
 
         pluginClasspath { args ->
@@ -285,7 +312,7 @@ abstract class KotlinCompile @Inject constructor(
         }
     }
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     protected fun overrideArgsUsingTaskModuleNameWithWarning(
         args: K2JVMCompilerArguments
     ) {
@@ -319,16 +346,17 @@ abstract class KotlinCompile @Inject constructor(
 
         val icEnv = if (isIncrementalCompilationEnabled()) {
             logger.info(USING_JVM_INCREMENTAL_COMPILATION_MESSAGE)
+
             IncrementalCompilationEnvironment(
                 changedFiles = getChangedFiles(inputChanges, incrementalProps),
                 classpathChanges = getClasspathChanges(inputChanges),
                 workingDir = taskBuildCacheableOutputDirectory.get().asFile,
                 rootProjectDir = projectRootDir,
                 buildDir = projectLayout.buildDirectory.getFile(),
-                usePreciseJavaTracking = usePreciseJavaTracking,
                 disableMultiModuleIC = disableMultiModuleIC,
                 multiModuleICSettings = multiModuleICSettings,
                 icFeatures = makeIncrementalCompilationFeatures(),
+                useJvmFirRunner = useFirRunner.get(),
             )
         } else null
 
@@ -357,6 +385,11 @@ abstract class KotlinCompile @Inject constructor(
     private fun validateKotlinAndJavaHasSameTargetCompatibility(
         args: K2JVMCompilerArguments,
     ) {
+        // Skip check in KMP projects and no Java sources
+        if (multiplatformStructure.fragments.get().isNotEmpty() &&
+            javaSources.isEmpty
+        ) return
+
         val severity = when (jvmTargetValidationMode.get()) {
             JvmTargetValidationMode.ERROR -> ToolingDiagnostic.Severity.FATAL
             JvmTargetValidationMode.WARNING -> ToolingDiagnostic.Severity.WARNING
@@ -456,19 +489,20 @@ abstract class KotlinCompile @Inject constructor(
     override fun source(vararg sources: Any) {
         javaSourceFiles.from(sources)
         scriptSourceFiles.from(sources)
-        super.setSource(sources)
+        super.source(sources)
     }
 
     // override source to track Java and script sources as well
     override fun setSource(vararg sources: Any) {
-        javaSourceFiles.from(*sources)
-        scriptSourceFiles.from(*sources)
+        javaSourceFiles.setFrom(*sources)
+        scriptSourceFiles.setFrom(*sources)
         super.setSource(*sources)
     }
 
     // jvm-specific incremental compilation features
     override fun makeIncrementalCompilationFeatures(): IncrementalCompilationFeatures {
         return super.makeIncrementalCompilationFeatures().copy(
+            usePreciseJavaTracking = usePreciseJavaTracking,
             /* Disabled on JVM in favor of classpath snapshot machinery */
             withAbiSnapshot = false,
         )

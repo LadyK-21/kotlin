@@ -359,6 +359,12 @@ class NewConstraintSystemImpl(
         doAddOtherSystem(otherSystem)
     }
 
+    /**
+     * This function is only expected to be called when [otherSystem] is a superset of this CS,
+     * or in other words _this_ CS has used as a base/outer CS of the [otherSystem].
+     *
+     * Or one might say that [otherSystem] is expected to be a clone of the current CS with some additions: new variables, constraints, etc.
+     */
     fun replaceContentWith(otherSystem: ConstraintStorage) {
         @OptIn(AssertionsOnly::class)
         runOuterCSRelatedAssertions(otherSystem, isAddingOuter = false)
@@ -650,7 +656,7 @@ class NewConstraintSystemImpl(
         }
 
         for (otherVariableWithConstraints in notFixedTypeVariables.values) {
-            otherVariableWithConstraints.removeConstrains { containsTypeVariable(it.type, freshTypeConstructor) }
+            otherVariableWithConstraints.removeConstraints { containsTypeVariable(it.type, freshTypeConstructor) }
         }
 
         storage.fixedTypeVariables[freshTypeConstructor] = resultType
@@ -853,7 +859,7 @@ class NewConstraintSystemImpl(
 
     override fun removePostponedTypeVariablesFromConstraints(postponedTypeVariables: Set<TypeConstructorMarker>) {
         for ((_, variableWithConstraints) in storage.notFixedTypeVariables) {
-            variableWithConstraints.removeConstrains { constraint ->
+            variableWithConstraints.removeConstraints { constraint ->
                 constraint.type.contains { it is StubTypeMarker && it.getOriginalTypeVariable() in postponedTypeVariables }
             }
         }

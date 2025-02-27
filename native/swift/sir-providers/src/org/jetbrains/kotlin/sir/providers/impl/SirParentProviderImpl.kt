@@ -62,8 +62,9 @@ public class SirParentProviderImpl(
                 extensionForPackage
             }
         } else {
-            (with(sirSession) { parentSymbol.sirDeclarations().firstOrNull() } as? SirDeclarationContainer)
-                ?: error("the found declaration is not parent")
+            with(sirSession) {
+                parentSymbol.toSir().primaryDeclaration as? SirDeclarationContainer
+            } ?: error("parent declaration does not produce suitable SIR")
         }
     }
 }

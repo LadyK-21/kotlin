@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.backend.wasm.lower.JsInteropFunctionsLowering
 import org.jetbrains.kotlin.backend.wasm.lower.markExportedDeclarations
 import org.jetbrains.kotlin.backend.wasm.utils.DwarfGenerator
 import org.jetbrains.kotlin.backend.wasm.utils.SourceMapGenerator
-import org.jetbrains.kotlin.cli.common.CommonCompilerPerformanceManager
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.ir.backend.js.MainModule
 import org.jetbrains.kotlin.ir.backend.js.WholeWorldStageController
@@ -28,6 +27,9 @@ import org.jetbrains.kotlin.js.common.isValidES5Identifier
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.platform.wasm.WasmTarget
 import org.jetbrains.kotlin.serialization.js.ModuleKind
+import org.jetbrains.kotlin.util.PerformanceManager
+import org.jetbrains.kotlin.util.PhaseType
+import org.jetbrains.kotlin.util.tryMeasurePhaseTime
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
 import org.jetbrains.kotlin.utils.addToStdlib.runIf
 import org.jetbrains.kotlin.wasm.config.WasmConfigurationKeys
@@ -65,7 +67,7 @@ fun compileToLoweredIr(
     irModuleInfo: IrModuleInfo,
     mainModule: MainModule,
     configuration: CompilerConfiguration,
-    performanceManager: CommonCompilerPerformanceManager?,
+    performanceManager: PerformanceManager?,
     exportedDeclarations: Set<FqName> = emptySet(),
     generateTypeScriptFragment: Boolean,
     propertyLazyInitialization: Boolean,
@@ -98,19 +100,16 @@ fun compileToLoweredIr(
         val fragment = exportModelToDtsTranslator.generateTypeScriptFragment(ModuleKind.ES, exportModel.declarations)
         TypeScriptFragment(exportModelToDtsTranslator.generateTypeScript("", ModuleKind.ES, listOf(fragment)))
     }
-    performanceManager?.notifyIRTranslationFinished()
+    performanceManager?.notifyPhaseFinished(PhaseType.TranslationToIr)
 
-    performanceManager?.notifyGenerationStarted()
-    performanceManager?.notifyIRLoweringStarted()
-
-    lowerPreservingTags(
-        allModules,
-        context,
-        context.irFactory.stageController as WholeWorldStageController,
-        isIncremental = false,
-    )
-
-    performanceManager?.notifyIRLoweringFinished()
+    performanceManager.tryMeasurePhaseTime(PhaseType.IrLowering) {
+        lowerPreservingTags(
+            allModules,
+            context,
+            context.irFactory.stageController as WholeWorldStageController,
+            isIncremental = false,
+        )
+    }
 
     return LoweredIrWithExtraArtifacts(allModules, context, typeScriptFragment)
 }
@@ -124,7 +123,7 @@ fun lowerPreservingTags(
     // Lower all the things
     controller.currentStage = 0
 
-    val phaserState = PhaserState<IrModuleFragment>()
+    val phaserState = PhaserState()
     val wasmLowerings = getWasmLowerings(context.configuration, isIncremental)
 
     wasmLowerings.forEachIndexed { i, lowering ->

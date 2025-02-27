@@ -214,7 +214,7 @@ internal fun deserializeClassToSymbol(
                     deserializeNestedClass(nestedClassId, context.withClassLikeDeclaration(declaration))?.fir?.let(this::addDeclaration)
                 }
 
-                is KtTypeAlias -> addDeclaration(memberDeserializer.loadTypeAlias(declaration, FirTypeAliasSymbol(classId)))
+                is KtTypeAlias -> addDeclaration(memberDeserializer.loadTypeAlias(declaration, FirTypeAliasSymbol(classId), scopeProvider))
             }
         }
 
@@ -267,7 +267,7 @@ internal fun deserializeClassToSymbol(
         replaceDeprecationsProvider(getDeprecationsProvider(session))
 
         setLazyPublishedVisibility(
-            hasPublishedApi = classOrObject.annotationEntries.any { context.annotationDeserializer.getAnnotationClassId(it) == StandardClassIds.Annotations.PublishedApi },
+            hasPublishedApi = classOrObject.annotationEntries.any { StubBasedAnnotationDeserializer.getAnnotationClassId(it) == StandardClassIds.Annotations.PublishedApi },
             parentProperty = null,
             session
         )

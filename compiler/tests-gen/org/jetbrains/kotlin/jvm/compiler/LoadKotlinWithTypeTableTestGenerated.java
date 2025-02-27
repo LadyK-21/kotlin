@@ -986,6 +986,29 @@ public class LoadKotlinWithTypeTableTestGenerated extends AbstractLoadKotlinWith
     }
   }
 
+  @TestMetadata("compiler/testData/loadJava/compiledKotlin/contextParameters")
+  @TestDataPath("$PROJECT_ROOT")
+  @RunWith(JUnit3RunnerWithInners.class)
+  public static class ContextParameters extends AbstractLoadKotlinWithTypeTableTest {
+    private void runTest(String testDataFilePath) {
+      KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
+    }
+
+    public void testAllFilesPresentInContextParameters() {
+      KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/loadJava/compiledKotlin/contextParameters"), Pattern.compile("^(.+)\\.kt$"), null, true);
+    }
+
+    @TestMetadata("contractOnContextParameter.kt")
+    public void testContractOnContextParameter() {
+      runTest("compiler/testData/loadJava/compiledKotlin/contextParameters/contractOnContextParameter.kt");
+    }
+
+    @TestMetadata("simpleContextParameters.kt")
+    public void testSimpleContextParameters() {
+      runTest("compiler/testData/loadJava/compiledKotlin/contextParameters/simpleContextParameters.kt");
+    }
+  }
+
   @TestMetadata("compiler/testData/loadJava/compiledKotlin/contextReceivers")
   @TestDataPath("$PROJECT_ROOT")
   @RunWith(JUnit3RunnerWithInners.class)

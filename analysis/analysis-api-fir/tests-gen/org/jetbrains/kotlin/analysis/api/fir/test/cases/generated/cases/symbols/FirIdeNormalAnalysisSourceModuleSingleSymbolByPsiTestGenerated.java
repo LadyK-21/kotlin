@@ -42,6 +42,24 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
   }
 
   @Test
+  @TestMetadata("abstractPropertyInAbstractClass.kt")
+  public void testAbstractPropertyInAbstractClass() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/abstractPropertyInAbstractClass.kt");
+  }
+
+  @Test
+  @TestMetadata("abstractPropertyInFinalClass.kt")
+  public void testAbstractPropertyInFinalClass() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/abstractPropertyInFinalClass.kt");
+  }
+
+  @Test
+  @TestMetadata("abstractPropertyInInterface.kt")
+  public void testAbstractPropertyInInterface() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/abstractPropertyInInterface.kt");
+  }
+
+  @Test
   public void testAllFilesPresentInSingleSymbolByPsi() {
     KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("analysis/analysis-api/testData/symbols/singleSymbolByPsi"), Pattern.compile("^(.+)\\.kt$"), null, true);
   }
@@ -101,9 +119,27 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
   }
 
   @Test
+  @TestMetadata("finalPropertyInInterface.kt")
+  public void testFinalPropertyInInterface() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/finalPropertyInInterface.kt");
+  }
+
+  @Test
   @TestMetadata("functionFromInitBlock.kt")
   public void testFunctionFromInitBlock() {
     runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/functionFromInitBlock.kt");
+  }
+
+  @Test
+  @TestMetadata("functionWithDefinitelyNotNullType.kt")
+  public void testFunctionWithDefinitelyNotNullType() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/functionWithDefinitelyNotNullType.kt");
+  }
+
+  @Test
+  @TestMetadata("functionWithNestedDefinitelyNotNullType.kt")
+  public void testFunctionWithNestedDefinitelyNotNullType() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/functionWithNestedDefinitelyNotNullType.kt");
   }
 
   @Test
@@ -122,6 +158,12 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
   @TestMetadata("getterWithReceiverAndAnnotations.kt")
   public void testGetterWithReceiverAndAnnotations() {
     runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/getterWithReceiverAndAnnotations.kt");
+  }
+
+  @Test
+  @TestMetadata("implicitFlexibleDnnType.kt")
+  public void testImplicitFlexibleDnnType() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/implicitFlexibleDnnType.kt");
   }
 
   @Test
@@ -167,6 +209,24 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
   }
 
   @Test
+  @TestMetadata("openPrimaryConstructorParameter.kt")
+  public void testOpenPrimaryConstructorParameter() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/openPrimaryConstructorParameter.kt");
+  }
+
+  @Test
+  @TestMetadata("openPrimaryConstructorParameterInFinalClass.kt")
+  public void testOpenPrimaryConstructorParameterInFinalClass() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/openPrimaryConstructorParameterInFinalClass.kt");
+  }
+
+  @Test
+  @TestMetadata("openPropertyInInterface.kt")
+  public void testOpenPropertyInInterface() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/openPropertyInInterface.kt");
+  }
+
+  @Test
   @TestMetadata("overriddenPropertyWithoutOverriddenSetter_param.kt")
   public void testOverriddenPropertyWithoutOverriddenSetter_param() {
     runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/overriddenPropertyWithoutOverriddenSetter_param.kt");
@@ -200,6 +260,12 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
   @TestMetadata("propertyFromWhenExpression.kt")
   public void testPropertyFromWhenExpression() {
     runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/propertyFromWhenExpression.kt");
+  }
+
+  @Test
+  @TestMetadata("propertyInInterface.kt")
+  public void testPropertyInInterface() {
+    runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/propertyInInterface.kt");
   }
 
   @Test
@@ -329,6 +395,142 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
   }
 
   @Nested
+  @TestMetadata("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters")
+  @TestDataPath("$PROJECT_ROOT")
+  public class ContextParameters {
+    @Test
+    public void testAllFilesPresentInContextParameters() {
+      KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters"), Pattern.compile("^(.+)\\.kt$"), null, true);
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnAnonymousFunction.kt")
+    public void testAnnotatedContextParameterOnAnonymousFunction() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnAnonymousFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnAnonymousFunction2.kt")
+    public void testAnnotatedContextParameterOnAnonymousFunction2() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnAnonymousFunction2.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnClass.kt")
+    public void testAnnotatedContextParameterOnClass() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnClass.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnClass2.kt")
+    public void testAnnotatedContextParameterOnClass2() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnClass2.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnFunction.kt")
+    public void testAnnotatedContextParameterOnFunction() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnFunction2.kt")
+    public void testAnnotatedContextParameterOnFunction2() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnFunction2.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnProperty.kt")
+    public void testAnnotatedContextParameterOnProperty() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnProperty.kt");
+    }
+
+    @Test
+    @TestMetadata("annotatedContextParameterOnProperty2.kt")
+    public void testAnnotatedContextParameterOnProperty2() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/annotatedContextParameterOnProperty2.kt");
+    }
+
+    @Test
+    @TestMetadata("anonymousFunctionWithContextParameters.kt")
+    public void testAnonymousFunctionWithContextParameters() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/anonymousFunctionWithContextParameters.kt");
+    }
+
+    @Test
+    @TestMetadata("anonymousFunctionWithContextReceivers.kt")
+    public void testAnonymousFunctionWithContextReceivers() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/anonymousFunctionWithContextReceivers.kt");
+    }
+
+    @Test
+    @TestMetadata("classWithContextParameters.kt")
+    public void testClassWithContextParameters() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/classWithContextParameters.kt");
+    }
+
+    @Test
+    @TestMetadata("classWithContextReceivers.kt")
+    public void testClassWithContextReceivers() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/classWithContextReceivers.kt");
+    }
+
+    @Test
+    @TestMetadata("contextParameterFromFunctionalType.kt")
+    public void testContextParameterFromFunctionalType() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/contextParameterFromFunctionalType.kt");
+    }
+
+    @Test
+    @TestMetadata("contextParameterOnAnonymousFunction.kt")
+    public void testContextParameterOnAnonymousFunction() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/contextParameterOnAnonymousFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("contextParameterOnClass.kt")
+    public void testContextParameterOnClass() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/contextParameterOnClass.kt");
+    }
+
+    @Test
+    @TestMetadata("contextParameterOnFunction.kt")
+    public void testContextParameterOnFunction() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/contextParameterOnFunction.kt");
+    }
+
+    @Test
+    @TestMetadata("contextParameterOnProperty.kt")
+    public void testContextParameterOnProperty() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/contextParameterOnProperty.kt");
+    }
+
+    @Test
+    @TestMetadata("functionWithContextParameters.kt")
+    public void testFunctionWithContextParameters() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/functionWithContextParameters.kt");
+    }
+
+    @Test
+    @TestMetadata("functionWithContextReceivers.kt")
+    public void testFunctionWithContextReceivers() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/functionWithContextReceivers.kt");
+    }
+
+    @Test
+    @TestMetadata("propertyWithContextParameters.kt")
+    public void testPropertyWithContextParameters() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/propertyWithContextParameters.kt");
+    }
+
+    @Test
+    @TestMetadata("propertyWithContextReceivers.kt")
+    public void testPropertyWithContextReceivers() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contextParameters/propertyWithContextReceivers.kt");
+    }
+  }
+
+  @Nested
   @TestMetadata("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contracts")
   @TestDataPath("$PROJECT_ROOT")
   public class Contracts {
@@ -341,6 +543,12 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
     @TestMetadata("booleanConstReferenceInImplies.kt")
     public void testBooleanConstReferenceInImplies() {
       runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contracts/booleanConstReferenceInImplies.kt");
+    }
+
+    @Test
+    @TestMetadata("booleanContextParameter.kt")
+    public void testBooleanContextParameter() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contracts/booleanContextParameter.kt");
     }
 
     @Test
@@ -371,6 +579,12 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
     @TestMetadata("callsInPlaceUnknownContract.kt")
     public void testCallsInPlaceUnknownContract() {
       runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contracts/callsInPlaceUnknownContract.kt");
+    }
+
+    @Test
+    @TestMetadata("castForDispatchReceiver.kt")
+    public void testCastForDispatchReceiver() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/contracts/castForDispatchReceiver.kt");
     }
 
     @Test
@@ -589,6 +803,12 @@ public class FirIdeNormalAnalysisSourceModuleSingleSymbolByPsiTestGenerated exte
     @TestMetadata("topLevelDestructuringDeclarationMutable.kt")
     public void testTopLevelDestructuringDeclarationMutable() {
       runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/errors/topLevelDestructuringDeclarationMutable.kt");
+    }
+
+    @Test
+    @TestMetadata("valKeywordOnVarargFunctionValueParameter.kt")
+    public void testValKeywordOnVarargFunctionValueParameter() {
+      runTest("analysis/analysis-api/testData/symbols/singleSymbolByPsi/errors/valKeywordOnVarargFunctionValueParameter.kt");
     }
 
     @Test

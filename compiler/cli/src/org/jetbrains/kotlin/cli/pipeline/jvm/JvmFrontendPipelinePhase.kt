@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.config.messageCollector
 import org.jetbrains.kotlin.config.moduleName
 import org.jetbrains.kotlin.config.useLightTree
+import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.DependencyListForCliModule
 import org.jetbrains.kotlin.fir.extensions.FirAnalysisHandlerExtension
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
@@ -51,6 +52,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.multiplatform.hmppModuleName
 import org.jetbrains.kotlin.resolve.multiplatform.isCommonSource
 import org.jetbrains.kotlin.utils.fileUtils.descendantRelativeTo
+import org.jetbrains.kotlin.util.PhaseType
 import java.io.File
 
 object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, JvmFrontendPipelineArtifact>(
@@ -61,7 +63,10 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
         val (configuration, diagnosticsCollector, rootDisposable) = input
         val messageCollector = configuration.messageCollector
 
+        val perfManager = configuration.perfManager
+
         if (!checkNotSupportedPlugins(configuration, messageCollector)) {
+            perfManager?.notifyPhaseFinished(PhaseType.Initialization)
             return null
         }
 
@@ -70,8 +75,12 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
         val (environment, sourcesProvider) = createEnvironmentAndSources(
             configuration,
             rootDisposable,
-            targetDescription
-        ) ?: return null
+            targetDescription,
+            diagnosticsCollector
+        ) ?: run {
+            perfManager?.notifyPhaseFinished(PhaseType.Initialization)
+            return null
+        }
 
         FirAnalysisHandlerExtension.analyze(environment.project, configuration)?.let {
             /*
@@ -86,11 +95,10 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
             }
         }
 
-        val performanceManager = configuration.perfManager
-        performanceManager?.notifyCompilerInitialized(files = 0, lines = 0, targetDescription)
-
         val sources = sourcesProvider()
         val allSources = sources.allFiles
+
+        perfManager?.notifyPhaseFinished(PhaseType.Initialization)
 
         if (
             allSources.isEmpty() &&
@@ -103,7 +111,7 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
             return null
         }
 
-        performanceManager?.notifyAnalysisStarted()
+        perfManager?.notifyPhaseStarted(PhaseType.Analysis)
         val sourceScope: AbstractProjectFileSearchScope
         when (configuration.useLightTree) {
             true -> {
@@ -158,7 +166,7 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
             }
         )
 
-        val countFilesAndLines = if (performanceManager == null) null else performanceManager::addSourcesStats
+        val countFilesAndLines = if (perfManager == null) null else perfManager::addSourcesStats
         val outputs = sessionsWithSources.map { (session, sources) ->
             val rawFirFiles = when (configuration.useLightTree) {
                 true -> session.buildFirViaLightTree(sources, diagnosticsCollector, countFilesAndLines)
@@ -193,7 +201,8 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
     private fun createEnvironmentAndSources(
         configuration: CompilerConfiguration,
         rootDisposable: Disposable,
-        targetDescription: String
+        targetDescription: String,
+        diagnosticReporter: BaseDiagnosticsCollector
     ): EnvironmentAndSources? {
         val messageCollector = configuration.messageCollector
         return when (configuration.useLightTree) {
@@ -220,7 +229,7 @@ object JvmFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, J
 
                 val sources = {
                     val ktFiles = kotlinCoreEnvironment.getSourceFiles()
-                    ktFiles.forEach { AnalyzerWithCompilerReport.reportSyntaxErrors(it, messageCollector) }
+                    ktFiles.forEach { AnalyzerWithCompilerReport.reportSyntaxErrors(it, diagnosticReporter) }
                     groupKtFiles(ktFiles)
                 }
 

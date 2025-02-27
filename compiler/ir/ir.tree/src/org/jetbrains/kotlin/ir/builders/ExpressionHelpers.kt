@@ -198,7 +198,9 @@ fun IrBuilderWithScope.irGet(type: IrType, receiver: IrExpression?, getterSymbol
         typeArgumentsCount = getterSymbol.owner.typeParameters.size,
         origin = IrStatementOrigin.GET_PROPERTY
     ).apply {
-        dispatchReceiver = receiver
+        if (receiver != null) {
+            arguments[0] = receiver
+        }
     }
 
 fun IrBuilderWithScope.irSet(type: IrType, receiver: IrExpression?, setterSymbol: IrFunctionSymbol, value: IrExpression): IrCall =
@@ -209,8 +211,12 @@ fun IrBuilderWithScope.irSet(type: IrType, receiver: IrExpression?, setterSymbol
         typeArgumentsCount = setterSymbol.owner.typeParameters.size,
         origin = IrStatementOrigin.EQ
     ).apply {
-        dispatchReceiver = receiver
-        putValueArgument(0, value)
+        if (receiver != null) {
+            arguments[0] = receiver
+            arguments[1] = value
+        } else {
+            arguments[0] = value
+        }
     }
 
 fun IrBuilderWithScope.irCall(
@@ -367,13 +373,14 @@ fun IrBuilderWithScope.irVararg(elementType: IrType, values: List<IrExpression>)
 fun IrBuilderWithScope.irRawFunctionReference(type: IrType, symbol: IrFunctionSymbol) =
     IrRawFunctionReferenceImpl(startOffset, endOffset, type, symbol)
 
-fun IrBuilderWithScope.irFunctionReference(type: IrType, symbol: IrFunctionSymbol) =
+fun IrBuilderWithScope.irFunctionReference(type: IrType, symbol: IrFunctionSymbol, reflectionTargetSymbol: IrFunctionSymbol? = symbol) =
     IrFunctionReferenceImpl(
         startOffset,
         endOffset,
         type,
         symbol,
-        symbol.owner.typeParameters.size
+        symbol.owner.typeParameters.size,
+        reflectionTargetSymbol,
     )
 
 fun IrBuilderWithScope.irTry(type: IrType, tryResult: IrExpression, catches: List<IrCatch>, finallyExpression: IrExpression?) =
@@ -392,6 +399,17 @@ inline fun IrBuilderWithScope.irBlock(
         endOffset,
         origin, resultType
     ).block(body)
+
+inline fun IrBuilderWithScope.irBlockOrSingleExpression(
+    startOffset: Int = this.startOffset,
+    endOffset: Int = this.endOffset,
+    origin: IrStatementOrigin? = null,
+    resultType: IrType? = null,
+    body: IrBlockBuilder.() -> Unit
+): IrExpression =
+    irBlock(startOffset, endOffset, origin, resultType, body).let {
+        it.statements.singleOrNull() as? IrExpression ?: it
+    }
 
 inline fun IrBuilderWithScope.irComposite(
     startOffset: Int = this.startOffset,

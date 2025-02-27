@@ -133,7 +133,7 @@ internal open class KaptConfig<TASK : KaptTask>(
                 if ("-source" in result || "--source" in result || "--release" in result) return@also
 
                 if (defaultJavaSourceCompatibility.isPresent) {
-                    val atLeast12Java = JavaVersion.current() >= JavaVersion.compose(12, 0, 0, 0, false)
+                    val atLeast12Java = System.getProperty("java.version").split('.').first().toInt() >= 12
                     val sourceOptionKey = if (atLeast12Java) {
                         "--source"
                     } else {
@@ -185,7 +185,7 @@ internal class KaptWithoutKotlincConfig : KaptConfig<KaptWithoutKotlincTask> {
             task.mapDiagnosticLocations = ext.mapDiagnosticLocations
             if (ext is KaptExtension) {
                 task.annotationProcessorFqNames.set(providers.provider {
-                    @Suppress("DEPRECATION")
+                    @Suppress("DEPRECATION_ERROR")
                     ext.processors.split(',').filter { it.isNotEmpty() }
                 })
             }

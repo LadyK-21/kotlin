@@ -18,15 +18,16 @@ import org.jetbrains.kotlin.ir.builders.irComposite
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.declarations.IrParameterKind
 import org.jetbrains.kotlin.ir.expressions.IrComposite
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOriginImpl
 import org.jetbrains.kotlin.ir.irAttribute
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
-import org.jetbrains.kotlin.ir.types.*
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.ir.util.parents
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.InlineClassDescriptorResolver
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
@@ -47,7 +48,7 @@ var IrFunction.parameterTemplateStructureOfThisNewMfvcBidingFunction: List<Remap
     get() = _parameterTemplateStructureOfThisNewMfvcBidingFunction
     set(value) {
         if (value != null) {
-            require(parameters.size == value.sumOf { it.valueParameters.size }) {
+            require(parameters.size == value.sumOf { it.parameters.size }) {
                 "Illegal structure $value for function ${this.dump()}"
             }
         }
@@ -160,10 +161,10 @@ class MemoizedMultiFieldValueClassReplacements(
 
     sealed class RemappedParameter {
 
-        abstract val valueParameters: List<IrValueParameter>
+        abstract val parameters: List<IrValueParameter>
 
         data class RegularMapping(val valueParameter: IrValueParameter) : RemappedParameter() {
-            override val valueParameters: List<IrValueParameter> = listOf(valueParameter)
+            override val parameters: List<IrValueParameter> = listOf(valueParameter)
             override fun toString(): String {
                 return "RegularMapping(valueParameter=${valueParameter.render()})"
             }
@@ -172,10 +173,10 @@ class MemoizedMultiFieldValueClassReplacements(
         data class MultiFieldValueClassMapping(
             val rootMfvcNode: RootMfvcNode,
             val typeArguments: TypeArguments,
-            override val valueParameters: List<IrValueParameter>,
+            override val parameters: List<IrValueParameter>,
         ) : RemappedParameter() {
             init {
-                require(valueParameters.size > 1) { "MFVC must have > 1 fields" }
+                require(parameters.size > 1) { "MFVC must have > 1 fields" }
             }
 
             constructor(rootMfvcNode: RootMfvcNode, type: IrSimpleType, valueParameters: List<IrValueParameter>) :
@@ -186,7 +187,7 @@ class MemoizedMultiFieldValueClassReplacements(
                 return """MultiFieldValueClassMapping(
                     |    rootMfvcNode=$rootMfvcNode,
                     |    typeArguments=[${typeArguments.values.joinToString(",") { "\n        " + it.render() }}],
-                    |    valueParameters=[${valueParameters.joinToString(",") { "\n        " + it.render() }}],
+                    |    valueParameters=[${parameters.joinToString(",") { "\n        " + it.render() }}],
                     |    boxedType=${boxedType.render()}
                     |)""".trimMargin()
             }
@@ -275,7 +276,7 @@ class MemoizedMultiFieldValueClassReplacements(
                         && function.nonDispatchParameters.any { it.type.needsMfvcFlattening() }
                         && run {
                     if (!function.isFakeOverride) return@run true
-                    val superDeclaration = findSuperDeclaration(function, false, context.config.jvmDefaultMode)
+                    val superDeclaration = findSuperDeclaration(function)
                     getReplacementFunction(superDeclaration) != null
                 } -> createMethodReplacement(function)
 
@@ -403,7 +404,7 @@ class MemoizedMultiFieldValueClassReplacements(
                             getArgument(sourceParameterStructure.valueParameter, targetParameterStructure.valueParameter.type)
                         )
                         is MultiFieldValueClassMapping -> {
-                            val valueArguments = sourceParameterStructure.valueParameters.map {
+                            val valueArguments = sourceParameterStructure.parameters.map {
                                 getArgument(it, it.type) ?: error("Expected an argument for $sourceParameterStructure")
                             }
                             val newArgument =
@@ -425,7 +426,7 @@ class MemoizedMultiFieldValueClassReplacements(
                             val argument = getArgument(sourceParameterStructure.valueParameter, targetParameterStructure.boxedType)
                                 ?: error("Expected an argument for $sourceParameterStructure")
                             if (sourceParameterStructure.valueParameter.type.isNothing()) {
-                                for ((index, parameter) in targetParameterStructure.valueParameters.withIndex()) {
+                                for ((index, parameter) in targetParameterStructure.parameters.withIndex()) {
                                     put(parameter, irComposite(origin = FLATTENED_NOTHING_DEFAULT_VALUE) {
                                         if (index == 0) +argument
                                         +parameter.type.defaultValue(
@@ -443,13 +444,13 @@ class MemoizedMultiFieldValueClassReplacements(
                                 val arguments = instance.makeFlattenedGetterExpressions(
                                     this, sourceFunction.parents.firstIsInstance<IrClass>(), registerPossibleExtraBoxCreation = {}
                                 )
-                                for ((targetParameter, expression) in targetParameterStructure.valueParameters zip arguments) {
+                                for ((targetParameter, expression) in targetParameterStructure.parameters zip arguments) {
                                     put(targetParameter, expression)
                                 }
                             }
                         }
                         is MultiFieldValueClassMapping -> {
-                            for ((sourceParameter, targetParameter) in sourceParameterStructure.valueParameters zip targetParameterStructure.valueParameters) {
+                            for ((sourceParameter, targetParameter) in sourceParameterStructure.parameters zip targetParameterStructure.parameters) {
                                 put(targetParameter, getArgument(sourceParameter, targetParameter.type))
                             }
                         }

@@ -128,7 +128,7 @@ if (!project.hasProperty("versions.kotlin-native")) {
     extra["versions.kotlin-native"] = if (kotlinBuildProperties.isKotlinNativeEnabled) {
         kotlinBuildProperties.defaultSnapshotVersion
     } else {
-        "2.1.20-dev-5043"
+        "2.2.0-dev-6046"
     }
 }
 
@@ -593,7 +593,7 @@ allprojects {
                 return@eachDependency
             }
 
-            val isReflect = requested.name == "kotlin-reflect" || requested.name == "kotlin-reflect-api"
+            val isReflect = requested.name == "kotlin-reflect"
             // More strict check for "compilerModules". We can't apply this check for all modules because it would force to
             // exclude kotlin-reflect from transitive dependencies of kotlin-poet, ktor, com.android.tools.build:gradle, etc
             if (project.path in @Suppress("UNCHECKED_CAST") (rootProject.extra["compilerModules"] as Array<String>)) {
@@ -850,9 +850,12 @@ tasks {
         dependsOn(":native:native.tests:klib-compatibility:check")
         dependsOn(":tools:binary-compatibility-validator:check")
         dependsOn(":native:objcexport-header-generator:check")
-        dependsOn(":native:swift:swift-export-standalone:test")
+        dependsOn(":native:swift:swift-export-standalone-integration-tests:simple:test")
+        dependsOn(":native:swift:swift-export-standalone-integration-tests:external:test")
+        dependsOn(":native:swift:swift-export-embeddable:testSwiftExportStandaloneWithEmbeddable")
         dependsOn(":native:swift:swift-export-ide:test")
         dependsOn(":native:native.tests:litmus-tests:check")
+        dependsOn(":native:swift:sir-light-classes:check")
     }
 
     // These are unit tests of Native compiler
@@ -863,6 +866,10 @@ tasks {
             dependsOn(":kotlin-native:Interop:StubGenerator:check")
             dependsOn(":kotlin-native:backend.native:check")
             dependsOn(":kotlin-native:tools:kdumputil:check")
+            dependsOn(":kotlin-native:common:env:check")
+            dependsOn(":kotlin-native:common:files:check")
+            dependsOn(":kotlin-native:libclangInterop:check")
+            dependsOn(":kotlin-native:llvmInterop:check")
         }
     }
 
@@ -937,6 +944,7 @@ tasks {
         dependsOn(":kotlin-util-klib-abi:test")
         dependsOn(":kotlinx-metadata-klib:test")
         dependsOn(":generators:test")
+        dependsOn(":kotlin-gradle-plugin-dsl-codegen:test")
     }
 
     register("incrementalCompilationTest") {
@@ -1195,24 +1203,8 @@ plugins.withType(org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin:
     }
 }
 
-plugins.withType(com.github.gradle.node.NodePlugin::class) {
-    extensions.configure(com.github.gradle.node.NodeExtension::class) {
-        if (kotlinBuildProperties.isCacheRedirectorEnabled) {
-            distBaseUrl = "https://cache-redirector.jetbrains.com/nodejs.org/dist"
-        }
-    }
-}
-
-afterEvaluate {
-    if (kotlinBuildProperties.isCacheRedirectorEnabled) {
-        rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
-            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().downloadBaseUrl =
-                "https://cache-redirector.jetbrains.com/github.com/yarnpkg/yarn/releases/download"
-
-            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().yarnLockMismatchReport =
-                YarnLockMismatchReport.WARNING
-        }
-    }
+if (kotlinBuildProperties.isCacheRedirectorEnabled) {
+    configureJsCacheRedirector()
 }
 
 afterEvaluate {

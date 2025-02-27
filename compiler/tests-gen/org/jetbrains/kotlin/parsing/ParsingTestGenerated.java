@@ -146,6 +146,11 @@ public class ParsingTestGenerated extends AbstractParsingTest {
       runTest("compiler/testData/psi/Constructors.kt");
     }
 
+    @TestMetadata("contextParametersAndAnnotations.kt")
+    public void testContextParametersAndAnnotations() {
+      runTest("compiler/testData/psi/contextParametersAndAnnotations.kt");
+    }
+
     @TestMetadata("ControlStructures.kt")
     public void testControlStructures() {
       runTest("compiler/testData/psi/ControlStructures.kt");
@@ -1330,6 +1335,59 @@ public class ParsingTestGenerated extends AbstractParsingTest {
             runTest("compiler/testData/psi/annotation/targeted/onParam/targetExpected.kt");
           }
         }
+      }
+    }
+
+    @TestMetadata("compiler/testData/psi/contextParameters")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class ContextParameters extends AbstractParsingTest {
+      private void runTest(String testDataFilePath) {
+        KotlinTestUtils.runTest(this::doParsingTest, this, testDataFilePath);
+      }
+
+      public void testAllFilesPresentInContextParameters() {
+        KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/psi/contextParameters"), Pattern.compile("^(.*)\\.kts?$"), null, true);
+      }
+
+      @TestMetadata("anonymousFunction.kt")
+      public void testAnonymousFunction() {
+        runTest("compiler/testData/psi/contextParameters/anonymousFunction.kt");
+      }
+
+      @TestMetadata("functions.kt")
+      public void testFunctions() {
+        runTest("compiler/testData/psi/contextParameters/functions.kt");
+      }
+
+      @TestMetadata("labelInFunctionTypeContext.kt")
+      public void testLabelInFunctionTypeContext() {
+        runTest("compiler/testData/psi/contextParameters/labelInFunctionTypeContext.kt");
+      }
+
+      @TestMetadata("properties.kt")
+      public void testProperties() {
+        runTest("compiler/testData/psi/contextParameters/properties.kt");
+      }
+
+      @TestMetadata("syntaxError.kt")
+      public void testSyntaxError() {
+        runTest("compiler/testData/psi/contextParameters/syntaxError.kt");
+      }
+
+      @TestMetadata("trailingComma.kt")
+      public void testTrailingComma() {
+        runTest("compiler/testData/psi/contextParameters/trailingComma.kt");
+      }
+
+      @TestMetadata("trailingCommaForbidden.kt")
+      public void testTrailingCommaForbidden() {
+        runTest("compiler/testData/psi/contextParameters/trailingCommaForbidden.kt");
+      }
+
+      @TestMetadata("unnamed.kt")
+      public void testUnnamed() {
+        runTest("compiler/testData/psi/contextParameters/unnamed.kt");
       }
     }
 

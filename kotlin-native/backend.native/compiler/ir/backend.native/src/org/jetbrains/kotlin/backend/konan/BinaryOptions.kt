@@ -41,6 +41,8 @@ object BinaryOptions : BinaryOptionRegistry() {
 
     val objcExportEntryPointsPath by stringOption()
 
+    val dumpObjcSelectorToSignatureMapping by stringOption()
+
     val gc by option<GC>(shortcut = { it.shortcut })
 
     val gcSchedulerType by option<GCSchedulerType>(hideValue = { it.deprecatedWithReplacement != null })
@@ -79,6 +81,8 @@ object BinaryOptions : BinaryOptionRegistry() {
 
     val disableMmap by booleanOption()
 
+    val mmapTag by uintOption()
+
     val enableSafepointSignposts by booleanOption()
 
     val packFields by booleanOption()
@@ -98,6 +102,10 @@ object BinaryOptions : BinaryOptionRegistry() {
     val enableDebugTransparentStepping by booleanOption()
 
     val debugCompilationDir by stringOption()
+
+    val pagedAllocator by booleanOption()
+
+    val latin1Strings by booleanOption()
 }
 
 open class BinaryOption<T : Any>(

@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.cli.js
 
 import com.intellij.openapi.Disposable
-import org.jetbrains.kotlin.backend.wasm.getWasmPhases
+import org.jetbrains.kotlin.backend.wasm.getWasmLowerings
 import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
@@ -19,6 +19,8 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.phaseConfig
 import org.jetbrains.kotlin.ir.backend.js.ModulesStructure
 import org.jetbrains.kotlin.serialization.js.ModuleKind
+import org.jetbrains.kotlin.util.PerformanceManager
+import org.jetbrains.kotlin.util.PhaseType
 import java.io.File
 
 internal class K2WasmCompilerImpl(
@@ -28,7 +30,7 @@ internal class K2WasmCompilerImpl(
     outputName: String,
     outputDir: File,
     messageCollector: MessageCollector,
-    performanceManager: CommonCompilerPerformanceManager?,
+    performanceManager: PerformanceManager?,
 ) : K2JsCompilerImplBase(
     arguments = arguments,
     configuration = configuration,
@@ -66,7 +68,7 @@ internal class K2WasmCompilerImpl(
             arguments.generateDwarf
         )
 
-        performanceManager?.notifyIRTranslationFinished()
+        performanceManager?.notifyPhaseFinished(PhaseType.TranslationToIr)
 
         return OK
     }
@@ -77,7 +79,7 @@ internal class K2WasmCompilerImpl(
         moduleKind: ModuleKind?,
     ): ExitCode {
         configuration.phaseConfig = createPhaseConfig(arguments).also {
-            if (arguments.listPhases) it.list(getWasmPhases(configuration, isIncremental = false))
+            if (arguments.listPhases) it.list(getWasmLowerings(configuration, isIncremental = false))
         }
 
 
@@ -93,7 +95,7 @@ internal class K2WasmCompilerImpl(
             generateDwarf = arguments.generateDwarf
         )
 
-        performanceManager?.notifyIRTranslationFinished()
+        performanceManager?.notifyPhaseFinished(PhaseType.TranslationToIr)
 
         return OK
     }

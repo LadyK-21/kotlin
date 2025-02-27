@@ -12,9 +12,11 @@ import org.jetbrains.kotlin.backend.konan.ir.BridgesPolicy
 import org.jetbrains.kotlin.backend.konan.objcexport.ObjCEntryPoints
 import org.jetbrains.kotlin.backend.konan.objcexport.readObjCEntryPoints
 import org.jetbrains.kotlin.backend.konan.serialization.KonanUserVisibleIrModulesSupport
+import org.jetbrains.kotlin.backend.konan.serialization.PartialCacheInfo
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.KlibConfigurationKeys.CUSTOM_KLIB_ABI_VERSION
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 import org.jetbrains.kotlin.config.phaseConfig
 import org.jetbrains.kotlin.ir.linkage.partial.partialLinkageConfig
@@ -82,10 +84,12 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
     }
 
     private val defaultGC get() = GC.PARALLEL_MARK_CONCURRENT_SWEEP
-    val gc: GC get() = configuration.get(BinaryOptions.gc) ?: defaultGC
+    val gc: GC get() = configuration.get(BinaryOptions.gc) ?: run {
+        if (swiftExport) GC.CONCURRENT_MARK_AND_SWEEP else defaultGC
+    }
     val runtimeAssertsMode: RuntimeAssertsMode get() = configuration.get(BinaryOptions.runtimeAssertionsMode) ?: RuntimeAssertsMode.IGNORE
     val checkStateAtExternalCalls: Boolean get() = configuration.get(BinaryOptions.checkStateAtExternalCalls) ?: false
-    private val defaultDisableMmap get() = target.family == Family.MINGW
+    private val defaultDisableMmap get() = target.family == Family.MINGW || !pagedAllocator
     val disableMmap: Boolean by lazy {
         when (configuration.get(BinaryOptions.disableMmap)) {
             null -> defaultDisableMmap
@@ -99,6 +103,14 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
                 }
             }
         }
+    }
+    val mmapTag: UByte by lazy {
+        configuration.get(BinaryOptions.mmapTag)?.let {
+            if (it > 255U) {
+                configuration.report(CompilerMessageSeverity.ERROR, "mmap tag must be between 1 and 255")
+            }
+            it.toUByte()
+        } ?: 246U // doesn't seem to be used in the wild.
     }
     val packFields: Boolean by lazy {
         configuration.get(BinaryOptions.packFields) ?: true
@@ -244,6 +256,13 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
                 ?: ObjCEntryPoints.ALL
     }
 
+    /**
+     * Path to store ObjC selector to Kotlin signature mapping
+     */
+    val dumpObjcSelectorToSignatureMapping: String? by lazy {
+        configuration.get(BinaryOptions.dumpObjcSelectorToSignatureMapping)
+    }
+
     val enableSafepointSignposts: Boolean = configuration.get(BinaryOptions.enableSafepointSignposts)?.also {
         if (it && !target.supportsSignposts) {
             configuration.report(CompilerMessageSeverity.STRONG_WARNING, "Signposts are not available on $target. The setting will have no effect.")
@@ -257,6 +276,12 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
     val genericSafeCasts: Boolean by lazy {
         configuration.get(BinaryOptions.genericSafeCasts)
                 ?: false // For now disabled by default due to performance penalty.
+    }
+
+    internal val defaultPagedAllocator: Boolean get() = true
+
+    val pagedAllocator: Boolean by lazy {
+        configuration.get(BinaryOptions.pagedAllocator) ?: true
     }
 
     internal val bridgesPolicy: BridgesPolicy by lazy {
@@ -277,6 +302,9 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
 
     val enableDebugTransparentStepping: Boolean
         get() = target.family.isAppleFamily && (configuration.get(BinaryOptions.enableDebugTransparentStepping) ?: true)
+
+    val latin1Strings: Boolean
+        get() = configuration.get(BinaryOptions.latin1Strings) ?: false
 
     init {
         // NB: producing LIBRARY is enabled on any combination of hosts/targets
@@ -300,6 +328,8 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
     internal val metadataKlib get() = configuration.getBoolean(CommonConfigurationKeys.METADATA_KLIB)
 
     internal val headerKlibPath get() = configuration.get(KonanConfigKeys.HEADER_KLIB)?.removeSuffixIfPresent(".klib")
+
+    internal val customAbiVersion get() = configuration.get(CUSTOM_KLIB_ABI_VERSION)
 
     internal val produceStaticFramework get() = configuration.getBoolean(KonanConfigKeys.STATIC_FRAMEWORK)
 
@@ -401,20 +431,11 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
                 throw IllegalStateException("Deprecated options must have already been handled")
             }
         }
-        if (allocationMode == AllocationMode.CUSTOM) {
-            when (gc) {
-                GC.STOP_THE_WORLD_MARK_AND_SWEEP -> add("same_thread_ms_gc_custom.bc")
-                GC.NOOP -> add("noop_gc_custom.bc")
-                GC.PARALLEL_MARK_CONCURRENT_SWEEP -> add("pmcs_gc_custom.bc")
-                GC.CONCURRENT_MARK_AND_SWEEP -> add("concurrent_ms_gc_custom.bc")
-            }
-        } else {
-            when (gc) {
-                GC.STOP_THE_WORLD_MARK_AND_SWEEP -> add("same_thread_ms_gc.bc")
-                GC.NOOP -> add("noop_gc.bc")
-                GC.PARALLEL_MARK_CONCURRENT_SWEEP -> add("pmcs_gc.bc")
-                GC.CONCURRENT_MARK_AND_SWEEP -> add("concurrent_ms_gc.bc")
-            }
+        when (gc) {
+            GC.STOP_THE_WORLD_MARK_AND_SWEEP -> add("same_thread_ms_gc.bc")
+            GC.NOOP -> add("noop_gc.bc")
+            GC.PARALLEL_MARK_CONCURRENT_SWEEP -> add("pmcs_gc.bc")
+            GC.CONCURRENT_MARK_AND_SWEEP -> add("concurrent_ms_gc.bc")
         }
         if (target.supportsCoreSymbolication()) {
             add("source_info_core_symbolication.bc")
@@ -538,7 +559,7 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
         if (allocationMode != defaultAllocationMode)
             append("-allocator${allocationMode.name}")
         if (gc != defaultGC)
-            append("-gc${gc.name}")
+            append("-gc${gc.shortcut ?: gc.name.lowercase()}")
         if (gcSchedulerType != defaultGCSchedulerType)
             append("-gc_scheduler${gcSchedulerType.name}")
         if (runtimeAssertsMode != RuntimeAssertsMode.IGNORE)
@@ -549,6 +570,8 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
             append("-gc_mark_single_threaded${if (gcMarkSingleThreaded) "TRUE" else "FALSE"}")
         if (fixedBlockPageSize != defaultFixedBlockPageSize)
             append("-fixed_block_page_size$fixedBlockPageSize")
+        if (pagedAllocator != defaultPagedAllocator)
+            append("-paged_allocator${if (pagedAllocator) "TRUE" else "FALSE"}")
     }
 
     private val userCacheFlavorString = buildString {

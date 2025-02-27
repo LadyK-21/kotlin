@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 import org.jetbrains.kotlin.gradle.testbase.*
 import org.jetbrains.kotlin.test.TestMetadata
 import org.junit.jupiter.api.DisplayName
+import kotlin.io.path.appendText
 
 
 @MppGradlePluginTests
@@ -34,6 +35,36 @@ class NodeJsGradlePluginIT : KGPBaseTest() {
         }
     }
 
+    @DisplayName("Check that changing granularity doesn't break incremental compilation")
+    @GradleTest
+    @TestMetadata("subprojects-nodejs-setup")
+    fun testIncrementalCompilationWithChangingGranularity(gradleVersion: GradleVersion) {
+        project("subprojects-nodejs-setup", gradleVersion) {
+            gradleProperties.appendText(
+                """
+                |
+                |kotlin.incremental.js.ir=true
+                |kotlin.js.ir.output.granularity=whole-program
+                """.trimMargin()
+            )
+
+            build(":app1:jsNodeDevelopmentRun") {
+                assertOutputContains("Hello with version: v22.2.0")
+            }
+
+            gradleProperties.appendText(
+                """
+                |
+                |kotlin.js.ir.output.granularity=per-file
+                """.trimMargin()
+            )
+
+            build(":app1:jsNodeDevelopmentRun") {
+                assertOutputContains("Hello with version: v22.2.0")
+            }
+        }
+    }
+
     @DisplayName("Set different Node.js versions in different subprojects configured with previous API")
     @GradleTest
     @TestMetadata("subprojects-nodejs-setup")
@@ -44,7 +75,7 @@ class NodeJsGradlePluginIT : KGPBaseTest() {
         ) {
             listOf("app1", "app2").forEach { subProjectName ->
                 subProject(subProjectName).buildGradleKts.modify {
-                    it.replace("plugins.", "rootProject.plugins.")
+                    it.replace("plugins.", "@Suppress(\"DEPRECATION_ERROR\") rootProject.plugins.")
                         .replace("the", "rootProject.the")
                         .replace("NodeJsPlugin", "NodeJsRootPlugin")
                         .replace("NodeJsEnvSpec", "NodeJsRootExtension")

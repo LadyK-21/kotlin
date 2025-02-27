@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -13,16 +13,17 @@ import org.jetbrains.kotlin.backend.konan.driver.PhaseContext
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 import org.jetbrains.kotlin.konan.file.File
 import org.jetbrains.kotlin.konan.library.impl.buildLibrary
+import org.jetbrains.kotlin.library.KLIB_LEGACY_METADATA_VERSION
 import org.jetbrains.kotlin.library.KLIB_PROPERTY_HEADER
 import org.jetbrains.kotlin.library.KotlinAbiVersion
 import org.jetbrains.kotlin.library.KotlinLibraryVersioning
-import org.jetbrains.kotlin.library.metadata.KlibMetadataVersion
 import java.util.*
 
 internal data class KlibWriterInput(
         val serializerOutput: SerializerOutput,
         val customOutputPath: String?,
-        val produceHeaderKlib: Boolean
+        val produceHeaderKlib: Boolean,
+        val customAbiVersion: KotlinAbiVersion?,
 )
 internal val WriteKlibPhase = createSimpleNamedCompilerPhase<PhaseContext, KlibWriterInput>(
         "WriteKlib",
@@ -35,9 +36,9 @@ internal val WriteKlibPhase = createSimpleNamedCompilerPhase<PhaseContext, KlibW
     val output = outputFiles.klibOutputFileName(!nopack)
     val libraryName = config.moduleId
     val shortLibraryName = config.shortModuleName
-    val abiVersion = KotlinAbiVersion.CURRENT
+    val abiVersion = input.customAbiVersion ?: KotlinAbiVersion.CURRENT
     val compilerVersion = KotlinCompilerVersion.getVersion().toString()
-    val metadataVersion = KlibMetadataVersion.INSTANCE.toString()
+    val metadataVersion = KLIB_LEGACY_METADATA_VERSION
     val versions = KotlinLibraryVersioning(
             abiVersion = abiVersion,
             compilerVersion = compilerVersion,
@@ -92,6 +93,7 @@ internal fun <T : PhaseContext> PhaseEngine<T>.writeKlib(
         serializationOutput: SerializerOutput,
         customOutputPath: String? = null,
         produceHeaderKlib: Boolean = false,
+        customAbiVersion: KotlinAbiVersion?,
 ) {
-    this.runPhase(WriteKlibPhase, KlibWriterInput(serializationOutput, customOutputPath, produceHeaderKlib))
+    this.runPhase(WriteKlibPhase, KlibWriterInput(serializationOutput, customOutputPath, produceHeaderKlib, customAbiVersion))
 }

@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.gradle.android
 import org.gradle.api.JavaVersion
 import org.gradle.api.logging.LogLevel
 import org.gradle.util.GradleVersion
+import org.jetbrains.kotlin.gradle.BrokenOnMacosTest
 import org.jetbrains.kotlin.gradle.Kapt3BaseIT
 import org.jetbrains.kotlin.gradle.forceK1Kapt
 import org.jetbrains.kotlin.gradle.testbase.*
@@ -119,7 +120,7 @@ open class Kapt3AndroidExternalIT : Kapt3BaseIT() {
         jdkVersion: JdkVersions.ProvidedJdk,
     ) {
         val realmVersion = if (agpVersion != TestVersions.AGP.AGP_73) {
-            "10.13.0-transformer-api"
+            "10.13.1-transformer-api"
         } else {
             "10.11.0"
         }

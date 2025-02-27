@@ -21,11 +21,11 @@ import org.jetbrains.kotlin.gradle.utils.newInstance
 import java.io.File
 import javax.inject.Inject
 
-@Suppress("UNCHECKED_CAST", "TYPEALIAS_EXPANSION_DEPRECATION", "DEPRECATION")
+@Suppress("UNCHECKED_CAST", "TYPEALIAS_EXPANSION_DEPRECATION_ERROR", "DEPRECATION")
 internal fun ObjectFactory.KotlinWithJavaTargetForJvm(
     project: Project,
     targetName: String = "",
-): KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions> = newInstance(
+): KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions> = (newInstance(
     KotlinWithJavaTarget::class.java,
     project,
     KotlinPlatformType.jvm,
@@ -41,14 +41,14 @@ internal fun ObjectFactory.KotlinWithJavaTargetForJvm(
             override val options: KotlinJvmCompilerOptions get() = compilerOptions
         }
     }
-) as KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions>
+) as KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions>)
 
 @Suppress("DEPRECATION")
 abstract class KotlinWithJavaTarget<KotlinOptionsType : KotlinCommonOptions, CO : KotlinCommonCompilerOptions> @Inject constructor(
     project: Project,
     override val platformType: KotlinPlatformType,
     override val targetName: String,
-    @Suppress("TYPEALIAS_EXPANSION_DEPRECATION") compilerOptionsFactory: () -> DeprecatedHasCompilerOptions<CO>,
+    @Suppress("TYPEALIAS_EXPANSION_DEPRECATION_ERROR") compilerOptionsFactory: () -> DeprecatedHasCompilerOptions<CO>,
     kotlinOptionsFactory: (CO) -> KotlinOptionsType
 ) : AbstractKotlinTarget(project),
     HasConfigurableKotlinCompilerOptions<KotlinJvmCompilerOptions> {

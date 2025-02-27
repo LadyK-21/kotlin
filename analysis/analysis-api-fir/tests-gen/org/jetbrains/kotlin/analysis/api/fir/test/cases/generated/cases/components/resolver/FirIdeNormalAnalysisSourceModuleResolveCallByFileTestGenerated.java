@@ -119,6 +119,12 @@ public class FirIdeNormalAnalysisSourceModuleResolveCallByFileTestGenerated exte
   }
 
   @Test
+  @TestMetadata("contextParameters.kt")
+  public void testContextParameters() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/contextParameters.kt");
+  }
+
+  @Test
   @TestMetadata("delegatedFieldNestedName.kt")
   public void testDelegatedFieldNestedName() {
     runTest("analysis/analysis-api/testData/components/resolver/allByPsi/delegatedFieldNestedName.kt");
@@ -167,6 +173,18 @@ public class FirIdeNormalAnalysisSourceModuleResolveCallByFileTestGenerated exte
   }
 
   @Test
+  @TestMetadata("innerClass.kt")
+  public void testInnerClass() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/innerClass.kt");
+  }
+
+  @Test
+  @TestMetadata("innerClassThis.kt")
+  public void testInnerClassThis() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/innerClassThis.kt");
+  }
+
+  @Test
   @TestMetadata("invoke.kt")
   public void testInvoke() {
     runTest("analysis/analysis-api/testData/components/resolver/allByPsi/invoke.kt");
@@ -191,6 +209,24 @@ public class FirIdeNormalAnalysisSourceModuleResolveCallByFileTestGenerated exte
   }
 
   @Test
+  @TestMetadata("nestedClass.kt")
+  public void testNestedClass() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/nestedClass.kt");
+  }
+
+  @Test
+  @TestMetadata("nestedClassThis.kt")
+  public void testNestedClassThis() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/nestedClassThis.kt");
+  }
+
+  @Test
+  @TestMetadata("operatorsWithContextParameters.kt")
+  public void testOperatorsWithContextParameters() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/operatorsWithContextParameters.kt");
+  }
+
+  @Test
   @TestMetadata("providedDelegate.kt")
   public void testProvidedDelegate() {
     runTest("analysis/analysis-api/testData/components/resolver/allByPsi/providedDelegate.kt");
@@ -206,6 +242,12 @@ public class FirIdeNormalAnalysisSourceModuleResolveCallByFileTestGenerated exte
   @TestMetadata("staticImports.kt")
   public void testStaticImports() {
     runTest("analysis/analysis-api/testData/components/resolver/allByPsi/staticImports.kt");
+  }
+
+  @Test
+  @TestMetadata("stringConcatenation.kt")
+  public void testStringConcatenation() {
+    runTest("analysis/analysis-api/testData/components/resolver/allByPsi/stringConcatenation.kt");
   }
 
   @Test

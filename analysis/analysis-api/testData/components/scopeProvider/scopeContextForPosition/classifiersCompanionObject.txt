@@ -1,16 +1,22 @@
 element: e
-implicit receivers:
-  type: KaUsualClassType:
-    annotations: []
-    typeArguments: []
-    type: Base
-  owner symbol: KaFirNamedClassSymbol
+implicit values:
+  KaImplicitReceiver:
+    scopeIndexInTower = 1
+    type = KaUsualClassType:
+      annotations: []
+      typeArguments: []
+      type: Base
+    ownerSymbol = KaNamedClassSymbol:
+      /Base
 
-  type: KaUsualClassType:
-    annotations: []
-    typeArguments: []
-    type: Base.Companion
-  owner symbol: KaFirNamedClassSymbol
+  KaImplicitReceiver:
+    scopeIndexInTower = 4
+    type = KaUsualClassType:
+      annotations: []
+      typeArguments: []
+      type: Base.Companion
+    ownerSymbol = KaNamedClassSymbol:
+      /Base.Companion
 
 scopes:
   LocalScope, index = 0
@@ -72,6 +78,7 @@ scopes:
           visibility: PRIVATE
         callableId: /Base.foo
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         getter: KaPropertyGetterSymbol:
           annotations: []
@@ -98,7 +105,7 @@ scopes:
         hasBackingField: true
         hasGetter: true
         hasSetter: false
-        initializer: KtNonConstantInitializerValue(e)
+        initializer: KaNonConstantInitializerValue(e)
         isActual: false
         isConst: false
         isDelegatedProperty: false
@@ -125,6 +132,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.equals
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -182,6 +190,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.hashCode
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -213,6 +222,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.toString
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -362,6 +372,7 @@ scopes:
         annotations: []
         callableId: /Base.Companion.bar
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -393,6 +404,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.equals
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -450,6 +462,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.hashCode
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -481,6 +494,7 @@ scopes:
         annotations: []
         callableId: kotlin/Any.toString
         compilerVisibility: Public
+        contextParameters: []
         contextReceivers: []
         contractEffects: []
         hasStableParameterNames: true
@@ -605,3 +619,4 @@ scopes:
     constructors: 0
 
   DefaultStarImportingScope, index = 10
+
