@@ -76,6 +76,7 @@ where advanced options include:
   -Xfriend-paths=<path>      Paths to output directories for friend modules (modules whose internals should be visible).
   -Xallow-no-source-files    Allow the set of source files to be empty.
   -Xemit-jvm-type-annotations Emit JVM type annotations in bytecode.
+  -Xjvm-expose-boxed         Expose inline classes and functions, accepting and returning them, to Java.
   -Xstring-concat={indy-with-constants|indy|inline}
                              Select the code generation scheme for string concatenation:
                              -Xstring-concat=indy-with-constants  Concatenate strings using 'invokedynamic' and 'makeConcatWithConstants'. This requires '-jvm-target 9' or greater.
@@ -127,6 +128,9 @@ where advanced options include:
   -Xdebug                    Enable debug mode for compilation.
                              Currently this includes spilling all variables in a suspending context regardless of whether they are alive.
                              If API Level >= 2.2 -- no-op.
+  -Xenhanced-coroutines-debugging
+                             Generate additional linenumber instruction for compiler-generated code
+                             inside suspend functions and lambdas to distinguish them from user code by debugger.
   -Xno-new-java-annotation-targets
                              Don't generate Java 1.8+ targets for Kotlin annotation classes.
   -Xvalue-classes            Enable experimental value classes.
@@ -152,7 +156,6 @@ where advanced options include:
   -Xintellij-plugin-root=<path> Path to 'kotlin-compiler.jar' or the directory where the IntelliJ IDEA configuration files can be found.
   -Xnew-inference            Enable the new experimental generic type inference algorithm.
   -Xinline-classes           Enable experimental inline classes.
-  -Xlegacy-smart-cast-after-try Allow 'var' smart casts even in the presence of assignments in 'try' blocks.
   -Xreport-perf              Report detailed performance statistics.
   -Xdump-perf=<path>         Dump detailed performance statistics to the specified file.
   -Xmetadata-version         Change the metadata version of the generated binary files.
@@ -188,7 +191,6 @@ where advanced options include:
                              Use the 'warning' level to issue warnings instead of errors.
   -Xreturn-value-checker={check|full|disable}
                              Set improved unused return value checker mode. Use 'check' to run checker only and use 'full' to also enable automatic annotation insertion.
-  -Xinference-compatibility  Enable compatibility changes for the generic type inference algorithm.
   -Xsuppress-version-warnings Suppress warnings about outdated, inconsistent, or experimental language or API versions.
   -Xsuppress-api-version-greater-than-language-version-error
                              Suppress error about API version greater than language version.
@@ -201,7 +203,6 @@ where advanced options include:
                              Eliminate builder inference restrictions, for example by allowing type variables to be returned from builder inference calls.
   -Xenable-builder-inference Use builder inference by default for all calls with lambdas that can't be resolved without it.
                              The corresponding calls' declarations may not be marked with @BuilderInference.
-  -Xself-upper-bound-inference Support inferring type arguments from the self-type upper bounds of the corresponding type parameters.
   -Xcontext-receivers        Enable experimental context receivers.
   -Xcontext-parameters       Enable experimental context parameters.
   -Xcontext-sensitive-resolution Enable experimental context-sensitive resolution.

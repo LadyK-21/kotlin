@@ -258,18 +258,6 @@ val actualCommonCompilerArguments by compilerArgumentsLevel(CompilerArgumentsLev
     }
 
     compilerArgument {
-        name = "Xlegacy-smart-cast-after-try"
-        description = "Allow 'var' smart casts even in the presence of assignments in 'try' blocks.".asReleaseDependent()
-        valueType = BooleanType.defaultFalse
-
-        additionalAnnotations(
-            Disables(LanguageFeature.SoundSmartCastsAfterTry)
-        )
-
-        stubLifecycle()
-    }
-
-    compilerArgument {
         name = "Xreport-perf"
         description = "Report detailed performance statistics.".asReleaseDependent()
         valueType = BooleanType.defaultFalse
@@ -554,19 +542,6 @@ This flag partially enables functionality of `-Xexplicit-api` flag, so please do
 
 
     compilerArgument {
-        name = "Xinference-compatibility"
-        description = "Enable compatibility changes for the generic type inference algorithm.".asReleaseDependent()
-        valueType = BooleanType.defaultFalse
-
-        additionalAnnotations(
-            Enables(LanguageFeature.InferenceCompatibility)
-        )
-
-        stubLifecycle()
-    }
-
-
-    compilerArgument {
         name = "Xsuppress-version-warnings"
         description = "Suppress warnings about outdated, inconsistent, or experimental language or API versions.".asReleaseDependent()
         valueType = BooleanType.defaultFalse
@@ -627,18 +602,6 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
         valueType = BooleanType.defaultFalse
 
         additionalAnnotations(Enables(LanguageFeature.UseBuilderInferenceWithoutAnnotation))
-
-        stubLifecycle()
-    }
-
-
-    compilerArgument {
-        name = "Xself-upper-bound-inference"
-        description =
-            "Support inferring type arguments from the self-type upper bounds of the corresponding type parameters.".asReleaseDependent()
-        valueType = BooleanType.defaultFalse
-
-        additionalAnnotations(Enables(LanguageFeature.TypeInferenceOnCallsWithSelfTypes))
 
         stubLifecycle()
     }
@@ -881,6 +844,14 @@ default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1
         valueType = BooleanType.defaultFalse
 
         additionalAnnotations(Enables(LanguageFeature.AnnotationAllUseSiteTarget))
+
+        stubLifecycle()
+    }
+
+    compilerArgument {
+        name = "XXlenient-mode"
+        description = "Lenient compiler mode. When actuals are missing, placeholder declarations are generated.".asReleaseDependent()
+        valueType = BooleanType.defaultFalse
 
         stubLifecycle()
     }

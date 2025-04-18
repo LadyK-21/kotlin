@@ -6,12 +6,10 @@
 package org.jetbrains.kotlin.gradle.plugin.mpp
 
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.DeprecatedTargetPresetApi
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.targets.android.internal.InternalKotlinTargetPreset
 
-@DeprecatedTargetPresetApi
-abstract class KotlinOnlyTargetPreset<R : KotlinOnlyTarget<T>, T : KotlinCompilation<Any>>(
+internal abstract class KotlinOnlyTargetPreset<R : KotlinOnlyTarget<T>, T : KotlinCompilation<Any>>(
     protected val project: Project,
 ) : InternalKotlinTargetPreset<R> {
 
@@ -26,7 +24,7 @@ abstract class KotlinOnlyTargetPreset<R : KotlinOnlyTarget<T>, T : KotlinCompila
         val result = instantiateTarget(name).apply {
             targetName = name
             disambiguationClassifier = provideTargetDisambiguationClassifier(this@apply)
-            preset = this@KotlinOnlyTargetPreset
+            targetPreset = this@KotlinOnlyTargetPreset
 
             val compilationFactory = createCompilationFactory(this)
             compilations = project.container(compilationFactory.itemClass, compilationFactory)

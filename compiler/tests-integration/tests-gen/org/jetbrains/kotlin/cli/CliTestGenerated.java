@@ -1951,19 +1951,9 @@ public class CliTestGenerated extends AbstractCliTest {
       runTest("compiler/testData/cli/js/experimentalCheckers.args");
     }
 
-    @TestMetadata("experimentalCheckersWasm.args")
-    public void testExperimentalCheckersWasm() {
-      runTest("compiler/testData/cli/js/experimentalCheckersWasm.args");
-    }
-
     @TestMetadata("extraCheckers.args")
     public void testExtraCheckers() {
       runTest("compiler/testData/cli/js/extraCheckers.args");
-    }
-
-    @TestMetadata("extraCheckersWasm.args")
-    public void testExtraCheckersWasm() {
-      runTest("compiler/testData/cli/js/extraCheckersWasm.args");
     }
 
     @TestMetadata("fir.args")
@@ -2004,6 +1994,11 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("jsHelp.args")
     public void testJsHelp() {
       runTest("compiler/testData/cli/js/jsHelp.args");
+    }
+
+    @TestMetadata("jsObsoleteOutputArgument.args")
+    public void testJsObsoleteOutputArgument() {
+      runTest("compiler/testData/cli/js/jsObsoleteOutputArgument.args");
     }
 
     @TestMetadata("kotlinPackage.args")
@@ -2144,11 +2139,6 @@ public class CliTestGenerated extends AbstractCliTest {
     @TestMetadata("warningsSuppressionDisablesErrors_Js.args")
     public void testWarningsSuppressionDisablesErrors_Js() {
       runTest("compiler/testData/cli/js/warningsSuppressionDisablesErrors_Js.args");
-    }
-
-    @TestMetadata("warningsSuppressionDisablesErrors_Wasm.args")
-    public void testWarningsSuppressionDisablesErrors_Wasm() {
-      runTest("compiler/testData/cli/js/warningsSuppressionDisablesErrors_Wasm.args");
     }
 
     @TestMetadata("withFolderAsLib.args")

@@ -8,8 +8,11 @@ package org.jetbrains.kotlin.ir.backend.js
 import org.jetbrains.kotlin.ir.backend.js.utils.findDefaultConstructorForReflection
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.irAttribute
 import org.jetbrains.kotlin.ir.irFlag
 import org.jetbrains.kotlin.ir.backend.js.utils.findDefaultConstructorForReflection
@@ -61,3 +64,20 @@ internal var IrClass.objectInstanceField: IrField? by irAttribute(copyByDefault 
  * in constructors that could be translated into simple ES6 class constructors.
  */
 internal var IrCall.originalConstructor: IrConstructor? by irAttribute(copyByDefault = false)
+
+var IrClass.syntheticPrimaryConstructor: IrConstructor? by irAttribute(copyByDefault = false)
+
+var IrEnumEntry.getInstanceFun: IrSimpleFunction? by irAttribute(copyByDefault = false)
+var IrEnumEntry.instanceField: IrField? by irAttribute(copyByDefault = false)
+var IrConstructor.newEnumConstructor: IrConstructor? by irAttribute(copyByDefault = false)
+var IrClass.correspondingEnumEntry: IrEnumEntry? by irAttribute(copyByDefault = false)
+var IrValueDeclaration.valueParameterForOldEnumConstructor: IrValueParameter? by irAttribute(copyByDefault = false)
+var IrEnumEntry.correspondingField: IrField? by irAttribute(copyByDefault = false)
+var IrField.correspondingEnumEntry: IrEnumEntry? by irAttribute(copyByDefault = false)
+
+/**
+ * If the object being lowered is nested inside an enum class, we want to also initialize the enum entries when initializing the object.
+ */
+var IrClass.initEntryInstancesFun: IrSimpleFunction? by irAttribute(copyByDefault = false)
+
+var IrClass.hasPureInitialization: Boolean? by irAttribute(copyByDefault = false)

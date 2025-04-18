@@ -42,14 +42,12 @@ enum class LanguageFeature(
     UnderscoresInNumericLiterals(KOTLIN_1_1),
     DivisionByZeroInConstantExpressions(KOTLIN_1_1),
     InlineConstVals(KOTLIN_1_1),
-    OperatorRem(KOTLIN_1_1),
     OperatorProvideDelegate(KOTLIN_1_1),
     ShortSyntaxForPropertyGetters(KOTLIN_1_1),
     RefinedSamAdaptersPriority(KOTLIN_1_1),
     SafeCallBoundSmartCasts(KOTLIN_1_1),
     TypeInferenceOnGenericsForCallableReferences(KOTLIN_1_1),
     NoDelegationToJavaDefaultInterfaceMembers(KOTLIN_1_1),
-    DefaultImportOfPackageKotlinComparisons(KOTLIN_1_1),
     Coroutines(
         KOTLIN_1_1, ApiVersion.KOTLIN_1_1,
         "https://kotlinlang.org/docs/diagnostics/experimental-coroutines",
@@ -60,7 +58,6 @@ enum class LanguageFeature(
 
     InlineDefaultFunctionalParameters(KOTLIN_1_2),
     SoundSmartCastsAfterTry(KOTLIN_1_2),
-    DeprecatedFieldForInvisibleCompanionObject(KOTLIN_1_2),
     NullabilityAssertionOnExtensionReceiver(KOTLIN_1_2),
     SafeCastCheckBoundSmartCasts(KOTLIN_1_2),
     CapturedInClosureSmartCasts(KOTLIN_1_2),
@@ -68,11 +65,9 @@ enum class LanguageFeature(
     LateinitLocalVariables(KOTLIN_1_2),
     InnerClassInEnumEntryClass(KOTLIN_1_2),
     CallableReferencesToClassMembersWithEmptyLHS(KOTLIN_1_2),
-    ThrowNpeOnExplicitEqualsForBoxedNull(KOTLIN_1_2),
     JvmPackageName(KOTLIN_1_2),
     AssigningArraysToVarargsInNamedFormInAnnotations(KOTLIN_1_2),
     ExpectedTypeFromCast(KOTLIN_1_2),
-    DefaultMethodsCallFromJava6TargetError(KOTLIN_1_2),
 
     // 1.3
 
@@ -95,11 +90,9 @@ enum class LanguageFeature(
     VariableDeclarationInWhenSubject(KOTLIN_1_3),
     ProhibitLocalAnnotations(KOTLIN_1_3, kind = BUG_FIX),
     ProhibitSmartcastsOnLocalDelegatedProperty(KOTLIN_1_3, kind = BUG_FIX),
-    ProhibitOperatorMod(KOTLIN_1_3, kind = BUG_FIX),
     ProhibitAssigningSingleElementsToVarargsInNamedForm(KOTLIN_1_3, kind = BUG_FIX),
     FunctionTypesWithBigArity(KOTLIN_1_3, sinceApiVersion = ApiVersion.KOTLIN_1_3),
     RestrictRetentionForExpressionAnnotations(KOTLIN_1_3, kind = BUG_FIX),
-    NormalizeConstructorCalls(KOTLIN_1_3),
     StrictJavaNullabilityAssertions(KOTLIN_1_3, kind = BUG_FIX),
     SoundSmartcastForEnumEntries(KOTLIN_1_3, kind = BUG_FIX),
     ProhibitErroneousExpressionsInAnnotationsWithUseSiteTargets(KOTLIN_1_3, kind = BUG_FIX),
@@ -112,14 +105,12 @@ enum class LanguageFeature(
 
     DslMarkerOnFunctionTypeReceiver(KOTLIN_1_4, kind = BUG_FIX),
     RestrictReturnStatementTarget(KOTLIN_1_4, kind = BUG_FIX),
-    NoConstantValueAttributeForNonConstVals(KOTLIN_1_4, kind = BUG_FIX),
     WarningOnMainUnusedParameter(KOTLIN_1_4),
     PolymorphicSignature(KOTLIN_1_4),
     ProhibitConcurrentHashMapContains(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitTypeParametersForLocalVariables(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitJvmOverloadsOnConstructorsOfAnnotationClasses(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitTypeParametersInAnonymousObjects(KOTLIN_1_4, kind = BUG_FIX),
-    ProperInlineFromHigherPlatformDiagnostic(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitRepeatedUseSiteTargetAnnotations(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitUseSiteTargetAnnotationsOnSuperTypes(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitTypeParametersInClassLiteralsInAnnotationArguments(KOTLIN_1_4, kind = BUG_FIX),
@@ -166,9 +157,6 @@ enum class LanguageFeature(
     ProhibitNonReifiedArraysAsReifiedTypeArguments(KOTLIN_1_5, kind = BUG_FIX),
     ProhibitVarargAsArrayAfterSamArgument(KOTLIN_1_5, kind = BUG_FIX),
     CorrectSourceMappingSyntax(KOTLIN_1_5, kind = UNSTABLE_FEATURE),
-    ProperArrayConventionSetterWithDefaultCalls(KOTLIN_1_5, kind = OTHER),
-    AdaptedCallableReferenceAgainstReflectiveType(null),
-    InferenceCompatibility(KOTLIN_1_5, kind = BUG_FIX),
     RequiredPrimaryConstructorDelegationCallInEnums(KOTLIN_1_5, kind = BUG_FIX),
     ApproximateAnonymousReturnTypesInPrivateInlineFunctions(KOTLIN_1_5, kind = BUG_FIX),
     ForbidReferencingToUnderscoreNamedParameterOfCatchBlock(KOTLIN_1_5, kind = BUG_FIX),
@@ -177,7 +165,6 @@ enum class LanguageFeature(
     AllowNullOperatorsForResultAndResultReturnTypeByDefault(KOTLIN_1_5),
     AllowSealedInheritorsInDifferentFilesOfSamePackage(KOTLIN_1_5),
     SealedInterfaces(KOTLIN_1_5),
-    JvmIrEnabledByDefault(KOTLIN_1_5),
     JvmInlineValueClasses(KOTLIN_1_5, kind = OTHER),
     SuspendFunctionsInFunInterfaces(KOTLIN_1_5, kind = OTHER),
     SamWrapperClassesAreSynthetic(KOTLIN_1_5, kind = BUG_FIX),
@@ -192,7 +179,6 @@ enum class LanguageFeature(
     SuspendFunctionAsSupertype(KOTLIN_1_6),
     UnrestrictedBuilderInference(KOTLIN_1_6),
     ClassTypeParameterAnnotations(KOTLIN_1_6),
-    TypeInferenceOnCallsWithSelfTypes(KOTLIN_1_6),
     WarnAboutNonExhaustiveWhenOnAlgebraicTypes(KOTLIN_1_6, kind = BUG_FIX),
     InstantiationOfAnnotationClasses(KOTLIN_1_6),
     OptInContagiousSignatures(KOTLIN_1_6, kind = BUG_FIX),
@@ -232,7 +218,6 @@ enum class LanguageFeature(
     PartiallySpecifiedTypeArguments(KOTLIN_1_7),
     EliminateAmbiguitiesWithExternalTypeParameters(KOTLIN_1_7),
     EliminateAmbiguitiesOnInheritedSamInterfaces(KOTLIN_1_7),
-    ConsiderExtensionReceiverFromConstrainsInLambda(KOTLIN_1_7, kind = BUG_FIX), // KT-49832
     ProperInternalVisibilityCheckInImportingScope(KOTLIN_1_7, kind = BUG_FIX),
     InlineClassImplementationByDelegation(KOTLIN_1_7),
     QualifiedSupertypeMayBeExtendedByOtherSupertype(KOTLIN_1_7),
@@ -385,12 +370,15 @@ enum class LanguageFeature(
     ForbidSyntheticPropertiesWithoutBaseJavaGetter(KOTLIN_2_2, kind = BUG_FIX), // KT-72305, KT-64358
     AnnotationDefaultTargetMigrationWarning(KOTLIN_2_2, kind = BUG_FIX), // KT-73255, KT-73494
     AllowDnnTypeOverridingFlexibleType(KOTLIN_2_2, kind = OTHER), // KT-74049
-    PreferDependentTypeVariablesWithProperArgumentConstraint(KOTLIN_2_2, kind = OTHER), // KT-71854
     ForbidEnumEntryNamedEntries(KOTLIN_2_2, kind = BUG_FIX), // KT-72829, KT-58920
     WhenGuards(KOTLIN_2_2, kind = OTHER), // KT-13626
     MultiDollarInterpolation(KOTLIN_2_2, kind = OTHER), // KT-2425
     JvmDefaultEnableByDefault(KOTLIN_2_2, kind = OTHER), // KT-71768
     ForbidExposureOfPrivateTypesInNonPrivateInlineFunctionsInKlibs(sinceVersion = KOTLIN_2_2, kind = BUG_FIX), // KT-70916
+    JvmIndyAllowLambdasWithAnnotations(KOTLIN_2_2, kind = OTHER), // KT-76606
+    FixationEnhancementsIn22(KOTLIN_2_2, kind = OTHER), // KT-76345, KT-71854
+    ForbidCrossFileIrFieldAccessInKlibs(KOTLIN_2_2, kind = BUG_FIX), // KT-71138
+    AllowExpectDeclarationsInJsExport(KOTLIN_2_2, kind = OTHER), // KT-64951
 
     // 2.3
 
@@ -406,6 +394,10 @@ enum class LanguageFeature(
     UnstableSmartcastOnDelegatedProperties(KOTLIN_2_3, kind = BUG_FIX), // KTLC-273
     ForbidAnnotationsWithUseSiteTargetOnExpressions(KOTLIN_2_3, kind = BUG_FIX), // KT-75242
     ProhibitNullableTypeThroughTypealias(KOTLIN_2_3, kind = BUG_FIX), // KTLC-279
+
+    // 2.4 TODO set sinceVersion to 2.4 when it becomes available
+
+    ForbidExposingLessVisibleTypesInInline(sinceVersion = null, kind = BUG_FIX), // KTLC-283
 
     // End of 2.* language features --------------------------------------------------
 
@@ -459,6 +451,7 @@ enum class LanguageFeature(
     JavaSamConversionEqualsHashCode(sinceVersion = null, kind = UNSTABLE_FEATURE),
     PropertyParamAnnotationDefaultTargetMode(sinceVersion = null, kind = OTHER), // KT-73255
     AnnotationAllUseSiteTarget(sinceVersion = null, kind = OTHER), // KT-73256
+    ImplicitJvmExposeBoxed(sinceVersion = null, kind = UNSTABLE_FEATURE), // KT-73466
 
     // K1 support only. We keep it, as we may want to support it also in K2
     UnitConversionsOnArbitraryExpressions(sinceVersion = null),

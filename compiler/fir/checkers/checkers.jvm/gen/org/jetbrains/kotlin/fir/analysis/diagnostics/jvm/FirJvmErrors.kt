@@ -9,9 +9,6 @@ import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.config.LanguageFeature.ForbidImplementationByDelegationWithDifferentGenericSignature
 import org.jetbrains.kotlin.config.LanguageFeature.ForbidJvmAnnotationsOnAnnotationParameters
 import org.jetbrains.kotlin.config.LanguageFeature.ForbidJvmSerializableLambdaOnInlinedFunctionLiterals
-import org.jetbrains.kotlin.config.LanguageFeature.ProhibitConcurrentHashMapContains
-import org.jetbrains.kotlin.config.LanguageFeature.ProhibitJvmOverloadsOnConstructorsOfAnnotationClasses
-import org.jetbrains.kotlin.config.LanguageFeature.ProhibitSpreadOnSignaturePolymorphicCall
 import org.jetbrains.kotlin.config.LanguageFeature.ProhibitSynchronizationByValueClassesAndPrimitives
 import org.jetbrains.kotlin.config.LanguageFeature.RepeatableAnnotationContainerConstraints
 import org.jetbrains.kotlin.config.LanguageFeature.SynchronizedSuspendError
@@ -64,6 +61,16 @@ object FirJvmErrors {
     val FUNCTION_DELEGATE_MEMBER_NAME_CLASH: KtDiagnosticFactory0 = KtDiagnosticFactory0("FUNCTION_DELEGATE_MEMBER_NAME_CLASH", ERROR, SourceElementPositioningStrategies.DECLARATION_NAME, PsiElement::class)
     val VALUE_CLASS_WITHOUT_JVM_INLINE_ANNOTATION: KtDiagnosticFactory0 = KtDiagnosticFactory0("VALUE_CLASS_WITHOUT_JVM_INLINE_ANNOTATION", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
     val JVM_INLINE_WITHOUT_VALUE_CLASS: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_INLINE_WITHOUT_VALUE_CLASS", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val INAPPLICABLE_JVM_EXPOSE_BOXED_WITH_NAME: KtDiagnosticFactory0 = KtDiagnosticFactory0("INAPPLICABLE_JVM_EXPOSE_BOXED_WITH_NAME", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val USELESS_JVM_EXPOSE_BOXED: KtDiagnosticFactory0 = KtDiagnosticFactory0("USELESS_JVM_EXPOSE_BOXED", WARNING, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_EXPOSE_SUSPEND: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_EXPOSE_SUSPEND", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_REQUIRES_NAME: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_REQUIRES_NAME", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_BE_THE_SAME: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_BE_THE_SAME", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_BE_THE_SAME_AS_JVM_NAME: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_BE_THE_SAME_AS_JVM_NAME", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_EXPOSE_OPEN_ABSTRACT: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_EXPOSE_OPEN_ABSTRACT", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_EXPOSE_SYNTHETIC: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_EXPOSE_SYNTHETIC", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_EXPOSE_LOCALS: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_EXPOSE_LOCALS", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val JVM_EXPOSE_BOXED_CANNOT_EXPOSE_REIFIED: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_EXPOSE_BOXED_CANNOT_EXPOSE_REIFIED", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
     val WRONG_NULLABILITY_FOR_JAVA_OVERRIDE: KtDiagnosticFactory2<FirCallableSymbol<*>, FirCallableSymbol<*>> = KtDiagnosticFactory2("WRONG_NULLABILITY_FOR_JAVA_OVERRIDE", WARNING, SourceElementPositioningStrategies.OVERRIDE_MODIFIER, PsiElement::class)
     val ACCIDENTAL_OVERRIDE_CLASH_BY_JVM_SIGNATURE: KtDiagnosticFactory3<FirNamedFunctionSymbol, String, FirNamedFunctionSymbol> = KtDiagnosticFactory3("ACCIDENTAL_OVERRIDE_CLASH_BY_JVM_SIGNATURE", ERROR, SourceElementPositioningStrategies.DECLARATION_NAME, KtNamedFunction::class)
     val IMPLEMENTATION_BY_DELEGATION_WITH_DIFFERENT_GENERIC_SIGNATURE: KtDiagnosticFactoryForDeprecation2<FirNamedFunctionSymbol, FirNamedFunctionSymbol> = KtDiagnosticFactoryForDeprecation2("IMPLEMENTATION_BY_DELEGATION_WITH_DIFFERENT_GENERIC_SIGNATURE", ForbidImplementationByDelegationWithDifferentGenericSignature, SourceElementPositioningStrategies.DEFAULT, KtTypeReference::class)
@@ -94,7 +101,7 @@ object FirJvmErrors {
     val OVERLOADS_ABSTRACT: KtDiagnosticFactory0 = KtDiagnosticFactory0("OVERLOADS_ABSTRACT", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val OVERLOADS_INTERFACE: KtDiagnosticFactory0 = KtDiagnosticFactory0("OVERLOADS_INTERFACE", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val OVERLOADS_LOCAL: KtDiagnosticFactory0 = KtDiagnosticFactory0("OVERLOADS_LOCAL", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
-    val OVERLOADS_ANNOTATION_CLASS_CONSTRUCTOR: KtDiagnosticFactoryForDeprecation0 = KtDiagnosticFactoryForDeprecation0("OVERLOADS_ANNOTATION_CLASS_CONSTRUCTOR", ProhibitJvmOverloadsOnConstructorsOfAnnotationClasses, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
+    val OVERLOADS_ANNOTATION_CLASS_CONSTRUCTOR_ERROR: KtDiagnosticFactory0 = KtDiagnosticFactory0("OVERLOADS_ANNOTATION_CLASS_CONSTRUCTOR_ERROR", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val OVERLOADS_PRIVATE: KtDiagnosticFactory0 = KtDiagnosticFactory0("OVERLOADS_PRIVATE", WARNING, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val DEPRECATED_JAVA_ANNOTATION: KtDiagnosticFactory1<FqName> = KtDiagnosticFactory1("DEPRECATED_JAVA_ANNOTATION", WARNING, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val JVM_PACKAGE_NAME_CANNOT_BE_EMPTY: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_PACKAGE_NAME_CANNOT_BE_EMPTY", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
@@ -163,8 +170,8 @@ object FirJvmErrors {
     val SYNCHRONIZED_BLOCK_ON_VALUE_CLASS_OR_PRIMITIVE: KtDiagnosticFactoryForDeprecation1<ConeKotlinType> = KtDiagnosticFactoryForDeprecation1("SYNCHRONIZED_BLOCK_ON_VALUE_CLASS_OR_PRIMITIVE", ProhibitSynchronizationByValueClassesAndPrimitives, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
     val JVM_SYNTHETIC_ON_DELEGATE: KtDiagnosticFactory0 = KtDiagnosticFactory0("JVM_SYNTHETIC_ON_DELEGATE", ERROR, SourceElementPositioningStrategies.DEFAULT, KtAnnotationEntry::class)
     val SUBCLASS_CANT_CALL_COMPANION_PROTECTED_NON_STATIC: KtDiagnosticFactory0 = KtDiagnosticFactory0("SUBCLASS_CANT_CALL_COMPANION_PROTECTED_NON_STATIC", ERROR, SourceElementPositioningStrategies.REFERENCED_NAME_BY_QUALIFIED, PsiElement::class)
-    val CONCURRENT_HASH_MAP_CONTAINS_OPERATOR: KtDiagnosticFactoryForDeprecation0 = KtDiagnosticFactoryForDeprecation0("CONCURRENT_HASH_MAP_CONTAINS_OPERATOR", ProhibitConcurrentHashMapContains, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
-    val SPREAD_ON_SIGNATURE_POLYMORPHIC_CALL: KtDiagnosticFactoryForDeprecation0 = KtDiagnosticFactoryForDeprecation0("SPREAD_ON_SIGNATURE_POLYMORPHIC_CALL", ProhibitSpreadOnSignaturePolymorphicCall, SourceElementPositioningStrategies.SPREAD_OPERATOR, PsiElement::class)
+    val CONCURRENT_HASH_MAP_CONTAINS_OPERATOR_ERROR: KtDiagnosticFactory0 = KtDiagnosticFactory0("CONCURRENT_HASH_MAP_CONTAINS_OPERATOR_ERROR", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
+    val SPREAD_ON_SIGNATURE_POLYMORPHIC_CALL_ERROR: KtDiagnosticFactory0 = KtDiagnosticFactory0("SPREAD_ON_SIGNATURE_POLYMORPHIC_CALL_ERROR", ERROR, SourceElementPositioningStrategies.SPREAD_OPERATOR, PsiElement::class)
     val JAVA_SAM_INTERFACE_CONSTRUCTOR_REFERENCE: KtDiagnosticFactory0 = KtDiagnosticFactory0("JAVA_SAM_INTERFACE_CONSTRUCTOR_REFERENCE", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
     val NO_REFLECTION_IN_CLASS_PATH: KtDiagnosticFactory0 = KtDiagnosticFactory0("NO_REFLECTION_IN_CLASS_PATH", WARNING, SourceElementPositioningStrategies.DEFAULT, PsiElement::class)
     val SYNTHETIC_PROPERTY_WITHOUT_JAVA_ORIGIN: KtDiagnosticFactory2<FirNamedFunctionSymbol, Name> = KtDiagnosticFactory2("SYNTHETIC_PROPERTY_WITHOUT_JAVA_ORIGIN", WARNING, SourceElementPositioningStrategies.REFERENCED_NAME_BY_QUALIFIED, PsiElement::class)

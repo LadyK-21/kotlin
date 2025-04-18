@@ -1,5 +1,5 @@
 // WITH_STDLIB
-// WITH_COROUTINES
+// FULL_JDK
 
 // Because of @JvmInline
 // TARGET_BACKEND: JVM

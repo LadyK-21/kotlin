@@ -36,10 +36,13 @@ import org.jetbrains.kotlin.tooling.core.mutableExtrasOf
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
-private const val KOTLIN_PROJECT_EXTENSION_NAME = "kotlin"
+internal const val KOTLIN_PROJECT_EXTENSION_NAME = "kotlin"
 
 internal fun Project.createKotlinExtension(extensionClass: KClass<out KotlinBaseExtension>): KotlinBaseExtension {
-    return extensions.create(KOTLIN_PROJECT_EXTENSION_NAME, extensionClass.java, this)
+    return when (extensionClass) {
+        KotlinMultiplatformExtension::class -> extensions.KotlinMultiplatformExtension(objects)
+        else -> extensions.create(KOTLIN_PROJECT_EXTENSION_NAME, extensionClass.java, this)
+    }
 }
 
 internal val Project.topLevelExtension: KotlinBaseExtension
@@ -179,15 +182,15 @@ abstract class KotlinJvmProjectExtension @Inject constructor(
     project: Project
 ) : KotlinSingleJavaTargetExtension(project),
     KotlinJvmExtension {
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     override val target: KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions>
         get() = targetFuture.getOrThrow()
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     override val targetFuture = CompletableFuture<KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions>>()
 
     open fun target(
-        @Suppress("DEPRECATION") body: KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions>.() -> Unit
+        @Suppress("DEPRECATION_ERROR") body: KotlinWithJavaTarget<KotlinJvmOptions, KotlinJvmCompilerOptions>.() -> Unit
     ) {
         project.launch(Undispatched) { targetFuture.await().body() }
     }
@@ -213,7 +216,7 @@ private class KotlinJvmPublishingDsl(private val project: Project) : KotlinPubli
 abstract class KotlinJsProjectExtension(project: Project) :
     KotlinSingleTargetExtension<KotlinJsTargetDsl>(project),
     KotlinJsCompilerTypeHolder {
-    lateinit var irPreset: KotlinJsIrSingleTargetPreset
+    internal lateinit var irPreset: KotlinJsIrSingleTargetPreset
 
     @Deprecated("Use js() instead. Scheduled for removal in Kotlin 2.3.", ReplaceWith("js()"), level = DeprecationLevel.ERROR)
     override val target: KotlinJsTargetDsl

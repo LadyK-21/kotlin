@@ -90,23 +90,6 @@ internal abstract class LLFirAbstractSessionFactory(protected val project: Proje
      */
     abstract fun createBinaryLibrarySession(module: KaModule): LLFirLibrarySession
 
-    private fun createLibraryProvidersForScope(
-        session: LLFirSession,
-        scope: GlobalSearchScope,
-        builtinSymbolProvider: FirSymbolProvider,
-    ): LLModuleWithDependenciesSymbolProvider {
-        return LLModuleWithDependenciesSymbolProvider(
-            session,
-            providers = createProjectLibraryProvidersForScope(session, scope),
-            LLDependenciesSymbolProvider(session) {
-                buildList {
-                    addAll(collectDependencySymbolProviders(session.ktModule))
-                    add(builtinSymbolProvider)
-                }
-            },
-        )
-    }
-
     abstract fun createProjectLibraryProvidersForScope(
         session: LLFirSession,
         scope: GlobalSearchScope,
@@ -153,7 +136,7 @@ internal abstract class LLFirAbstractSessionFactory(protected val project: Proje
                 }
             }
 
-            val javaSymbolProvider = LLFirJavaSymbolProvider(this, provider.searchScope)
+            val javaSymbolProvider = LLFirJavaSymbolProvider(this, module.contentScope)
             register(JavaSymbolProvider::class, javaSymbolProvider)
 
             register(
@@ -334,7 +317,10 @@ internal abstract class LLFirAbstractSessionFactory(protected val project: Proje
                 }
 
             val context = SourceSessionCreationContext(
-                firProvider.searchScope, firProvider, dependencyProvider, syntheticFunctionInterfaceProvider,
+                module.contentScope,
+                firProvider,
+                dependencyProvider,
+                syntheticFunctionInterfaceProvider,
                 switchableExtensionDeclarationsSymbolProvider,
             )
 
@@ -396,7 +382,7 @@ internal abstract class LLFirAbstractSessionFactory(protected val project: Proje
 
             register(FirLazyDeclarationResolver::class, LLFirLazyDeclarationResolver())
 
-            val contentScope = (binaryModule as? KaLibraryModule)?.contentScope ?: firProvider.searchScope
+            val contentScope = binaryModule.contentScope
 
             // We need FirRegisteredPluginAnnotations during extensions' registration process
             val annotationsResolver = project.createAnnotationResolver(contentScope)
@@ -470,10 +456,14 @@ internal abstract class LLFirAbstractSessionFactory(protected val project: Proje
 
             register(FirKotlinScopeProvider::class, kotlinScopeProvider)
 
-            val symbolProvider = createLibraryProvidersForScope(
+            val symbolProvider = LLModuleWithDependenciesSymbolProvider(
                 this,
-                module.contentScope,
-                builtinsSession.symbolProvider
+                providers = createProjectLibraryProvidersForScope(this, module.contentScope),
+                LLDependenciesSymbolProvider(this) {
+                    // A binary library session should not have any dependencies (apart from fallback builtins), as library module
+                    // dependencies only apply to *resolvable* sessions, including fallback dependencies.
+                    listOf(builtinsSession.symbolProvider)
+                },
             )
 
             register(LLFirFirClassByPsiClassProvider::class, LLFirFirClassByPsiClassProvider(this))

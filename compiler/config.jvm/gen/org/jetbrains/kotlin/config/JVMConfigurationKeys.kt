@@ -105,9 +105,6 @@ object JVMConfigurationKeys {
     val LAMBDAS = CompilerConfigurationKey.create<JvmClosureGenerationScheme>("Lambdas code generation scheme")
 
     @JvmField
-    val INDY_ALLOW_ANNOTATED_LAMBDAS = CompilerConfigurationKey.create<Boolean>("Allow using indy for lambdas with annotations")
-
-    @JvmField
     val KLIB_PATHS = CompilerConfigurationKey.create<List<String>>("Paths to .klib libraries")
 
     @JvmField
@@ -145,6 +142,9 @@ object JVMConfigurationKeys {
 
     @JvmField
     val ENABLE_DEBUG_MODE = CompilerConfigurationKey.create<Boolean>("Enable debug mode")
+
+    @JvmField
+    val ENHANCED_COROUTINES_DEBUGGING = CompilerConfigurationKey.create<Boolean>("Mark compiled generated code in coroutines")
 
     @JvmField
     val NO_NEW_JAVA_ANNOTATION_TARGETS = CompilerConfigurationKey.create<Boolean>("Do not generate Java 1.8+ targets for Kotlin annotation classes")
@@ -283,10 +283,6 @@ var CompilerConfiguration.lambdas: JvmClosureGenerationScheme?
     get() = get(JVMConfigurationKeys.LAMBDAS)
     set(value) { put(JVMConfigurationKeys.LAMBDAS, requireNotNull(value) { "nullable values are not allowed" }) }
 
-var CompilerConfiguration.indyAllowAnnotatedLambdas: Boolean
-    get() = getBoolean(JVMConfigurationKeys.INDY_ALLOW_ANNOTATED_LAMBDAS)
-    set(value) { put(JVMConfigurationKeys.INDY_ALLOW_ANNOTATED_LAMBDAS, value) }
-
 var CompilerConfiguration.klibPaths: List<String>
     get() = getList(JVMConfigurationKeys.KLIB_PATHS)
     set(value) { put(JVMConfigurationKeys.KLIB_PATHS, value) }
@@ -338,6 +334,10 @@ var CompilerConfiguration.linkViaSignatures: Boolean
 var CompilerConfiguration.enableDebugMode: Boolean
     get() = getBoolean(JVMConfigurationKeys.ENABLE_DEBUG_MODE)
     set(value) { put(JVMConfigurationKeys.ENABLE_DEBUG_MODE, value) }
+
+var CompilerConfiguration.enhancedCoroutinesDebugging: Boolean
+    get() = getBoolean(JVMConfigurationKeys.ENHANCED_COROUTINES_DEBUGGING)
+    set(value) { put(JVMConfigurationKeys.ENHANCED_COROUTINES_DEBUGGING, value) }
 
 var CompilerConfiguration.noNewJavaAnnotationTargets: Boolean
     get() = getBoolean(JVMConfigurationKeys.NO_NEW_JAVA_ANNOTATION_TARGETS)

@@ -9,9 +9,13 @@ import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
 import org.jetbrains.kotlin.backend.wasm.WasmBackendContext
 import org.jetbrains.kotlin.backend.wasm.ir2wasm.JsModuleAndQualifierReference
+import org.jetbrains.kotlin.backend.wasm.topLevelFunctionForNestedExternal
 import org.jetbrains.kotlin.backend.wasm.utils.getJsFunAnnotation
 import org.jetbrains.kotlin.backend.wasm.utils.getJsPrimitiveType
 import org.jetbrains.kotlin.backend.wasm.utils.getWasmImportDescriptor
+import org.jetbrains.kotlin.backend.wasm.getInstanceFunctionForExternalObject
+import org.jetbrains.kotlin.backend.wasm.instanceCheckForExternalClass
+import org.jetbrains.kotlin.backend.wasm.getJsClassForExternalClass
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -46,9 +50,6 @@ import org.jetbrains.kotlin.name.Name
 class ComplexExternalDeclarationsToTopLevelFunctionsLowering(val context: WasmBackendContext) : FileLoweringPass {
     lateinit var currentFile: IrFile
     val addedDeclarations = mutableListOf<IrDeclaration>()
-
-    val externalFunToTopLevelMapping =
-        context.mapping.wasmNestedExternalToNewTopLevelFunction
 
     override fun lower(irFile: IrFile) {
         currentFile = irFile
@@ -136,7 +137,7 @@ class ComplexExternalDeclarationsToTopLevelFunctionsLowering(val context: WasmBa
                 res.addValueParameter("_this", dispatchReceiver.type)
             }
 
-            externalFunToTopLevelMapping[getter] = res
+            getter.topLevelFunctionForNestedExternal = res
         }
 
         property.setter?.let { setter ->
@@ -160,7 +161,7 @@ class ComplexExternalDeclarationsToTopLevelFunctionsLowering(val context: WasmBa
             val setterParameter = setter.parameters.first { it.kind == IrParameterKind.Regular }.type
             res.addValueParameter("v", setterParameter)
 
-            externalFunToTopLevelMapping[setter] = res
+            setter.topLevelFunctionForNestedExternal = res
         }
     }
 
@@ -377,11 +378,11 @@ class ComplexExternalDeclarationsToTopLevelFunctionsLowering(val context: WasmBa
         }
         // Using Int type with 0 and 1 values to prevent overhead of converting Boolean to true and false
         repeat(numDefaultParameters) { res.addValueParameter("isDefault$it", context.irBuiltIns.intType) }
-        externalFunToTopLevelMapping[function] = res
+        function.topLevelFunctionForNestedExternal = res
     }
 
     fun generateExternalObjectInstanceGetter(obj: IrClass) {
-        context.mapping.wasmExternalObjectToGetInstanceFunction[obj] = createExternalJsFunction(
+        obj.getInstanceFunctionForExternalObject = createExternalJsFunction(
             obj.name,
             "_\$external_object_getInstance",
             resultType = obj.defaultType,
@@ -393,7 +394,7 @@ class ComplexExternalDeclarationsToTopLevelFunctionsLowering(val context: WasmBa
     }
 
     fun generateInstanceCheckForExternalClass(klass: IrClass) {
-        context.mapping.wasmExternalClassToInstanceCheck[klass] = createExternalJsFunction(
+        klass.instanceCheckForExternalClass = createExternalJsFunction(
             klass.name,
             "_\$external_class_instanceof",
             resultType = context.irBuiltIns.booleanType,
@@ -412,7 +413,7 @@ class ComplexExternalDeclarationsToTopLevelFunctionsLowering(val context: WasmBa
     }
 
     fun generateGetClassForExternalClass(klass: IrClass) {
-        context.mapping.wasmGetJsClass[klass] = createExternalJsFunction(
+        klass.getJsClassForExternalClass = createExternalJsFunction(
             klass.name,
             "_\$external_class_get",
             resultType = context.wasmSymbols.jsRelatedSymbols.jsAnyType.makeNullable(),
@@ -479,9 +480,6 @@ fun createExternalJsFunction(
  * Redirect usages of complex declarations to top-level functions
  */
 class ComplexExternalDeclarationsUsageLowering(val context: WasmBackendContext) : FileLoweringPass {
-    private val nestedExternalToNewTopLevelFunctions = context.mapping.wasmNestedExternalToNewTopLevelFunction
-    private val objectToGetInstanceFunctions = context.mapping.wasmExternalObjectToGetInstanceFunction
-
     override fun lower(irFile: IrFile) {
         irFile.acceptVoid(declarationTransformer)
     }
@@ -503,7 +501,7 @@ class ComplexExternalDeclarationsUsageLowering(val context: WasmBackendContext) 
 
         private fun process(container: IrDeclarationContainer) {
             container.declarations.transformFlat { member ->
-                if (member is IrFunction && nestedExternalToNewTopLevelFunctions[member] != null) {
+                if (member is IrFunction && member.topLevelFunctionForNestedExternal != null) {
                     emptyList()
                 } else {
                     member.acceptVoid(this)
@@ -529,7 +527,7 @@ class ComplexExternalDeclarationsUsageLowering(val context: WasmBackendContext) 
         }
 
         override fun visitGetObjectValue(expression: IrGetObjectValue): IrExpression {
-            val externalGetInstance = objectToGetInstanceFunctions[expression.symbol.owner] ?: return expression
+            val externalGetInstance = expression.symbol.owner.getInstanceFunctionForExternalObject ?: return expression
             return IrCallImpl(
                 startOffset = expression.startOffset,
                 endOffset = expression.endOffset,
@@ -541,7 +539,7 @@ class ComplexExternalDeclarationsUsageLowering(val context: WasmBackendContext) 
 
         fun transformCall(call: IrFunctionAccessExpression): IrExpression {
             val oldFun = call.symbol.owner.realOverrideTarget
-            val newFun: IrSimpleFunction = nestedExternalToNewTopLevelFunctions[oldFun] ?: return call
+            val newFun: IrSimpleFunction = oldFun.topLevelFunctionForNestedExternal ?: return call
 
             val newCall = IrCallImpl(call.startOffset, call.endOffset, newFun.returnType, newFun.symbol)
 

@@ -47,7 +47,7 @@ fun IrMemberAccessExpression<*>.getAllArgumentsWithIr(): List<Pair<IrValueParame
         is IrPropertyReference -> {
             this.getter?.owner ?: error("There should be getter to use `getArgumentsWithIr` on IrPropertyReference: ${this.dump()}}")
         }
-        else -> error(this)
+        else -> error(dump())
     }
 
     return irFunction.parameters zip arguments
@@ -806,7 +806,7 @@ fun IrValueParameter.copyTo(
             expression = originalDefault.expression.deepCopyWithSymbols(irFunction),
         )
     }
-    @Suppress("DEPRECATED_COMPILER_API")
+    @OptIn(DeprecatedForRemovalCompilerApi::class)
     return factory.createValueParameter(
         startOffset = startOffset,
         endOffset = endOffset,

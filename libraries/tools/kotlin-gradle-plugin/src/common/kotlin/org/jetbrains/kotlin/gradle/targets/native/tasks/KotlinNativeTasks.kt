@@ -126,7 +126,7 @@ private val File.canKlibBePassedToCompiler get() = (extension == "klib" || isDir
 internal fun Collection<File>.filterKlibsPassedToCompiler(): List<File> = filter(File::canKlibBePassedToCompiler)
 
 // endregion
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION_ERROR")
 @DisableCachingByDefault(because = "Abstract super-class, not to be instantiated directly")
 abstract class AbstractKotlinNativeCompile<
         T : KotlinCommonToolOptions,
@@ -282,7 +282,7 @@ abstract class AbstractKotlinNativeCompile<
 /**
  * A task producing a klibrary from a compilation.
  */
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION_ERROR")
 @CacheableTask
 abstract class KotlinNativeCompile
 @Inject
@@ -410,6 +410,11 @@ internal constructor(
         level = DeprecationLevel.ERROR,
     )
     override val kotlinOptions: KotlinCommonOptions = object : KotlinCommonOptions {
+        @OptIn(org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi::class)
+        @Deprecated(
+            message = org.jetbrains.kotlin.gradle.dsl.KOTLIN_OPTIONS_DEPRECATION_MESSAGE,
+            level = DeprecationLevel.ERROR,
+        )
         override val options: KotlinCommonCompilerOptions
             get() = compilerOptions
     }

@@ -5,8 +5,11 @@
 package org.jetbrains.kotlin.cli.common.arguments
 
 import com.intellij.util.xmlb.annotations.Transient
+import org.jetbrains.kotlin.config.LanguageFeature
 
-// This file was generated automatically. See compiler/cli/cli-arguments-generator
+// This file was generated automatically. See generator in :compiler:cli:cli-arguments-generator
+// Please declare arguments in compiler/arguments/src/org/jetbrains/kotlin/arguments/description/JvmCompilerArguments.kt
+// DO NOT MODIFY IT MANUALLY.
 
 class K2JVMCompilerArguments : CommonCompilerArguments() {
     @Argument(
@@ -576,6 +579,17 @@ problems with parentheses in identifiers on certain platforms.""",
         }
 
     @Argument(
+        value = "-Xjvm-expose-boxed",
+        description = "Expose inline classes and functions, accepting and returning them, to Java.",
+    )
+    @Enables(LanguageFeature.ImplicitJvmExposeBoxed)
+    var jvmExposeBoxed: Boolean = false
+        set(value) {
+            checkFrozen()
+            field = value
+        }
+
+    @Argument(
         value = "-Xstring-concat",
         valueDescription = "{indy-with-constants|indy|inline}",
         description = """Select the code generation scheme for string concatenation:
@@ -792,6 +806,17 @@ Currently this includes spilling all variables in a suspending context regardles
 If API Level >= 2.2 -- no-op.""",
     )
     var enableDebugMode: Boolean = false
+        set(value) {
+            checkFrozen()
+            field = value
+        }
+
+    @Argument(
+        value = "-Xenhanced-coroutines-debugging",
+        description = """Generate additional linenumber instruction for compiler-generated code
+inside suspend functions and lambdas to distinguish them from user code by debugger.""",
+    )
+    var enhancedCoroutinesDebugging: Boolean = false
         set(value) {
             checkFrozen()
             field = value

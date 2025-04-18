@@ -77,6 +77,12 @@ fun testWhen() {
             }
         }
     }
+
+    consume {
+        when (a) {
+            "" -> <!UNUSED_EXPRESSION!>""<!>
+        }
+    }
 }
 
 fun testIfElse(

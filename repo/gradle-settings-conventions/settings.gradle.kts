@@ -3,7 +3,7 @@ pluginManagement {
     apply(from = "../scripts/kotlin-bootstrap.settings.gradle.kts")
 
     repositories {
-        maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/kotlin-dependencies")
+        maven(url = "https://redirector.kotlinlang.org/maven/kotlin-dependencies")
         mavenCentral()
         gradlePluginPortal()
     }
@@ -76,12 +76,19 @@ buildCache {
         }
     }
     if (develocity.server.isPresent) {
-        remote(develocity.buildCache) {
-            isPush = buildProperties.pushToBuildCache
-            val remoteBuildCacheUrl = buildProperties.buildCacheUrl?.trim()
-            isEnabled = remoteBuildCacheUrl != "" // explicit "" disables it
-            if (!remoteBuildCacheUrl.isNullOrEmpty()) {
-                server = remoteBuildCacheUrl.removeSuffix("/cache/")
+        if (System.getenv("TC_K8S_CLOUD_PROFILE_ID") == "kotlindev-kotlin-k8s") {
+            remote(develocity.buildCache) {
+                isPush = buildProperties.pushToBuildCache
+                server = "https://kotlin-cache.eqx.k8s.intellij.net"
+            }
+        } else {
+            remote(develocity.buildCache) {
+                isPush = buildProperties.pushToBuildCache
+                val remoteBuildCacheUrl = buildProperties.buildCacheUrl?.trim()
+                isEnabled = remoteBuildCacheUrl != "" // explicit "" disables it
+                if (!remoteBuildCacheUrl.isNullOrEmpty()) {
+                    server = remoteBuildCacheUrl.removeSuffix("/cache/")
+                }
             }
         }
     }

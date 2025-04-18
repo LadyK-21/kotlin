@@ -209,15 +209,22 @@ class FirCallCompletionResultsWriterTransformer(
     }
 
     private fun runPCLARelatedTasksForCandidate(candidate: Candidate) {
+        // NB: The order is important here, especially for the case of delegated var property with an implicit type.
+        // (see usages of `isImplicitTypedProperty` at FirDeclarationsResolveTransformer.transformPropertyAccessorsWithDelegate)
         for (postponedCall in candidate.postponedPCLACalls) {
             postponedCall.expression.transformSingle(this, null)
         }
 
+        // Currently, those callbacks are only from nested FirDelegatedPropertyInferenceSession.
+        // They update the property / accessor types _and_ resolve setter if it wasn't yet resolved (again implicitly typed delegated var).
+        // It should be done _after_ completion of the delegation call.
         for (callback in candidate.onPCLACompletionResultsWritingCallbacks) {
             callback(finalSubstitutor)
         }
 
         // TODO: Be aware of exponent
+        // This should happen after `onPCLACompletionResultsWritingCallbacks`,
+        // to guarantee that the setter of implicitly typed delegated var is resolved.
         val firStubTypeTransformer = FirTypeVariablesAfterPCLATransformer(finalSubstitutor)
         for (lambda in candidate.lambdasAnalyzedWithPCLA) {
             lambda.transformSingle(firStubTypeTransformer, null)
@@ -1013,10 +1020,18 @@ class FirCallCompletionResultsWriterTransformer(
             ?: runUnless(containingCallIsError) { (data as? ExpectedArgumentType.ArgumentsMap)?.lambdasReturnTypes?.get(anonymousFunction) }
 
         val newData = expectedReturnType?.toExpectedType(data?.contextSensitiveResolutionReplacements)
-        val result = transformElement(anonymousFunction, newData)
         for ((expression, _) in returnExpressions) {
             expression.transformSingle(this, newData)
         }
+
+        // TODO: Avoid recursive transformation of statements again (KT-76677)
+        // The only thing that seems necessary is writing the resulting type of the block
+        // from already analyzed statements.
+        // On the other hand, what does "resulting type of a block" means and why it's obtained from the last statement-only
+        // is a different question.
+        // Currently, it only seems to be heavily used by org.jetbrains.kotlin.fir.resolve.ResolveUtilsKt.addReturnToLastStatementIfNeeded
+        // below when checking the `isNothing` case.
+        anonymousFunction.body?.let { transformBlock(it, newData) }
 
         val resultReturnType = anonymousFunction.computeReturnType(
             session,
@@ -1026,9 +1041,9 @@ class FirCallCompletionResultsWriterTransformer(
         )
 
         if (initialReturnType != resultReturnType) {
-            val fakeSource = result.source?.fakeElement(KtFakeSourceElementKind.ImplicitFunctionReturnType)
-            result.replaceReturnTypeRef(result.returnTypeRef.resolvedTypeFromPrototype(resultReturnType, fakeSource))
-            session.lookupTracker?.recordTypeResolveAsLookup(result.returnTypeRef, result.source, context.file.source)
+            val fakeSource = anonymousFunction.source?.fakeElement(KtFakeSourceElementKind.ImplicitFunctionReturnType)
+            anonymousFunction.replaceReturnTypeRef(anonymousFunction.returnTypeRef.resolvedTypeFromPrototype(resultReturnType, fakeSource))
+            session.lookupTracker?.recordTypeResolveAsLookup(anonymousFunction.returnTypeRef, anonymousFunction.source, context.file.source)
             needUpdateLambdaType = true
         }
 
@@ -1037,13 +1052,13 @@ class FirCallCompletionResultsWriterTransformer(
             // class ID and annotations. On the other hand, `functionTypeKind()` checks only class ID.
             val kind = initialExpectedType?.functionTypeKindForDeserializedConeType()
                 ?: initialExpectedType?.functionTypeKind(session)
-                ?: result.typeRef.coneTypeSafe<ConeClassLikeType>()?.functionTypeKind(session)
-            result.replaceTypeRef(result.constructFunctionTypeRef(session, kind))
-            session.lookupTracker?.recordTypeResolveAsLookup(result.typeRef, result.source, context.file.source)
+                ?: anonymousFunction.typeRef.coneTypeSafe<ConeClassLikeType>()?.functionTypeKind(session)
+            anonymousFunction.replaceTypeRef(anonymousFunction.constructFunctionTypeRef(session, kind))
+            session.lookupTracker?.recordTypeResolveAsLookup(anonymousFunction.typeRef, anonymousFunction.source, context.file.source)
         }
         // Have to delay this until the type is written to avoid adding a return if the type is Unit.
-        result.addReturnToLastStatementIfNeeded(session)
-        return result
+        anonymousFunction.addReturnToLastStatementIfNeeded(session)
+        return anonymousFunction
     }
 
     /**
@@ -1323,6 +1338,25 @@ class FirCallCompletionResultsWriterTransformer(
 
             else -> toErrorReference(errorDiagnostic)
         }
+    }
+
+    override fun <E : FirElement> transformElement(
+        element: E,
+        data: ExpectedArgumentType?,
+    ): E {
+        // FirCallCompletionResultsWriterTransformer is expected to transform only a call and its expression arguments.
+        // Though one of the arguments might be a lambda with arbitrary declarations inside, for a non-PCLA case all of them should be
+        // processed in IndependentMode and fully completed.
+        // In the case of PCLA, we use a dedicated FirTypeVariablesAfterPCLATransformer for adapting all the type variable usages inside the
+        // lambda.
+        //
+        // This `if` is not only a fast-path avoiding unnecessary tree traversal, but also semantically necessary to avoid
+        // traversal of some nodes that are not fully ready yet.
+        // The main case currently is a delegated _var_ property inside PCLA, for which deliberately not resolve its setter until the
+        // completion ends
+        // (see usages of `isImplicitTypedProperty` at FirDeclarationsResolveTransformer.transformPropertyAccessorsWithDelegate).
+        if (element is FirDeclaration) return element
+        return super.transformElement(element, data)
     }
 }
 

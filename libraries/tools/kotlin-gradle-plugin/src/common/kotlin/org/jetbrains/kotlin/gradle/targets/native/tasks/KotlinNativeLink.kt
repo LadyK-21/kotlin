@@ -135,23 +135,30 @@ constructor(
     @get:Internal
     val additionalCompilerOptions: Provider<Collection<String>> = toolOptions.freeCompilerArgs as Provider<Collection<String>>
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     @Deprecated(KOTLIN_OPTIONS_AS_TOOLS_DEPRECATION_MESSAGE)
     @get:Internal
     val kotlinOptions: KotlinCommonToolOptions = object : KotlinCommonToolOptions {
+        @OptIn(org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi::class)
+        @Deprecated(
+            message = org.jetbrains.kotlin.gradle.dsl.KOTLIN_OPTIONS_DEPRECATION_MESSAGE,
+            level = DeprecationLevel.ERROR,
+        )
         override val options: KotlinCommonCompilerToolOptions
             get() = toolOptions
     }
 
     @Deprecated(KOTLIN_OPTIONS_AS_TOOLS_DEPRECATION_MESSAGE)
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     fun kotlinOptions(fn: KotlinCommonToolOptions.() -> Unit) {
+        @Suppress("DEPRECATION")
         kotlinOptions.fn()
     }
 
     @Deprecated(KOTLIN_OPTIONS_AS_TOOLS_DEPRECATION_MESSAGE)
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     fun kotlinOptions(fn: Action<KotlinCommonToolOptions>) {
+        @Suppress("DEPRECATION")
         fn.execute(kotlinOptions)
     }
 

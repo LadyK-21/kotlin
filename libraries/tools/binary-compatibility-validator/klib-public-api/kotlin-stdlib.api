@@ -89,6 +89,13 @@ open annotation class kotlin.jvm/ImplicitlyActualizedByJvmDeclaration : kotlin/A
     constructor <init>() // kotlin.jvm/ImplicitlyActualizedByJvmDeclaration.<init>|<init>(){}[1]
 }
 
+open annotation class kotlin.jvm/JvmExposeBoxed : kotlin/Annotation { // kotlin.jvm/JvmExposeBoxed|null[1]
+    constructor <init>(kotlin/String = ...) // kotlin.jvm/JvmExposeBoxed.<init>|<init>(kotlin.String){}[1]
+
+    final val jvmName // kotlin.jvm/JvmExposeBoxed.jvmName|{}jvmName[1]
+        final fun <get-jvmName>(): kotlin/String // kotlin.jvm/JvmExposeBoxed.jvmName.<get-jvmName>|<get-jvmName>(){}[1]
+}
+
 open annotation class kotlin.jvm/JvmField : kotlin/Annotation { // kotlin.jvm/JvmField|null[1]
     constructor <init>() // kotlin.jvm/JvmField.<init>|<init>(){}[1]
 }
@@ -2041,6 +2048,7 @@ final class kotlin.time/Instant : kotlin.io/Serializable, kotlin/Comparable<kotl
         final fun fromEpochSeconds(kotlin/Long, kotlin/Long = ...): kotlin.time/Instant // kotlin.time/Instant.Companion.fromEpochSeconds|fromEpochSeconds(kotlin.Long;kotlin.Long){}[0]
         final fun now(): kotlin.time/Instant // kotlin.time/Instant.Companion.now|now(){}[0]
         final fun parse(kotlin/CharSequence): kotlin.time/Instant // kotlin.time/Instant.Companion.parse|parse(kotlin.CharSequence){}[0]
+        final fun parseOrNull(kotlin/CharSequence): kotlin.time/Instant? // kotlin.time/Instant.Companion.parseOrNull|parseOrNull(kotlin.CharSequence){}[0]
     }
 }
 
@@ -4432,6 +4440,8 @@ open class kotlin.io.encoding/Base64 { // kotlin.io.encoding/Base64|null[0]
     final object Default : kotlin.io.encoding/Base64 { // kotlin.io.encoding/Base64.Default|null[0]
         final val Mime // kotlin.io.encoding/Base64.Default.Mime|{}Mime[0]
             final fun <get-Mime>(): kotlin.io.encoding/Base64 // kotlin.io.encoding/Base64.Default.Mime.<get-Mime>|<get-Mime>(){}[0]
+        final val Pem // kotlin.io.encoding/Base64.Default.Pem|{}Pem[0]
+            final fun <get-Pem>(): kotlin.io.encoding/Base64 // kotlin.io.encoding/Base64.Default.Pem.<get-Pem>|<get-Pem>(){}[0]
         final val UrlSafe // kotlin.io.encoding/Base64.Default.UrlSafe|{}UrlSafe[0]
             final fun <get-UrlSafe>(): kotlin.io.encoding/Base64 // kotlin.io.encoding/Base64.Default.UrlSafe.<get-UrlSafe>|<get-UrlSafe>(){}[0]
     }
@@ -4554,9 +4564,6 @@ open class kotlin/AssertionError : kotlin/Error { // kotlin/AssertionError|null[
     constructor <init>() // kotlin/AssertionError.<init>|<init>(){}[0]
     constructor <init>(kotlin/Any?) // kotlin/AssertionError.<init>|<init>(kotlin.Any?){}[0]
     constructor <init>(kotlin/String?, kotlin/Throwable?) // kotlin/AssertionError.<init>|<init>(kotlin.String?;kotlin.Throwable?){}[0]
-
-    // Targets: [native]
-    constructor <init>(kotlin/Throwable?) // kotlin/AssertionError.<init>|<init>(kotlin.Throwable?){}[0]
 
     // Targets: [js, wasmJs, wasmWasi]
     constructor <init>(kotlin/String?) // kotlin/AssertionError.<init>|<init>(kotlin.String?){}[0]
@@ -5078,6 +5085,7 @@ final fun (kotlin.sequences/Sequence<kotlin/UShort>).kotlin.sequences/sum(): kot
 final fun (kotlin.text/MatchGroupCollection).kotlin.text/get(kotlin/String): kotlin.text/MatchGroup? // kotlin.text/get|get@kotlin.text.MatchGroupCollection(kotlin.String){}[0]
 final fun (kotlin.text/StringBuilder).kotlin.text/append(kotlin/Array<out kotlin/Any?>...): kotlin.text/StringBuilder // kotlin.text/append|append@kotlin.text.StringBuilder(kotlin.Array<out|kotlin.Any?>...){}[0]
 final fun (kotlin.text/StringBuilder).kotlin.text/append(kotlin/Array<out kotlin/String?>...): kotlin.text/StringBuilder // kotlin.text/append|append@kotlin.text.StringBuilder(kotlin.Array<out|kotlin.String?>...){}[0]
+final fun (kotlin.time/TimeSource).kotlin.time/asClock(kotlin.time/Instant): kotlin.time/Clock // kotlin.time/asClock|asClock@kotlin.time.TimeSource(kotlin.time.Instant){}[0]
 final fun (kotlin/Array<out kotlin/Boolean>).kotlin.collections/toBooleanArray(): kotlin/BooleanArray // kotlin.collections/toBooleanArray|toBooleanArray@kotlin.Array<out|kotlin.Boolean>(){}[0]
 final fun (kotlin/Array<out kotlin/Byte>).kotlin.collections/average(): kotlin/Double // kotlin.collections/average|average@kotlin.Array<out|kotlin.Byte>(){}[0]
 final fun (kotlin/Array<out kotlin/Byte>).kotlin.collections/sum(): kotlin/Int // kotlin.collections/sum|sum@kotlin.Array<out|kotlin.Byte>(){}[0]
@@ -6546,6 +6554,7 @@ final fun <#A: kotlin/Any?> kotlin.comparisons/minOf(#A, kotlin/Array<out #A>...
 final fun <#A: kotlin/Any?> kotlin.sequences/emptySequence(): kotlin.sequences/Sequence<#A> // kotlin.sequences/emptySequence|emptySequence(){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> kotlin.sequences/iterator(kotlin.coroutines/SuspendFunction1<kotlin.sequences/SequenceScope<#A>, kotlin/Unit>): kotlin.collections/Iterator<#A> // kotlin.sequences/iterator|iterator(kotlin.coroutines.SuspendFunction1<kotlin.sequences.SequenceScope<0:0>,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> kotlin.sequences/sequence(kotlin.coroutines/SuspendFunction1<kotlin.sequences/SequenceScope<#A>, kotlin/Unit>): kotlin.sequences/Sequence<#A> // kotlin.sequences/sequence|sequence(kotlin.coroutines.SuspendFunction1<kotlin.sequences.SequenceScope<0:0>,kotlin.Unit>){0§<kotlin.Any?>}[0]
+final fun <#A: kotlin/Any?> kotlin.sequences/sequenceOf(#A): kotlin.sequences/Sequence<#A> // kotlin.sequences/sequenceOf|sequenceOf(0:0){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> kotlin.sequences/sequenceOf(kotlin/Array<out #A>...): kotlin.sequences/Sequence<#A> // kotlin.sequences/sequenceOf|sequenceOf(kotlin.Array<out|0:0>...){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> kotlin/lazy(kotlin/Any?, kotlin/Function0<#A>): kotlin/Lazy<#A> // kotlin/lazy|lazy(kotlin.Any?;kotlin.Function0<0:0>){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> kotlin/lazy(kotlin/Function0<#A>): kotlin/Lazy<#A> // kotlin/lazy|lazy(kotlin.Function0<0:0>){0§<kotlin.Any?>}[0]
@@ -8801,6 +8810,7 @@ final inline fun <#A: kotlin/Any?> kotlin.comparisons/compareByDescending(crossi
 final inline fun <#A: kotlin/Any?> kotlin.comparisons/compareValuesBy(#A, #A, kotlin/Function1<#A, kotlin/Comparable<*>?>): kotlin/Int // kotlin.comparisons/compareValuesBy|compareValuesBy(0:0;0:0;kotlin.Function1<0:0,kotlin.Comparable<*>?>){0§<kotlin.Any?>}[0]
 final inline fun <#A: kotlin/Any?> kotlin.coroutines/Continuation(kotlin.coroutines/CoroutineContext, crossinline kotlin/Function1<kotlin/Result<#A>, kotlin/Unit>): kotlin.coroutines/Continuation<#A> // kotlin.coroutines/Continuation|Continuation(kotlin.coroutines.CoroutineContext;kotlin.Function1<kotlin.Result<0:0>,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final inline fun <#A: kotlin/Any?> kotlin.sequences/Sequence(crossinline kotlin/Function0<kotlin.collections/Iterator<#A>>): kotlin.sequences/Sequence<#A> // kotlin.sequences/Sequence|Sequence(kotlin.Function0<kotlin.collections.Iterator<0:0>>){0§<kotlin.Any?>}[0]
+final inline fun <#A: kotlin/Any?> kotlin.sequences/sequenceOf(): kotlin.sequences/Sequence<#A> // kotlin.sequences/sequenceOf|sequenceOf(){0§<kotlin.Any?>}[0]
 final inline fun <#A: kotlin/Any?> kotlin.time/measureTimedValue(kotlin/Function0<#A>): kotlin.time/TimedValue<#A> // kotlin.time/measureTimedValue|measureTimedValue(kotlin.Function0<0:0>){0§<kotlin.Any?>}[0]
 final inline fun <#A: kotlin/Any?> kotlin/arrayOf(kotlin/Array<out #A>...): kotlin/Array<#A> // kotlin/arrayOf|arrayOf(kotlin.Array<out|0:0>...){0§<kotlin.Any?>}[0]
 final inline fun <#A: kotlin/Any?> kotlin/arrayOfNulls(kotlin/Int): kotlin/Array<#A?> // kotlin/arrayOfNulls|arrayOfNulls(kotlin.Int){0§<kotlin.Any?>}[0]
@@ -9153,15 +9163,6 @@ final fun (kotlin.text/StringBuilder).kotlin.text/clear(): kotlin.text/StringBui
 final fun (kotlin/BooleanArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Boolean> // kotlin.collections/asList|asList@kotlin.BooleanArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/BooleanArray).kotlin.collections/contentEquals(kotlin/BooleanArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.BooleanArray(kotlin.BooleanArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/BooleanArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.BooleanArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/BooleanArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.BooleanArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/BooleanArray).kotlin.collections/copyInto(kotlin/BooleanArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/BooleanArray // kotlin.collections/copyInto|copyInto@kotlin.BooleanArray(kotlin.BooleanArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
@@ -9172,15 +9173,6 @@ final fun (kotlin/BooleanArray).kotlin.collections/plus(kotlin/BooleanArray): ko
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/ByteArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Byte> // kotlin.collections/asList|asList@kotlin.ByteArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ByteArray).kotlin.collections/contentEquals(kotlin/ByteArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.ByteArray(kotlin.ByteArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ByteArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.ByteArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ByteArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.ByteArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/ByteArray).kotlin.collections/copyInto(kotlin/ByteArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/ByteArray // kotlin.collections/copyInto|copyInto@kotlin.ByteArray(kotlin.ByteArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
@@ -9210,15 +9202,6 @@ final fun (kotlin/Char).kotlin.text/toUpperCase(): kotlin/Char // kotlin.text/to
 final fun (kotlin/Char).kotlin.text/uppercase(): kotlin/String // kotlin.text/uppercase|uppercase@kotlin.Char(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/CharArray).kotlin.collections/contentEquals(kotlin/CharArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.CharArray(kotlin.CharArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/CharArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.CharArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/CharArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.CharArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/CharArray).kotlin.collections/copyInto(kotlin/CharArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/CharArray // kotlin.collections/copyInto|copyInto@kotlin.CharArray(kotlin.CharArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
@@ -9238,15 +9221,6 @@ final fun (kotlin/Double).kotlin.math/withSign(kotlin/Int): kotlin/Double // kot
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/DoubleArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Double> // kotlin.collections/asList|asList@kotlin.DoubleArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/DoubleArray).kotlin.collections/contentEquals(kotlin/DoubleArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.DoubleArray(kotlin.DoubleArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/DoubleArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.DoubleArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/DoubleArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.DoubleArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/DoubleArray).kotlin.collections/copyInto(kotlin/DoubleArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/DoubleArray // kotlin.collections/copyInto|copyInto@kotlin.DoubleArray(kotlin.DoubleArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
@@ -9282,15 +9256,6 @@ final fun (kotlin/Float).kotlin.math/withSign(kotlin/Int): kotlin/Float // kotli
 final fun (kotlin/FloatArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Float> // kotlin.collections/asList|asList@kotlin.FloatArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/FloatArray).kotlin.collections/contentEquals(kotlin/FloatArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.FloatArray(kotlin.FloatArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/FloatArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.FloatArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/FloatArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.FloatArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/FloatArray).kotlin.collections/copyInto(kotlin/FloatArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/FloatArray // kotlin.collections/copyInto|copyInto@kotlin.FloatArray(kotlin.FloatArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
@@ -9309,15 +9274,6 @@ final fun (kotlin/Int).kotlin/countLeadingZeroBits(): kotlin/Int // kotlin/count
 final fun (kotlin/IntArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Int> // kotlin.collections/asList|asList@kotlin.IntArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/IntArray).kotlin.collections/contentEquals(kotlin/IntArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.IntArray(kotlin.IntArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/IntArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.IntArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/IntArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.IntArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/IntArray).kotlin.collections/copyInto(kotlin/IntArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/IntArray // kotlin.collections/copyInto|copyInto@kotlin.IntArray(kotlin.IntArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
@@ -9333,15 +9289,6 @@ final fun (kotlin/IntArray).kotlin.collections/plus(kotlin/IntArray): kotlin/Int
 final fun (kotlin/LongArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Long> // kotlin.collections/asList|asList@kotlin.LongArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/LongArray).kotlin.collections/contentEquals(kotlin/LongArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.LongArray(kotlin.LongArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/LongArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.LongArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/LongArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.LongArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/LongArray).kotlin.collections/copyInto(kotlin/LongArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/LongArray // kotlin.collections/copyInto|copyInto@kotlin.LongArray(kotlin.LongArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
@@ -9352,15 +9299,6 @@ final fun (kotlin/LongArray).kotlin.collections/plus(kotlin/LongArray): kotlin/L
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/ShortArray).kotlin.collections/asList(): kotlin.collections/List<kotlin/Short> // kotlin.collections/asList|asList@kotlin.ShortArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ShortArray).kotlin.collections/contentEquals(kotlin/ShortArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.ShortArray(kotlin.ShortArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ShortArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.ShortArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ShortArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.ShortArray(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun (kotlin/ShortArray).kotlin.collections/copyInto(kotlin/ShortArray, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/ShortArray // kotlin.collections/copyInto|copyInto@kotlin.ShortArray(kotlin.ShortArray;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
@@ -9393,42 +9331,6 @@ final fun (kotlin/String).kotlin.text/toUpperCase(): kotlin/String // kotlin.tex
 final fun (kotlin/String).kotlin.text/uppercase(): kotlin/String // kotlin.text/uppercase|uppercase@kotlin.String(){}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UByteArray).kotlin.collections/contentEquals(kotlin/UByteArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.UByteArray(kotlin.UByteArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UByteArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.UByteArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UByteArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.UByteArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UIntArray).kotlin.collections/contentEquals(kotlin/UIntArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.UIntArray(kotlin.UIntArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UIntArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.UIntArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UIntArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.UIntArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ULongArray).kotlin.collections/contentEquals(kotlin/ULongArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.ULongArray(kotlin.ULongArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ULongArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.ULongArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/ULongArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.ULongArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UShortArray).kotlin.collections/contentEquals(kotlin/UShortArray): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.UShortArray(kotlin.UShortArray){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UShortArray).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.UShortArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun (kotlin/UShortArray).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.UShortArray(){}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
 final fun <#A: kotlin/Any?, #B: kotlin/Any?> kotlin.collections/linkedMapOf(kotlin/Array<out kotlin/Pair<#A, #B>>...): kotlin.collections/HashMap<#A, #B> // kotlin.collections/linkedMapOf|linkedMapOf(kotlin.Array<out|kotlin.Pair<0:0,0:1>>...){0§<kotlin.Any?>;1§<kotlin.Any?>}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
@@ -9448,15 +9350,6 @@ final fun <#A: kotlin/Any?> (kotlin/Array<#A>).kotlin.collections/plus(kotlin.co
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun <#A: kotlin/Any?> (kotlin/Array<#A>).kotlin.collections/plus(kotlin/Array<out #A>): kotlin/Array<#A> // kotlin.collections/plus|plus@kotlin.Array<0:0>(kotlin.Array<out|0:0>){0§<kotlin.Any?>}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun <#A: kotlin/Any?> (kotlin/Array<out #A>).kotlin.collections/contentEquals(kotlin/Array<out #A>): kotlin/Boolean // kotlin.collections/contentEquals|contentEquals@kotlin.Array<out|0:0>(kotlin.Array<out|0:0>){0§<kotlin.Any?>}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun <#A: kotlin/Any?> (kotlin/Array<out #A>).kotlin.collections/contentHashCode(): kotlin/Int // kotlin.collections/contentHashCode|contentHashCode@kotlin.Array<out|0:0>(){0§<kotlin.Any?>}[0]
-
-// Targets: [native, wasmJs, wasmWasi]
-final fun <#A: kotlin/Any?> (kotlin/Array<out #A>).kotlin.collections/contentToString(): kotlin/String // kotlin.collections/contentToString|contentToString@kotlin.Array<out|0:0>(){0§<kotlin.Any?>}[0]
 
 // Targets: [native, wasmJs, wasmWasi]
 final fun <#A: kotlin/Any?> (kotlin/Array<out #A>).kotlin.collections/copyInto(kotlin/Array<#A>, kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin/Array<#A> // kotlin.collections/copyInto|copyInto@kotlin.Array<out|0:0>(kotlin.Array<0:0>;kotlin.Int;kotlin.Int;kotlin.Int){0§<kotlin.Any?>}[0]

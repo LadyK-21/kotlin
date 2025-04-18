@@ -8,7 +8,9 @@ import com.intellij.util.xmlb.annotations.Transient
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersion
 
-// This file was generated automatically. See compiler/cli/cli-arguments-generator
+// This file was generated automatically. See generator in :compiler:cli:cli-arguments-generator
+// Please declare arguments in compiler/arguments/src/org/jetbrains/kotlin/arguments/description/CommonCompilerArguments.kt
+// DO NOT MODIFY IT MANUALLY.
 
 abstract class CommonCompilerArguments : CommonToolArguments() {
     @get:Transient
@@ -209,7 +211,7 @@ progressive mode enabled may cause compilation errors in progressive mode.""",
         value = "-Xcompiler-plugin",
         valueDescription = "<path1>,<path2>[=<optionName>=<value>,<optionName>=<value>]",
         description = "Register a compiler plugin.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var pluginConfigurations: Array<String>? = null
         set(value) {
@@ -269,17 +271,6 @@ progressive mode enabled may cause compilation errors in progressive mode.""",
     )
     @Enables(LanguageFeature.InlineClasses)
     var inlineClasses: Boolean = false
-        set(value) {
-            checkFrozen()
-            field = value
-        }
-
-    @Argument(
-        value = "-Xlegacy-smart-cast-after-try",
-        description = "Allow 'var' smart casts even in the presence of assignments in 'try' blocks.",
-    )
-    @Disables(LanguageFeature.SoundSmartCastsAfterTry)
-    var legacySmartCastAfterTry: Boolean = false
         set(value) {
             checkFrozen()
             field = value
@@ -587,17 +578,6 @@ This flag partially enables functionality of `-Xexplicit-api` flag, so please do
         }
 
     @Argument(
-        value = "-Xinference-compatibility",
-        description = "Enable compatibility changes for the generic type inference algorithm.",
-    )
-    @Enables(LanguageFeature.InferenceCompatibility)
-    var inferenceCompatibility: Boolean = false
-        set(value) {
-            checkFrozen()
-            field = value
-        }
-
-    @Argument(
         value = "-Xsuppress-version-warnings",
         description = "Suppress warnings about outdated, inconsistent, or experimental language or API versions.",
     )
@@ -658,17 +638,6 @@ The corresponding calls' declarations may not be marked with @BuilderInference."
     )
     @Enables(LanguageFeature.UseBuilderInferenceWithoutAnnotation)
     var enableBuilderInference: Boolean = false
-        set(value) {
-            checkFrozen()
-            field = value
-        }
-
-    @Argument(
-        value = "-Xself-upper-bound-inference",
-        description = "Support inferring type arguments from the self-type upper bounds of the corresponding type parameters.",
-    )
-    @Enables(LanguageFeature.TypeInferenceOnCallsWithSelfTypes)
-    var selfUpperBoundInference: Boolean = false
         set(value) {
             checkFrozen()
             field = value
@@ -912,6 +881,16 @@ default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1
     )
     @Enables(LanguageFeature.AnnotationAllUseSiteTarget)
     var annotationTargetAll: Boolean = false
+        set(value) {
+            checkFrozen()
+            field = value
+        }
+
+    @Argument(
+        value = "-XXlenient-mode",
+        description = "Lenient compiler mode. When actuals are missing, placeholder declarations are generated.",
+    )
+    var lenientMode: Boolean = false
         set(value) {
             checkFrozen()
             field = value

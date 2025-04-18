@@ -17,16 +17,22 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.overrides.isEffectivelyPrivate
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.*
 
 /**
- * Checks if the given function should be treated by 1st phase of inlining (inlining of private functions):
- * - Either the function is private.
- * - Or the function is declared inside a local class.
+ * Checks if the given function should be treated by 1st phase of inlining (inlining of private functions)
  */
-fun IrFunctionSymbol.isConsideredAsPrivateForInlining(): Boolean = this.isBound && (isPrivate(owner.visibility) || owner.isLocal)
+fun IrFunctionSymbol.isConsideredAsPrivateForInlining(): Boolean = this.isBound && owner.isEffectivelyPrivate()
+
+/**
+ * Checks if the given function is available in the inlined scope.
+ * - Effectively private declarations are not available (outside the given file).
+ * - Local declarations are always fine because they will be copied with inline declaration.
+ */
+fun IrFunctionSymbol.isConsideredAsPrivateAndNotLocalForInlining(): Boolean = this.isBound && owner.isEffectivelyPrivate() && !owner.isLocal
 
 interface CallInlinerStrategy {
     /**

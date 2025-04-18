@@ -136,6 +136,10 @@ object CodegenTestDirectives : SimpleDirectivesContainer() {
         description = "Dumps generated backend IR (enables ${IrTextDumpHandler::class})"
     )
 
+    val DUMP_IR_AFTER_INLINE by directive(
+        description = "Dumps generated backend IR after inlining (enables ${IrTextDumpHandler::class} after inlining)"
+    )
+
     val DUMP_EXTERNAL_CLASS by stringDirective(
         description = "Specifies names of external classes which IR should be dumped"
     )
@@ -260,10 +264,6 @@ object CodegenTestDirectives : SimpleDirectivesContainer() {
 
     val DISABLE_IR_VARARG_TYPE_CHECKS by enumDirective<TargetBackend>(
         description = "Don't check for vararg type mismatches when validating IR on the target backend"
-    )
-
-    val JVM_INDY_ALLOW_ANNOTATED_LAMBDAS by directive(
-        description = "Allow indy on lambdas with annotations"
     )
 }
 

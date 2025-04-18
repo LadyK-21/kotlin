@@ -66,7 +66,7 @@ private object HasNoEnumEntriesKey : FirDeclarationDataKey()
 var FirClass.hasNoEnumEntriesAttr: Boolean? by FirDeclarationDataRegistry.data(HasNoEnumEntriesKey)
 
 // Must be true iff the class metadata contains the hasEnumEntries flag
-val FirClass.hasEnumEntries get() = hasNoEnumEntriesAttr != true
+val FirClass.hasEnumEntries: Boolean get() = hasNoEnumEntriesAttr != true
 
 private object IsNewPlaceForBodyGeneration : FirDeclarationDataKey()
 var FirRegularClass.isNewPlaceForBodyGeneration: Boolean? by FirDeclarationDataRegistry.data(IsNewPlaceForBodyGeneration)
@@ -222,6 +222,10 @@ var FirFunction.isJavaRecordComponent: Boolean? by FirDeclarationDataRegistry.da
 private object IsCatchParameterProperty : FirDeclarationDataKey()
 
 var FirProperty.isCatchParameter: Boolean? by FirDeclarationDataRegistry.data(IsCatchParameterProperty)
+
+private object IsForLoopParameterProperty : FirDeclarationDataKey()
+
+var FirProperty.isForLoopParameter: Boolean? by FirDeclarationDataRegistry.data(IsForLoopParameterProperty)
 
 private object DelegatedWrapperDataKey : FirDeclarationDataKey()
 

@@ -7,9 +7,24 @@ package org.jetbrains.kotlin.cli.common.arguments
 import com.intellij.util.xmlb.annotations.Transient
 import org.jetbrains.kotlin.config.LanguageVersion
 
-// This file was generated automatically. See compiler/cli/cli-arguments-generator
+// This file was generated automatically. See generator in :compiler:cli:cli-arguments-generator
+// Please declare arguments in compiler/arguments/src/org/jetbrains/kotlin/arguments/description/JsCompilerArguments.kt
+// DO NOT MODIFY IT MANUALLY.
 
 class K2JSCompilerArguments : K2WasmCompilerArguments() {
+    @Deprecated("It is senseless to use with IR compiler. Only for compatibility.")
+    @Argument(
+        value = "-output",
+        valueDescription = "<filepath>",
+        description = "",
+        isObsolete = true,
+    )
+    var outputFile: String? = null
+        set(value) {
+            checkFrozen()
+            field = if (value.isNullOrEmpty()) null else value
+        }
+
     @Argument(
         value = "-ir-output-dir",
         valueDescription = "<directory>",

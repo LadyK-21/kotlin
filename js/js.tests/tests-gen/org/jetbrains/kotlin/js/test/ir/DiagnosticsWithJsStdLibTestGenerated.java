@@ -343,6 +343,12 @@ public class DiagnosticsWithJsStdLibTestGenerated extends AbstractDiagnosticsTes
     }
 
     @Test
+    @TestMetadata("jsonParseInsideIf.kt")
+    public void testJsonParseInsideIf() {
+      runTest("compiler/testData/diagnostics/testsWithJsStdLib/dynamicTypes/jsonParseInsideIf.kt");
+    }
+
+    @Test
     @TestMetadata("kt57960.kt")
     public void testKt57960() {
       runTest("compiler/testData/diagnostics/testsWithJsStdLib/dynamicTypes/kt57960.kt");
@@ -507,6 +513,12 @@ public class DiagnosticsWithJsStdLibTestGenerated extends AbstractDiagnosticsTes
     @Test
     public void testAllFilesPresentInExport() {
       KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/diagnostics/testsWithJsStdLib/export"), Pattern.compile("^([^_](.+))\\.kt$"), Pattern.compile("^(.+)\\.fir\\.kts?$"), TargetBackend.JS_IR, true);
+    }
+
+    @Test
+    @TestMetadata("expectActualExports.kt")
+    public void testExpectActualExports() {
+      runTest("compiler/testData/diagnostics/testsWithJsStdLib/export/expectActualExports.kt");
     }
 
     @Test

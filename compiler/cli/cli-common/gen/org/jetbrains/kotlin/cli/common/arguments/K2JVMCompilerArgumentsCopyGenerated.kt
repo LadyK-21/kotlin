@@ -29,6 +29,7 @@ fun copyK2JVMCompilerArguments(from: K2JVMCompilerArguments, to: K2JVMCompilerAr
     to.enableIrInliner = from.enableIrInliner
     to.enableJvmPreview = from.enableJvmPreview
     to.enhanceTypeParameterTypesToDefNotNull = from.enhanceTypeParameterTypesToDefNotNull
+    to.enhancedCoroutinesDebugging = from.enhancedCoroutinesDebugging
     to.expectBuiltinsAsPartOfStdlib = from.expectBuiltinsAsPartOfStdlib
     to.expression = from.expression
     to.friendPaths = from.friendPaths?.copyOf()
@@ -46,6 +47,7 @@ fun copyK2JVMCompilerArguments(from: K2JVMCompilerArguments, to: K2JVMCompilerAr
     to.jsr305 = from.jsr305?.copyOf()
     to.jvmDefault = from.jvmDefault
     to.jvmDefaultStable = from.jvmDefaultStable
+    to.jvmExposeBoxed = from.jvmExposeBoxed
     to.jvmTarget = from.jvmTarget
     to.klibLibraries = from.klibLibraries
     to.lambdas = from.lambdas

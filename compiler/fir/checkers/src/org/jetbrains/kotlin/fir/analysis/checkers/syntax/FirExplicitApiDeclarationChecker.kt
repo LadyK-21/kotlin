@@ -24,21 +24,22 @@ import org.jetbrains.kotlin.fir.declarations.impl.FirPrimaryConstructor
 import org.jetbrains.kotlin.fir.declarations.utils.effectiveVisibility
 import org.jetbrains.kotlin.fir.declarations.utils.isData
 import org.jetbrains.kotlin.fir.declarations.utils.isOverride
+import org.jetbrains.kotlin.fir.expressions.impl.FirSingleExpressionBlock
 import org.jetbrains.kotlin.fir.resolve.transformers.publishedApiEffectiveVisibility
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 
 object FirExplicitApiDeclarationChecker : FirDeclarationSyntaxChecker<FirDeclaration, KtDeclaration>() {
-    private val codeFragmentTypes =
-        setOf(KtNodeTypes.BLOCK_CODE_FRAGMENT, KtNodeTypes.EXPRESSION_CODE_FRAGMENT, KtNodeTypes.TYPE_CODE_FRAGMENT)
-
     override fun checkPsiOrLightTree(
         element: FirDeclaration,
         source: KtSourceElement,
         context: CheckerContext,
         reporter: DiagnosticReporter
     ) {
-        if ((source.kind !is KtRealSourceElementKind && source.kind != KtFakeSourceElementKind.PropertyFromParameter) ||
+        val sourceKindIsReal = source.kind is KtRealSourceElementKind
+        if (!sourceKindIsReal &&
+            source.kind != KtFakeSourceElementKind.PropertyFromParameter || // Fake properties from parameter should be checked for visibility
+            element.origin == FirDeclarationOrigin.ScriptCustomization.ResultProperty ||
             element !is FirMemberDeclaration
         ) {
             return
@@ -63,7 +64,10 @@ object FirExplicitApiDeclarationChecker : FirDeclarationSyntaxChecker<FirDeclara
             checkVisibilityModifier(explicitApiState, element, source, context, reporter)
         }
 
-        checkExplicitReturnType(explicitApiState ?: explicitReturnTypesState!!, element, source, context, reporter)
+        if (sourceKindIsReal && element is FirCallableDeclaration) {
+            // Don't check fake property from parameter because they always have an explicit type (otherwise it's a compiler error)
+            checkExplicitReturnType(explicitApiState ?: explicitReturnTypesState!!, element, source, context, reporter)
+        }
     }
 
     private fun checkVisibilityModifier(
@@ -108,9 +112,6 @@ object FirExplicitApiDeclarationChecker : FirDeclarationSyntaxChecker<FirDeclara
                     if (containingClass != null && (containingClass.isData || containingClass.classKind == ClassKind.ANNOTATION_CLASS)) {
                         return true
                     }
-                    if (declaration.origin == FirDeclarationOrigin.ScriptCustomization.ResultProperty) {
-                        return true
-                    }
                 }
 
                 // 3, 8
@@ -122,43 +123,31 @@ object FirExplicitApiDeclarationChecker : FirDeclarationSyntaxChecker<FirDeclara
 
     private fun checkExplicitReturnType(
         state: ExplicitApiMode,
-        declaration: FirMemberDeclaration,
+        declaration: FirCallableDeclaration,
         source: KtSourceElement,
         context: CheckerContext,
         reporter: DiagnosticReporter
     ) {
-        if (declaration !is FirCallableDeclaration) return
-        if (!returnTypeCheckIsApplicable(source, context)) return
+        if (!declaration.returnTypeCheckIsApplicable()) return
 
-        val shouldReport = returnTypeRequired(declaration, context)
-        if (shouldReport) {
-            val factory =
-                if (state == ExplicitApiMode.STRICT)
-                    FirErrors.NO_EXPLICIT_RETURN_TYPE_IN_API_MODE
-                else
-                    FirErrors.NO_EXPLICIT_RETURN_TYPE_IN_API_MODE_WARNING
-            reporter.reportOn(source, factory, context)
-        }
+        val factory =
+            if (state == ExplicitApiMode.STRICT)
+                FirErrors.NO_EXPLICIT_RETURN_TYPE_IN_API_MODE
+            else
+                FirErrors.NO_EXPLICIT_RETURN_TYPE_IN_API_MODE_WARNING
+        reporter.reportOn(source, factory, context)
     }
 
-    private fun returnTypeCheckIsApplicable(source: KtSourceElement, context: CheckerContext): Boolean {
-        // Note that by default getChild uses `depth = -1`, which would find all descendents.
-        if (source.getChild(KtNodeTypes.TYPE_REFERENCE, depth = 1) != null) return false
-        // Do not check if the containing file is not a physical file.
-        val containingFile = context.containingDeclarations.first()
-        if (containingFile.source?.elementType in codeFragmentTypes) return false
+    private fun FirCallableDeclaration.returnTypeCheckIsApplicable(): Boolean {
+        // It's an explicit type, the check always should be skipped
+        if (returnTypeRef.source?.kind == KtRealSourceElementKind) return false
 
-        return when (source.elementType) {
-            // Only require return type if the function is defined via `=`. If it has a block body or is abstract, we don't require return
-            // type because not declaring means it returns `Unit`.
-            KtNodeTypes.FUN -> source.getChild(KtTokens.EQ, depth = 1) != null
-            KtNodeTypes.PROPERTY -> true
-            else -> false
-        }
-    }
-
-    private fun returnTypeRequired(declaration: FirCallableDeclaration, context: CheckerContext): Boolean {
-        // If current declaration is local or it's a member in a local declaration (local class, etc), then we do not require return type.
-        return !declaration.isLocalMember && context.containingDeclarations.lastOrNull()?.isLocalMember != true
+        return this is FirProperty ||
+                this is FirFunction &&
+                // It's allowed to have implicit return type for getters, for setters the return type is always `Unit`.
+                // The return type of the outer property is only worth considering.
+                this !is FirPropertyAccessor &&
+                // Implicit return type can exist only for single-expression functions, unspecified type for regular functions is incorrect.
+                body is FirSingleExpressionBlock
     }
 }

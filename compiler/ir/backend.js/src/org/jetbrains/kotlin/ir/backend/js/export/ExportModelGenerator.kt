@@ -12,6 +12,9 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.JsLoweredDeclarationOrigin
+import org.jetbrains.kotlin.ir.backend.js.correspondingEnumEntry
+import org.jetbrains.kotlin.ir.backend.js.getInstanceFun
+import org.jetbrains.kotlin.ir.backend.js.initEntryInstancesFun
 import org.jetbrains.kotlin.ir.backend.js.lower.ES6_BOX_PARAMETER
 import org.jetbrains.kotlin.ir.backend.js.lower.isBoxParameter
 import org.jetbrains.kotlin.ir.backend.js.lower.isEs6ConstructorReplacement
@@ -166,7 +169,7 @@ class ExportModelGenerator(val context: JsIrBackendContext, val generateNamespac
     }
 
     private fun exportEnumEntry(field: IrField, enumEntries: Map<IrEnumEntry, Int>): ExportedProperty {
-        val irEnumEntry = context.mapping.fieldToEnumEntry[field]
+        val irEnumEntry = field.correspondingEnumEntry
             ?: irError("Unable to find enum entry") {
                 withIrEntry("field", field)
             }
@@ -200,7 +203,7 @@ class ExportModelGenerator(val context: JsIrBackendContext, val generateNamespac
             isMember = true,
             isStatic = true,
             isProtected = parentClass.visibility == DescriptorVisibilities.PROTECTED,
-            irGetter = context.mapping.enumEntryToGetInstanceFun[irEnumEntry]
+            irGetter = irEnumEntry.getInstanceFun
                 ?: irError("Unable to find get instance fun") {
                     withIrEntry("field", field)
                 },
@@ -285,7 +288,7 @@ class ExportModelGenerator(val context: JsIrBackendContext, val generateNamespac
         val enumEntries = klass
             .declarations
             .filterIsInstance<IrField>()
-            .mapNotNull { context.mapping.fieldToEnumEntry[it] }
+            .mapNotNull { it.correspondingEnumEntry }
 
         val enumEntriesToOrdinal: Map<IrEnumEntry, Int> =
             enumEntries
@@ -674,7 +677,7 @@ class ExportModelGenerator(val context: JsIrBackendContext, val generateNamespac
 
         val parentClass = function.parent as? IrClass
 
-        if (parentClass != null && context.mapping.enumClassToInitEntryInstancesFun[parentClass] == function) {
+        if (parentClass != null && parentClass.initEntryInstancesFun == function) {
             return Exportability.NotNeeded
         }
 

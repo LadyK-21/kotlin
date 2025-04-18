@@ -3060,6 +3060,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       }
 
       @Test
+      @TestMetadata("generticReferences.kt")
+      public void testGenerticReferences() {
+        runTest("compiler/testData/codegen/box/callableReference/generticReferences.kt");
+      }
+
+      @Test
       @TestMetadata("inlineArrayConstructors.kt")
       public void testInlineArrayConstructors() {
         runTest("compiler/testData/codegen/box/callableReference/inlineArrayConstructors.kt");
@@ -7992,6 +7998,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       }
 
       @Test
+      @TestMetadata("suspendContextParemetersWithExtension.kt")
+      public void testSuspendContextParemetersWithExtension() {
+        runTest("compiler/testData/codegen/box/contextParameters/suspendContextParemetersWithExtension.kt");
+      }
+
+      @Test
       @TestMetadata("typealiasOnTypeWithContext.kt")
       public void testTypealiasOnTypeWithContext() {
         runTest("compiler/testData/codegen/box/contextParameters/typealiasOnTypeWithContext.kt");
@@ -8141,6 +8153,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       @TestMetadata("nonNullSmartCast.kt")
       public void testNonNullSmartCast() {
         runTest("compiler/testData/codegen/box/contracts/nonNullSmartCast.kt");
+      }
+
+      @Test
+      @TestMetadata("referenceToGenericInDeserializedContract.kt")
+      public void testReferenceToGenericInDeserializedContract() {
+        runTest("compiler/testData/codegen/box/contracts/referenceToGenericInDeserializedContract.kt");
       }
 
       @Test
@@ -11382,6 +11400,26 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       }
 
       @Nested
+      @TestMetadata("compiler/testData/codegen/box/coroutines/generatedCodeMarkers")
+      @TestDataPath("$PROJECT_ROOT")
+      @ClassicPipeline()
+      @UseExtTestCaseGroupProvider()
+      @UsePartialLinkage(mode = Mode.DISABLED)
+      @Tag("no-partial-linkage-may-be-skipped")
+      public class GeneratedCodeMarkers {
+        @Test
+        public void testAllFilesPresentInGeneratedCodeMarkers() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/coroutines/generatedCodeMarkers"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+        }
+
+        @Test
+        @TestMetadata("simple.kt")
+        public void testSimple() {
+          runTest("compiler/testData/codegen/box/coroutines/generatedCodeMarkers/simple.kt");
+        }
+      }
+
+      @Nested
       @TestMetadata("compiler/testData/codegen/box/coroutines/inlineClasses")
       @TestDataPath("$PROJECT_ROOT")
       @ClassicPipeline()
@@ -14560,6 +14598,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       }
 
       @Test
+      @TestMetadata("lazyDelegateInObject.kt")
+      public void testLazyDelegateInObject() {
+        runTest("compiler/testData/codegen/box/delegatedProperty/lazyDelegateInObject.kt");
+      }
+
+      @Test
       @TestMetadata("local.kt")
       public void testLocal() {
         runTest("compiler/testData/codegen/box/delegatedProperty/local.kt");
@@ -15334,6 +15378,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       }
 
       @Test
+      @TestMetadata("delegationToIntersectionType3.kt")
+      public void testDelegationToIntersectionType3() {
+        runTest("compiler/testData/codegen/box/delegation/delegationToIntersectionType3.kt");
+      }
+
+      @Test
       @TestMetadata("delegationToVar.kt")
       public void testDelegationToVar() {
         runTest("compiler/testData/codegen/box/delegation/delegationToVar.kt");
@@ -16057,6 +16107,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       @TestMetadata("capturingLambda.kt")
       public void testCapturingLambda() {
         runTest("compiler/testData/codegen/box/directInvokeOptimization/capturingLambda.kt");
+      }
+
+      @Test
+      @TestMetadata("contextParameters.kt")
+      public void testContextParameters() {
+        runTest("compiler/testData/codegen/box/directInvokeOptimization/contextParameters.kt");
       }
 
       @Test
@@ -18184,6 +18240,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
         runTest("compiler/testData/codegen/box/fir/toLong.kt");
       }
 
+      @Test
+      @TestMetadata("unnamedLocalVariable.kt")
+      public void testUnnamedLocalVariable() {
+        runTest("compiler/testData/codegen/box/fir/unnamedLocalVariable.kt");
+      }
+
       @Nested
       @TestMetadata("compiler/testData/codegen/box/fir/contextSensitiveResolution")
       @TestDataPath("$PROJECT_ROOT")
@@ -20306,12 +20368,6 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
         }
 
         @Test
-        @TestMetadata("withExpectedType.kt")
-        public void testWithExpectedType() {
-          runTest("compiler/testData/codegen/box/inference/pcla/withExpectedType.kt");
-        }
-
-        @Test
         @TestMetadata("withoutAnnotation.kt")
         public void testWithoutAnnotation() {
           runTest("compiler/testData/codegen/box/inference/pcla/withoutAnnotation.kt");
@@ -20784,6 +20840,12 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
           @TestMetadata("kt76058.kt")
           public void testKt76058() {
             runTest("compiler/testData/codegen/box/inference/pcla/issues/kt76058.kt");
+          }
+
+          @Test
+          @TestMetadata("kt76171.kt")
+          public void testKt76171() {
+            runTest("compiler/testData/codegen/box/inference/pcla/issues/kt76171.kt");
           }
         }
 
@@ -27718,6 +27780,76 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
         @Test
         public void testAllFilesPresentInJvm8DefaultInterfaceMethods() {
           KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/inlineClasses/jvm8DefaultInterfaceMethods"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+        }
+      }
+
+      @Nested
+      @TestMetadata("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed")
+      @TestDataPath("$PROJECT_ROOT")
+      @ClassicPipeline()
+      @UseExtTestCaseGroupProvider()
+      @UsePartialLinkage(mode = Mode.DISABLED)
+      @Tag("no-partial-linkage-may-be-skipped")
+      public class JvmExposeBoxed {
+        @Test
+        public void testAllFilesPresentInJvmExposeBoxed() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/directive")
+        @TestDataPath("$PROJECT_ROOT")
+        @ClassicPipeline()
+        @UseExtTestCaseGroupProvider()
+        @UsePartialLinkage(mode = Mode.DISABLED)
+        @Tag("no-partial-linkage-may-be-skipped")
+        public class Directive {
+          @Test
+          public void testAllFilesPresentInDirective() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/directive"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+          }
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/featureInteraction")
+        @TestDataPath("$PROJECT_ROOT")
+        @ClassicPipeline()
+        @UseExtTestCaseGroupProvider()
+        @UsePartialLinkage(mode = Mode.DISABLED)
+        @Tag("no-partial-linkage-may-be-skipped")
+        public class FeatureInteraction {
+          @Test
+          public void testAllFilesPresentInFeatureInteraction() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/featureInteraction"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+          }
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/inherit")
+        @TestDataPath("$PROJECT_ROOT")
+        @ClassicPipeline()
+        @UseExtTestCaseGroupProvider()
+        @UsePartialLinkage(mode = Mode.DISABLED)
+        @Tag("no-partial-linkage-may-be-skipped")
+        public class Inherit {
+          @Test
+          public void testAllFilesPresentInInherit() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/inherit"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+          }
+
+          @Nested
+          @TestMetadata("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/inherit/child")
+          @TestDataPath("$PROJECT_ROOT")
+          @ClassicPipeline()
+          @UseExtTestCaseGroupProvider()
+          @UsePartialLinkage(mode = Mode.DISABLED)
+          @Tag("no-partial-linkage-may-be-skipped")
+          public class Child {
+            @Test
+            public void testAllFilesPresentInChild() {
+              KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/inlineClasses/jvmExposeBoxed/inherit/child"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.NATIVE, true);
+            }
+          }
         }
       }
 
@@ -46698,12 +46830,6 @@ public class NativeCodegenBoxTestNoPLGenerated extends AbstractNativeCodegenBoxT
       @TestMetadata("unsignedLiteralsForMaxLongValue.kt")
       public void testUnsignedLiteralsForMaxLongValue() {
         runTest("compiler/testData/codegen/box/unsignedTypes/unsignedLiteralsForMaxLongValue.kt");
-      }
-
-      @Test
-      @TestMetadata("unsignedLiteralsInApiVersion14.kt")
-      public void testUnsignedLiteralsInApiVersion14() {
-        runTest("compiler/testData/codegen/box/unsignedTypes/unsignedLiteralsInApiVersion14.kt");
       }
 
       @Test

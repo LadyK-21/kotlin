@@ -16,9 +16,11 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.backend.js.JsCommonBackendContext
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.JsLoweredDeclarationOrigin
+import org.jetbrains.kotlin.ir.backend.js.initEntryInstancesFun
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrBuilder
 import org.jetbrains.kotlin.ir.backend.js.objectGetInstanceFunction
 import org.jetbrains.kotlin.ir.backend.js.objectInstanceField
+import org.jetbrains.kotlin.ir.backend.js.syntheticPrimaryConstructor
 import org.jetbrains.kotlin.ir.backend.js.utils.getVoid
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
@@ -37,13 +39,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  * Creates lazy object instance generator functions.
  */
 class ObjectDeclarationLowering(val context: JsCommonBackendContext) : DeclarationTransformer {
-
-    private var IrClass.syntheticPrimaryConstructor by context.mapping.classToSyntheticPrimaryConstructor
-
-    /**
-     * If the object being lowered is nested inside an enum class, we want to also initialize the enum entries when initializing the object.
-     */
-    private var IrClass.initEntryInstancesFun: IrSimpleFunction? by context.mapping.enumClassToInitEntryInstancesFun
     override fun transformFlat(declaration: IrDeclaration): List<IrDeclaration>? {
         if (declaration !is IrClass || declaration.kind != ClassKind.OBJECT || declaration.isEffectivelyExternal())
             return null

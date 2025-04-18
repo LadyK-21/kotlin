@@ -39,12 +39,6 @@ public class JsPartialLinkageWithICTestCaseGenerated extends AbstractJsPartialLi
   }
 
   @Test
-  @TestMetadata("callableReferenceOperations")
-  public void testCallableReferenceOperations() {
-    runTest("compiler/testData/klib/partial-linkage/callableReferenceOperations/");
-  }
-
-  @Test
   @TestMetadata("changeClassVisibility")
   public void testChangeClassVisibility() {
     runTest("compiler/testData/klib/partial-linkage/changeClassVisibility/");
@@ -93,9 +87,15 @@ public class JsPartialLinkageWithICTestCaseGenerated extends AbstractJsPartialLi
   }
 
   @Test
-  @TestMetadata("kt73511")
-  public void testKt73511() {
-    runTest("compiler/testData/klib/partial-linkage/kt73511/");
+  @TestMetadata("inlineFunctions-noInliningInKlibs")
+  public void testInlineFunctions_noInliningInKlibs() {
+    runTest("compiler/testData/klib/partial-linkage/inlineFunctions-noInliningInKlibs/");
+  }
+
+  @Test
+  @TestMetadata("inlineFunctions-withInliningInKlibs")
+  public void testInlineFunctions_withInliningInKlibs() {
+    runTest("compiler/testData/klib/partial-linkage/inlineFunctions-withInliningInKlibs/");
   }
 
   @Test
@@ -114,12 +114,6 @@ public class JsPartialLinkageWithICTestCaseGenerated extends AbstractJsPartialLi
   @TestMetadata("nonExhaustivenessOfWhenClause")
   public void testNonExhaustivenessOfWhenClause() {
     runTest("compiler/testData/klib/partial-linkage/nonExhaustivenessOfWhenClause/");
-  }
-
-  @Test
-  @TestMetadata("propertyTransformations")
-  public void testPropertyTransformations() {
-    runTest("compiler/testData/klib/partial-linkage/propertyTransformations/");
   }
 
   @Test
@@ -168,6 +162,12 @@ public class JsPartialLinkageWithICTestCaseGenerated extends AbstractJsPartialLi
   @TestMetadata("replaceCallableReturnType")
   public void testReplaceCallableReturnType() {
     runTest("compiler/testData/klib/partial-linkage/replaceCallableReturnType/");
+  }
+
+  @Test
+  @TestMetadata("richReferencesOperations")
+  public void testRichReferencesOperations() {
+    runTest("compiler/testData/klib/partial-linkage/richReferencesOperations/");
   }
 
   @Test

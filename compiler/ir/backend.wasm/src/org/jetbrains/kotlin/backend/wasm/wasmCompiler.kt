@@ -49,7 +49,8 @@ class WasmCompilerResult(
     val jsWrapper: String,
     val wasm: ByteArray,
     val debugInformation: DebugInformation?,
-    val dts: String?
+    val dts: String?,
+    val useDebuggerCustomFormatters: Boolean
 )
 
 class DebugInformation(
@@ -142,11 +143,11 @@ fun compileWasm(
     configuration: CompilerConfiguration,
     typeScriptFragment: TypeScriptFragment?,
     baseFileName: String,
-    emitNameSection: Boolean = false,
-    generateWat: Boolean = false,
-    generateSourceMaps: Boolean = false,
-    useDebuggerCustomFormatters: Boolean = false,
-    generateDwarf: Boolean = false
+    emitNameSection: Boolean,
+    generateWat: Boolean,
+    generateSourceMaps: Boolean,
+    useDebuggerCustomFormatters: Boolean,
+    generateDwarf: Boolean
 ): WasmCompilerResult {
     val useJsTag = configuration.getBoolean(WasmConfigurationKeys.WASM_USE_JS_TAG)
     val isWasmJsTarget = configuration.get(WasmConfigurationKeys.WASM_TARGET) != WasmTarget.WASI
@@ -234,7 +235,8 @@ fun compileWasm(
             sourceMapGeneratorForBinary?.generate(),
             sourceMapGeneratorForText?.generate(),
         ),
-        dts = typeScriptFragment?.raw
+        dts = typeScriptFragment?.raw,
+        useDebuggerCustomFormatters = useDebuggerCustomFormatters
     )
 }
 
@@ -465,8 +467,7 @@ ${generateExports(exports)}
 fun writeCompilationResult(
     result: WasmCompilerResult,
     dir: File,
-    fileNameBase: String,
-    useDebuggerCustomFormatters: Boolean
+    fileNameBase: String
 ) {
     dir.mkdirs()
     if (result.wat != null) {
@@ -485,10 +486,10 @@ fun writeCompilationResult(
     result.debugInformation?.sourceMapForText?.let {
         File(dir, "$fileNameBase.wat.map").writeText(it)
     }
-    if (useDebuggerCustomFormatters) {
+    if (result.useDebuggerCustomFormatters) {
         val fileName = "custom-formatters.js"
         val systemClassLoader = ClassLoader.getSystemClassLoader()
-        val customFormattersInputStream = systemClassLoader.getResourceAsStream(fileName)
+        val customFormattersInputStream = systemClassLoader.getResourceAsStream(fileName) ?: error("Resource $fileName not found")
 
         Files.copy(customFormattersInputStream, Paths.get(dir.path, fileName), StandardCopyOption.REPLACE_EXISTING)
     }

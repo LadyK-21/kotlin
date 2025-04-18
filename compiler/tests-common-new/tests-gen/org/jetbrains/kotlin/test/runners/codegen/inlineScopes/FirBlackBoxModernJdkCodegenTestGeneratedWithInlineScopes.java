@@ -444,6 +444,54 @@ public class FirBlackBoxModernJdkCodegenTestGeneratedWithInlineScopes extends Ab
     }
 
     @Nested
+    @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection")
+    @TestDataPath("$PROJECT_ROOT")
+    public class Reflection {
+      @Test
+      public void testAllFilesPresentInReflection() {
+        KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+      }
+
+      @Nested
+      @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/classes")
+      @TestDataPath("$PROJECT_ROOT")
+      public class Classes {
+        @Test
+        public void testAllFilesPresentInClasses() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/classes"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+        }
+
+        @Test
+        @TestMetadata("sealedSubclassesJava.kt")
+        public void testSealedSubclassesJava() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/classes/sealedSubclassesJava.kt");
+        }
+      }
+
+      @Nested
+      @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers")
+      @TestDataPath("$PROJECT_ROOT")
+      public class Modifiers {
+        @Test
+        public void testAllFilesPresentInModifiers() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+        }
+
+        @Test
+        @TestMetadata("javaClassModifiers.kt")
+        public void testJavaClassModifiers() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers/javaClassModifiers.kt");
+        }
+
+        @Test
+        @TestMetadata("javaClasses.kt")
+        public void testJavaClasses() {
+          runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers/javaClasses.kt");
+        }
+      }
+    }
+
+    @Nested
     @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/releaseFlag")
     @TestDataPath("$PROJECT_ROOT")
     public class ReleaseFlag {

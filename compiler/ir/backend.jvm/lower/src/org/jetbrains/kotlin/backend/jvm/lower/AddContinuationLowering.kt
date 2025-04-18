@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
-import org.jetbrains.kotlin.ir.originalBeforeInline
+import org.jetbrains.kotlin.backend.common.originalBeforeInline
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -345,6 +345,11 @@ internal class AddContinuationLowering(context: JvmBackendContext) : SuspendLowe
                         function,
                         capturesCrossinline
                     )
+                    if (this@AddContinuationLowering.context.config.enhancedCoroutinesDebugging) {
+                        for (fakeInlineFunction in this@AddContinuationLowering.context.symbols.generatedCodeMarkersInCoroutinesClass.functions) {
+                            +irCall(fakeInlineFunction)
+                        }
+                    }
                     if (newFunction.body is IrExpressionBody) {
                         +irReturn(newFunction.body!!.statements[0] as IrExpression)
                     } else {

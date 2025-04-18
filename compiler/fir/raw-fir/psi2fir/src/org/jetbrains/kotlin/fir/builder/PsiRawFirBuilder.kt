@@ -2313,7 +2313,7 @@ open class PsiRawFirBuilder(
             }
         }
 
-        protected fun KtDeclarationWithInitializer.toInitializerExpression() =
+        protected fun KtDeclarationWithInitializer.toInitializerExpression(): FirExpression? =
             runIf(hasInitializer()) {
                 this@PsiRawFirBuilder.context.calleeNamesForLambda += null
 
@@ -3138,7 +3138,9 @@ open class PsiRawFirBuilder(
                             },
                             typeRef = ktParameter.typeReference.toFirOrImplicitType(),
                             extractedAnnotations = ktParameter.modifierList?.annotationEntries?.map { it.convert<FirAnnotation>() },
-                        )
+                        ).apply {
+                            isForLoopParameter = true
+                        }
                         if (multiDeclaration != null) {
                             addDestructuringVariables(
                                 blockBuilder.statements,

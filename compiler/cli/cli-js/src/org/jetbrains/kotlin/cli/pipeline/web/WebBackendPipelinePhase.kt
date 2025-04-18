@@ -70,20 +70,16 @@ abstract class WebBackendPipelinePhase<Output : WebBackendPipelineArtifact>(
                     cacheDirectory = cacheDirectory,
                     icConfigurationData = when {
                         configuration.wasmCompilation -> IcCachesConfigurationData.Wasm(
-                            configuration.includes!!,
                             wasmDebug = configuration.getBoolean(WasmConfigurationKeys.WASM_DEBUG),
                             preserveIcOrder = configuration.preserveIcOrder,
                             generateWat = configuration.getBoolean(WasmConfigurationKeys.WASM_GENERATE_WAT),
                         )
                         else -> IcCachesConfigurationData.Js(
-                            configuration.includes!!,
                             granularity = configuration.granularity!!
                         )
                     },
                     messageCollector = messageCollector,
                     outputDir = configuration.outputDir!!,
-                    libraries = configuration.libraries,
-                    friendLibraries = configuration.friendLibraries,
                     targetConfiguration = configuration,
                     mainCallArguments = mainCallArguments,
                     icCacheReadOnly = icCacheReadOnly,
@@ -112,11 +108,11 @@ abstract class WebBackendPipelinePhase<Output : WebBackendPipelineArtifact>(
                 configFiles
             )
             val module = ModulesStructure(
-                environment.project,
-                kLib,
-                configuration,
-                configuration.libraries,
-                configuration.friendLibraries
+                project = environment.project,
+                mainModule = kLib,
+                compilerConfiguration = configuration,
+                libraryPaths = configuration.libraries,
+                friendDependenciesPaths = configuration.friendLibraries
             ).also {
                 runStandardLibrarySpecialCompatibilityChecks(
                     it.allDependencies,

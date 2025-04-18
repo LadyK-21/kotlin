@@ -59,6 +59,7 @@ data class PublishedProject(
         val pom: File get() = path.resolve("${artifactsPrefix}.pom")
         val uklib: File get() = path.resolve("${artifactsPrefix}.uklib")
         val jar: File get() = path.resolve("${artifactsPrefix}.jar")
+        val psmJar: File get() = path.resolve("${artifactsPrefix}-psm.jar")
         val gradleMetadata: File get() = path.resolve("${artifactsPrefix}.module")
     }
 
@@ -271,5 +272,12 @@ internal fun Project.setUklibResolutionStrategy(strategy: KmpResolutionStrategy 
     propertiesExtension.set(
         PropertiesProvider.PropertyNames.KOTLIN_KMP_RESOLUTION_STRATEGY,
         strategy.propertyName,
+    )
+}
+
+fun Project.computeTransformedLibraryChecksum(enable: Boolean = false) {
+    propertiesExtension.set(
+        PropertiesProvider.PropertyNames.KOTLIN_MPP_COMPUTE_TRANSFORMED_LIBRARY_CHECKSUM,
+        enable.toString(),
     )
 }

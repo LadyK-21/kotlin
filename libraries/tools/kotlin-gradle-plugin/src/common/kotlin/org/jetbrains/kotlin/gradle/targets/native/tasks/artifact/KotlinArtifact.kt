@@ -2,6 +2,7 @@
  * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
+@file:Suppress("DEPRECATION")
 
 package org.jetbrains.kotlin.gradle.targets.native.tasks.artifact
 
@@ -57,12 +58,15 @@ abstract class KotlinNativeArtifactConfigImpl(artifactName: String) : KotlinArti
         toolOptionsConfigure = configure::execute
     }
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION_ERROR")
     internal var kotlinOptionsFn: KotlinCommonToolOptions.() -> Unit = {}
 
-    @Deprecated("Please migrate to toolOptions DSL. More details are here: https://kotl.in/u1r8ln")
+    @Deprecated(
+        message = KOTLIN_OPTIONS_AS_TOOLS_DEPRECATION_MESSAGE,
+        level = DeprecationLevel.ERROR,
+    )
     override fun kotlinOptions(
-        @Suppress("DEPRECATION") fn: Action<KotlinCommonToolOptions>
+        @Suppress("DEPRECATION_ERROR") fn: Action<KotlinCommonToolOptions>
     ) {
         kotlinOptionsFn = fn::execute
     }

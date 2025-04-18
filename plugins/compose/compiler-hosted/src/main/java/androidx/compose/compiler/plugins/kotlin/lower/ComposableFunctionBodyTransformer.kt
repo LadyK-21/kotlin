@@ -3406,7 +3406,7 @@ class ComposableFunctionBodyTransformer(
         if (blockArg !is IrFunctionExpression)
             error("Expected function expression but was ${blockArg?.let { it::class }}")
 
-        val (block, resultVar) = blockArg.function.body!!.asBodyAndResultVar()
+        val (block, resultVar) = blockArg.function.body!!.asBodyAndResultVar(expectedTarget = blockArg.function)
 
         var transformed: IrExpression = block
 
@@ -3835,22 +3835,10 @@ class ComposableFunctionBodyTransformer(
             condScopes.add(Scope.BranchScope())
             resultScopes.add(Scope.BranchScope())
             transformed.branches.add(
-                IrElseBranchImpl(
-                    expression.endOffset,
-                    expression.endOffset,
-                    condition = IrConstImpl(
-                        expression.endOffset,
-                        expression.endOffset,
-                        context.irBuiltIns.booleanType,
-                        IrConstKind.Boolean,
-                        true
-                    ),
-                    result = IrBlockImpl(
-                        expression.endOffset,
-                        expression.endOffset,
-                        context.irBuiltIns.unitType,
-                        null,
-                        emptyList()
+                irElseBranch(
+                    expression = irBlock(
+                        type = context.irBuiltIns.unitType,
+                        statements = emptyList()
                     )
                 )
             )

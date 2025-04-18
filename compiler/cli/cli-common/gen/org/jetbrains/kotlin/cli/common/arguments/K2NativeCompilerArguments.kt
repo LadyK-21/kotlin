@@ -6,7 +6,9 @@ package org.jetbrains.kotlin.cli.common.arguments
 
 import com.intellij.util.xmlb.annotations.Transient
 
-// This file was generated automatically. See compiler/cli/cli-arguments-generator
+// This file was generated automatically. See generator in :compiler:cli:cli-arguments-generator
+// Please declare arguments in compiler/arguments/src/org/jetbrains/kotlin/arguments/description/NativeCompilerArguments.kt
+// DO NOT MODIFY IT MANUALLY.
 
 class K2NativeCompilerArguments : CommonKlibBasedCompilerArguments() {
     @Argument(
@@ -83,7 +85,7 @@ class K2NativeCompilerArguments : CommonKlibBasedCompilerArguments() {
         shortName = "-l",
         valueDescription = "<path>",
         description = "Link with the given library.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var libraries: Array<String>? = null
         set(value) {
@@ -159,7 +161,7 @@ Note: This option is deprecated and will be removed in one of the future release
         deprecatedName = "-nativelibrary",
         valueDescription = "<path>",
         description = "Include the given native bitcode library.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var nativeLibraries: Array<String>? = null
         set(value) {
@@ -213,7 +215,7 @@ Note: This option is deprecated and will be removed in one of the future release
         deprecatedName = "-linkerOpts",
         valueDescription = "<arg>",
         description = "Pass arguments to the linker.",
-        delimiter = Argument.Delimiters.space
+        delimiter = Argument.Delimiters.space,
     )
     var linkerArguments: Array<String>? = null
         set(value) {
@@ -225,7 +227,7 @@ Note: This option is deprecated and will be removed in one of the future release
         value = "-linker-option",
         valueDescription = "<arg>",
         description = "Pass the given argument to the linker.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var singleLinkerArguments: Array<String>? = null
         set(value) {
@@ -315,7 +317,7 @@ Note: This option is deprecated and will be removed in one of the future release
         value = "-Xcache-directory",
         valueDescription = "<path>",
         description = "Path to the directory containing caches.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var cacheDirectories: Array<String>? = null
         set(value) {
@@ -327,7 +329,7 @@ Note: This option is deprecated and will be removed in one of the future release
         value = "-Xcached-library",
         valueDescription = "<library path>,<cache path>",
         description = "Paths to a library and its cache, separated by a comma.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var cachedLibraries: Array<String>? = null
         set(value) {
@@ -340,7 +342,7 @@ Note: This option is deprecated and will be removed in one of the future release
         valueDescription = "<path>",
         description = """Path to the root directory from which dependencies are to be cached automatically.
 By default caches will be placed into the kotlin-native system cache directory.""",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var autoCacheableFrom: Array<String>? = null
         set(value) {
@@ -352,7 +354,7 @@ By default caches will be placed into the kotlin-native system cache directory."
         value = "-Xauto-cache-dir",
         valueDescription = "<path>",
         description = "Path to the directory where caches for auto-cacheable dependencies should be put.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var autoCacheDir: String? = null
         set(value) {
@@ -364,7 +366,7 @@ By default caches will be placed into the kotlin-native system cache directory."
         value = "-Xic-cache-dir",
         valueDescription = "<path>",
         description = "Path to the directory where incremental build caches should be put.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var incrementalCacheDir: String? = null
         set(value) {
@@ -398,7 +400,7 @@ By default caches will be placed into the kotlin-native system cache directory."
         valueDescription = "<path>",
         description = """A library to be included in the produced framework API.
 This library must be one of the ones passed with '-library'.""",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var exportedLibraries: Array<String>? = null
         set(value) {
@@ -478,7 +480,7 @@ Currently this option is disabled by default on other platforms.""",
         value = "-Xadd-cache",
         valueDescription = "<path>",
         description = "Path to a library to be added to the cache.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var libraryToAddToCache: String? = null
         set(value) {
@@ -490,7 +492,7 @@ Currently this option is disabled by default on other platforms.""",
         value = "-Xfile-to-cache",
         valueDescription = "<path>",
         description = "Path to the file to cache.",
-        delimiter = Argument.Delimiters.none
+        delimiter = Argument.Delimiters.none,
     )
     var filesToCache: Array<String>? = null
         set(value) {
@@ -782,7 +784,7 @@ The default value is 1.""",
         value = "-Xoverride-konan-properties",
         valueDescription = "key1=value1;key2=value2;...",
         description = "Override values from 'konan.properties' with the given ones.",
-        delimiter = Argument.Delimiters.semicolon
+        delimiter = Argument.Delimiters.semicolon,
     )
     var overrideKonanProperties: Array<String>? = null
         set(value) {

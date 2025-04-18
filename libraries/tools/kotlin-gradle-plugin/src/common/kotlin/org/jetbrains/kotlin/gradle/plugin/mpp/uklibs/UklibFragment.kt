@@ -5,17 +5,18 @@
 
 package org.jetbrains.kotlin.gradle.plugin.mpp.uklibs
 
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import java.io.File
 
 internal data class UklibFragment(
+    @get:Input
     val identifier: String,
+    @get:Input
     val attributes: Set<String>,
-    /**
-     * FIXME: This file is a lambda to
-     * - capture Provider<File> when the fragment is packed in KGP
-     * - return the file on disk when Uklib fragment is deserialized from disk
-     *
-     * Maybe we should just have the Provider<UklibFragment> in KGP and this would then be a File property
-     */
-    val file: () -> File,
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:InputFiles
+    val file: File,
 )

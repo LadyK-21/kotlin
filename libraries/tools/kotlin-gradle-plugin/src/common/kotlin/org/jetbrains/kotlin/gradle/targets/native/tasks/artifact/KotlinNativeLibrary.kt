@@ -2,6 +2,7 @@
  * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
+@file:Suppress("DEPRECATION")
 
 package org.jetbrains.kotlin.gradle.targets.native.tasks.artifact
 
@@ -24,6 +25,7 @@ import org.jetbrains.kotlin.konan.target.presetName
 import org.jetbrains.kotlin.konan.util.visibleName
 import javax.inject.Inject
 
+@Deprecated(KotlinArtifactsExtension.KOTLIN_NATIVE_ARTIFACTS_DEPRECATION)
 abstract class KotlinNativeLibraryConfigImpl @Inject constructor(artifactName: String) :
     KotlinNativeArtifactConfigImpl(artifactName), KotlinNativeLibraryConfig {
 
@@ -52,14 +54,18 @@ abstract class KotlinNativeLibraryConfigImpl @Inject constructor(artifactName: S
     }
 }
 
+@Deprecated(KotlinArtifactsExtension.KOTLIN_NATIVE_ARTIFACTS_DEPRECATION)
 class KotlinNativeLibraryImpl(
     override val artifactName: String,
     override val modules: Set<Any>,
     override val modes: Set<NativeBuildType>,
     override val isStatic: Boolean,
     override val linkerOptions: List<String>,
-    @Suppress("DEPRECATION")
-    @Deprecated("Please migrate to toolOptionsConfigure DSL. More details are here: https://kotl.in/u1r8ln")
+    @Suppress("DEPRECATION_ERROR")
+    @Deprecated(
+        message = "Please migrate to toolOptionsConfigure DSL. More details are here: https://kotl.in/u1r8ln",
+        level = DeprecationLevel.ERROR,
+    )
     override val kotlinOptionsFn: KotlinCommonToolOptions.() -> Unit,
     override val toolOptionsConfigure: KotlinCommonCompilerToolOptions.() -> Unit,
     override val binaryOptions: Map<String, String>,
@@ -97,7 +103,7 @@ class KotlinNativeLibraryImpl(
                 task.binaryOptions.set(binaryOptions)
                 task.libraries.setFrom(project.configurations.getByName(librariesConfigurationName))
                 task.exportLibraries.setFrom(project.configurations.getByName(exportConfigurationName))
-                @Suppress("DEPRECATION")
+                @Suppress("DEPRECATION_ERROR")
                 task.kotlinOptions(kotlinOptionsFn)
                 task.toolOptions(toolOptionsConfigure)
                 task.kotlinNativeProvider.set(task.chooseKotlinNativeProvider(enabledOnCurrentHost, task.konanTarget))

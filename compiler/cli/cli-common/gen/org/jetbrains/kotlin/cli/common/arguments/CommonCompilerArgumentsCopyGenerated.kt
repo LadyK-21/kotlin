@@ -40,12 +40,11 @@ fun copyCommonCompilerArguments(from: CommonCompilerArguments, to: CommonCompile
     to.fragments = from.fragments?.copyOf()
     to.ignoreConstOptimizationErrors = from.ignoreConstOptimizationErrors
     to.incrementalCompilation = from.incrementalCompilation
-    to.inferenceCompatibility = from.inferenceCompatibility
     to.inlineClasses = from.inlineClasses
     to.intellijPluginRoot = from.intellijPluginRoot
     to.kotlinHome = from.kotlinHome
     to.languageVersion = from.languageVersion
-    to.legacySmartCastAfterTry = from.legacySmartCastAfterTry
+    to.lenientMode = from.lenientMode
     to.listPhases = from.listPhases
     to.metadataKlib = from.metadataKlib
     to.metadataVersion = from.metadataVersion
@@ -75,7 +74,6 @@ fun copyCommonCompilerArguments(from: CommonCompilerArguments, to: CommonCompile
     to.reportPerf = from.reportPerf
     to.returnValueChecker = from.returnValueChecker
     to.script = from.script
-    to.selfUpperBoundInference = from.selfUpperBoundInference
     to.skipMetadataVersionCheck = from.skipMetadataVersionCheck
     to.skipPrereleaseCheck = from.skipPrereleaseCheck
     to.stdlibCompilation = from.stdlibCompilation

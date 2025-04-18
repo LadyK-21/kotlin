@@ -8,6 +8,10 @@ package org.jetbrains.kotlin.test.services.configuration
 import org.jetbrains.kotlin.cli.jvm.addModularRootIfNotNull
 import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoot
 import org.jetbrains.kotlin.cli.jvm.config.jvmClasspathRoots
+import org.jetbrains.kotlin.codegen.forTestCompile.TestCompilePaths.KOTLIN_THIRDPARTY_ANNOTATIONS_PATH
+import org.jetbrains.kotlin.codegen.forTestCompile.TestCompilePaths.KOTLIN_THIRDPARTY_JAVA8_ANNOTATIONS_PATH
+import org.jetbrains.kotlin.codegen.forTestCompile.TestCompilePaths.KOTLIN_THIRDPARTY_JAVA9_ANNOTATIONS_PATH
+import org.jetbrains.kotlin.codegen.forTestCompile.TestCompilePaths.KOTLIN_THIRDPARTY_JSR305_PATH
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.load.java.*
 import org.jetbrains.kotlin.name.FqName
@@ -30,18 +34,20 @@ import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.services.standardLibrariesPathProvider
 import org.jetbrains.kotlin.test.util.KtTestUtil
 import java.io.File
+import java.net.URI
+import java.util.zip.ZipFile
 import kotlin.io.path.createTempDirectory
 
 enum class JavaForeignAnnotationType(val path: String) {
-    Annotations("third-party/annotations"),
-    Java8Annotations("third-party/java8-annotations"),
-    Java9Annotations("third-party/java9-annotations"),
-    Jsr305("third-party/jsr305");
+    Annotations(System.getProperty(KOTLIN_THIRDPARTY_ANNOTATIONS_PATH) ?: "third-party/annotations"),
+    Java8Annotations(System.getProperty(KOTLIN_THIRDPARTY_JAVA8_ANNOTATIONS_PATH) ?: "third-party/java8-annotations"),
+    Java9Annotations(System.getProperty(KOTLIN_THIRDPARTY_JAVA9_ANNOTATIONS_PATH) ?: "third-party/java9-annotations"),
+    Jsr305(System.getProperty(KOTLIN_THIRDPARTY_JSR305_PATH) ?: "third-party/jsr305")
 }
 
 open class JvmForeignAnnotationsConfigurator(testServices: TestServices) : EnvironmentConfigurator(testServices) {
     companion object {
-        const val JSR_305_TEST_ANNOTATIONS_PATH = "compiler/testData/diagnostics/helpers/jsr305_test_annotations"
+        const val JSR_305_TEST_ANNOTATIONS_PATH = "diagnostics/helpers/jsr305_test_annotations"
     }
 
     override val directiveContainers: List<DirectivesContainer>
@@ -104,12 +110,36 @@ open class JvmForeignAnnotationsConfigurator(testServices: TestServices) : Envir
         configuration.addJvmClasspathRoot(testServices.standardLibrariesPathProvider.jvmAnnotationsForTests())
 
         if (JvmEnvironmentConfigurationDirectives.WITH_JSR305_TEST_ANNOTATIONS in registeredDirectives) {
-            val jsr305AnnotationsDir = createTempDirectory().toFile().also {
-                File(JSR_305_TEST_ANNOTATIONS_PATH).copyRecursively(it)
+            val resourceUri = this::class.java.classLoader.getResource(JSR_305_TEST_ANNOTATIONS_PATH)!!.toURI()
+            val target = createTempDirectory().toFile()
+            when (resourceUri.scheme) {
+                "jar" -> {
+                    val array = resourceUri.toString().split("!")
+                    val jarUri = URI.create(array[0])
+                    val pathInsideJar = array[1]
+                    val path = jarUri.toString().substringAfterLast(":")
+                    ZipFile(path).use { zipFile ->
+                        val prefix = pathInsideJar.removePrefix("/")
+                        zipFile.entries().asSequence()
+                            .filter { entry -> !entry.isDirectory && entry.name.startsWith(prefix) }
+                            .forEach { entry ->
+                                val relativePath = entry.name.removePrefix(prefix)
+                                val targetFile = File(target, relativePath)
+                                targetFile.parentFile.mkdirs()
+                                zipFile.getInputStream(entry).use { input ->
+                                    targetFile.outputStream().use { output ->
+                                        input.copyTo(output)
+                                    }
+                                }
+                            }
+                    }
+                }
+                "file" -> File(resourceUri).copyRecursively(target)
+                else -> throw UnsupportedOperationException("Unsupported URI scheme: ${resourceUri.scheme}")
             }
             configuration.addJvmClasspathRoot(
                 MockLibraryUtil.compileJavaFilesLibraryToJar(
-                    jsr305AnnotationsDir.path,
+                    target.path,
                     "jsr-305-test-annotations",
                     assertions = JUnit5Assertions,
                     extraClasspath = configuration.jvmClasspathRoots.map { it.absolutePath } + jsr305JarFile.absolutePath

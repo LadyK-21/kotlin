@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.config.IrVerificationMode
 import org.jetbrains.kotlin.config.LanguageFeature
-import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.fir.FirModuleData
 import org.jetbrains.kotlin.fir.FirSession
@@ -261,7 +260,8 @@ private class Fir2IrPipeline(
                 fir2IrConfiguration.expectActualTracker,
                 mainIrFragment,
                 dependentIrFragments,
-                this@Fir2IrPipeline.extraActualDeclarationExtractorsInitializer(componentsStorage),
+                extraActualDeclarationExtractorsInitializer(componentsStorage),
+                missingActualProvider = LenientModeMissingActualDeclarationProvider.initializeIfNeeded(componentsStorage),
             )
         }
 
@@ -432,7 +432,8 @@ private fun IrPluginContext.runMandatoryIrValidation(
 ) {
     if (!fir2IrConfiguration.validateIrAfterPlugins) return
     val mode =
-        if (languageVersionSettings.languageVersion >= LanguageVersion.KOTLIN_2_2) IrVerificationMode.ERROR else IrVerificationMode.WARNING
+        if (languageVersionSettings.supportsFeature(LanguageFeature.ForbidCrossFileIrFieldAccessInKlibs)) IrVerificationMode.ERROR
+        else IrVerificationMode.WARNING
     validateIr(fir2IrConfiguration.messageCollector, mode) {
         customMessagePrefix = if (extension == null) {
             "The frontend generated invalid IR. This is a compiler bug, please report it to https://kotl.in/issue."

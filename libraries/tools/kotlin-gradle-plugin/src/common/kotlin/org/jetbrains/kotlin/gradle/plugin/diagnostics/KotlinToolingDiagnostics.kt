@@ -6,8 +6,13 @@
 package org.jetbrains.kotlin.gradle.plugin.diagnostics
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
+import org.gradle.internal.extensions.stdlib.capitalized
 import org.gradle.util.GradleVersion
+import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.*
+import org.jetbrains.kotlin.gradle.plugin.mpp.uklibs.Uklib
 import org.jetbrains.kotlin.gradle.dsl.KotlinSourceSetConvention.isAccessedByKotlinSourceSetConventionAt
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.internal.KOTLIN_BUILD_TOOLS_API_IMPL
@@ -56,7 +61,40 @@ internal object KotlinToolingDiagnostics {
         }
     }
 
-    object DeprecatedKotlinNativeTargetsDiagnostic : ToolingDiagnosticFactory(ERROR, DiagnosticGroup.Kgp.Deprecation) {
+    object UklibFragmentFromUnexpectedTarget : ToolingDiagnosticFactory(ERROR, DiagnosticGroup.Kgp.Misconfiguration) {
+        operator fun invoke(target: String) = build {
+            title("UklibFragmentFromUnexpectedTarget")
+                .description("Publication of ${Uklib.UKLIB_NAME} with $target is not supported")
+                .solution("FIXME: KT-76659")
+        }
+    }
+
+    data class UklibPublicationWithoutCrossCompilation(val severity: ToolingDiagnostic.Severity) : ToolingDiagnosticFactory(severity, DiagnosticGroup.Kgp.Misconfiguration) {
+        fun get() = build {
+            title("UklibPublicationWithoutCrossCompilation")
+                .description("Publication of ${Uklib.UKLIB_NAME} without cross compilation will not work on non-macOS hosts. Please enable it by specifying ${PropertiesProvider.PropertyNames.KOTLIN_NATIVE_ENABLE_KLIBS_CROSSCOMPILATION}=true in gradle.properties")
+                .solution("FIXME: KT-76659")
+        }
+    }
+
+    object UklibPublicationWithCinterops : ToolingDiagnosticFactory(ERROR, DiagnosticGroup.Kgp.Misconfiguration) {
+        operator fun invoke(target: String, interopName: String) = build {
+            title("UklibPublicationWithCinterops")
+                .description("Publication of ${Uklib.UKLIB_NAME} with cinterops is not yet supported. Target $target declares cinterop $interopName")
+                .solution("FIXME: KT-76659")
+        }
+    }
+
+    object UklibSourceSetStructureUnderRefinementViolation : ToolingDiagnosticFactory(ERROR, DiagnosticGroup.Kgp.Misconfiguration) {
+        operator fun invoke(sourceSet: KotlinSourceSet, shouldRefine: List<KotlinSourceSet>, actuallyRefines: List<KotlinSourceSet>) = build {
+            title("UklibSourceSetStructureUnderRefinementViolation")
+                .description("Source set '${sourceSet}' should refine source sets ${shouldRefine}, but only refines source sets $actuallyRefines")
+                .solution("FIXME: KT-76659")
+        }
+    }
+
+
+    object DeprecatedKotlinNativeTargetsDiagnostic : ToolingDiagnosticFactory(ERROR, DiagnosticGroup.Kgp.Misconfiguration) {
         operator fun invoke(usedTargetIds: List<String>) = buildDiagnostic(
             title = "Deprecated Kotlin/Native Targets",
             description = "The following removed Kotlin/Native targets were used in the project: ${usedTargetIds.joinToString()}",
@@ -1520,6 +1558,15 @@ internal object KotlinToolingDiagnostics {
                 .solution {
                     "Please update Kotlin language version in your build scripts at least to 2.0"
                 }
+        }
+    }
+
+    object KotlinNativeArtifactsDeprecation : ToolingDiagnosticFactory(WARNING, DiagnosticGroup.Kgp.Deprecation) {
+        operator fun invoke() = build {
+            title("kotlinArtifacts DSL is deprecated")
+                .description("kotlinArtifacts DSL is deprecated and will be removed in the future")
+                .solution("Please migrate to another way to create Kotlin/Native binaries")
+                .documentationLink(URI("https://kotl.in/kotlin-native-artifacts-gradle-dsl"))
         }
     }
 

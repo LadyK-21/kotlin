@@ -6626,6 +6626,54 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
       }
 
       @Nested
+      @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection")
+      @TestDataPath("$PROJECT_ROOT")
+      public class Reflection {
+        @Test
+        public void testAllFilesPresentInReflection() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/classes")
+        @TestDataPath("$PROJECT_ROOT")
+        public class Classes {
+          @Test
+          public void testAllFilesPresentInClasses() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/classes"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+          }
+
+          @Test
+          @TestMetadata("sealedSubclassesJava.kt")
+          public void testSealedSubclassesJava() {
+            runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/classes/sealedSubclassesJava.kt");
+          }
+        }
+
+        @Nested
+        @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers")
+        @TestDataPath("$PROJECT_ROOT")
+        public class Modifiers {
+          @Test
+          public void testAllFilesPresentInModifiers() {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+          }
+
+          @Test
+          @TestMetadata("javaClassModifiers.kt")
+          public void testJavaClassModifiers() {
+            runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers/javaClassModifiers.kt");
+          }
+
+          @Test
+          @TestMetadata("javaClasses.kt")
+          public void testJavaClasses() {
+            runTest("compiler/testData/codegen/boxModernJdk/testsWithJava17/reflection/modifiers/javaClasses.kt");
+          }
+        }
+      }
+
+      @Nested
       @TestMetadata("compiler/testData/codegen/boxModernJdk/testsWithJava17/releaseFlag")
       @TestDataPath("$PROJECT_ROOT")
       public class ReleaseFlag {
@@ -10601,6 +10649,12 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
       @TestMetadata("interfaceDefaultMethod.kt")
       public void testInterfaceDefaultMethod() {
         runTest("compiler/testData/codegen/bytecodeText/inline/interfaceDefaultMethod.kt");
+      }
+
+      @Test
+      @TestMetadata("kt69624.kt")
+      public void testKt69624() {
+        runTest("compiler/testData/codegen/bytecodeText/inline/kt69624.kt");
       }
 
       @Test
@@ -15178,6 +15232,36 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
           public void testBridgeInInterfaceWithProperties() {
             runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/bridgeInInterfaceWithProperties.kt");
           }
+
+          @Test
+          @TestMetadata("differentModeParents.kt")
+          public void testDifferentModeParents() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/differentModeParents.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeGenericInline.kt")
+          public void testGeneratedBridgeGenericInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/generatedBridgeGenericInline.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeGenericSpecializedInline.kt")
+          public void testGeneratedBridgeGenericSpecializedInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/generatedBridgeGenericSpecializedInline.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeGenericSpecializedOverrideInline.kt")
+          public void testGeneratedBridgeGenericSpecializedOverrideInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/generatedBridgeGenericSpecializedOverrideInline.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeInline.kt")
+          public void testGeneratedBridgeInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/disable/generatedBridgeInline.kt");
+          }
         }
 
         @Nested
@@ -15202,6 +15286,12 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
           }
 
           @Test
+          @TestMetadata("bridgeInInterface_inline.kt")
+          public void testBridgeInInterface_inline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/bridgeInInterface_inline.kt");
+          }
+
+          @Test
           @TestMetadata("bridgeWithJava.kt")
           public void testBridgeWithJava() {
             runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/bridgeWithJava.kt");
@@ -15223,6 +15313,42 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
           @TestMetadata("deprecationWithDefault.kt")
           public void testDeprecationWithDefault() {
             runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/deprecationWithDefault.kt");
+          }
+
+          @Test
+          @TestMetadata("differentModeParents.kt")
+          public void testDifferentModeParents() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/differentModeParents.kt");
+          }
+
+          @Test
+          @TestMetadata("differentModeParentsAnnotatedClass.kt")
+          public void testDifferentModeParentsAnnotatedClass() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/differentModeParentsAnnotatedClass.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeGenericInline.kt")
+          public void testGeneratedBridgeGenericInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/generatedBridgeGenericInline.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeGenericSpecializedInline.kt")
+          public void testGeneratedBridgeGenericSpecializedInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/generatedBridgeGenericSpecializedInline.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeGenericSpecializedOverrideInline.kt")
+          public void testGeneratedBridgeGenericSpecializedOverrideInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/generatedBridgeGenericSpecializedOverrideInline.kt");
+          }
+
+          @Test
+          @TestMetadata("generatedBridgeInline.kt")
+          public void testGeneratedBridgeInline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/enable/generatedBridgeInline.kt");
           }
 
           @Test
@@ -15294,9 +15420,27 @@ public class JvmAbiConsistencyTestRestGenerated extends AbstractJvmAbiConsistenc
           }
 
           @Test
+          @TestMetadata("bridgeInInterface_inline.kt")
+          public void testBridgeInInterface_inline() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/bridgeInInterface_inline.kt");
+          }
+
+          @Test
           @TestMetadata("bridgeWithJava.kt")
           public void testBridgeWithJava() {
             runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/bridgeWithJava.kt");
+          }
+
+          @Test
+          @TestMetadata("differentModeParents.kt")
+          public void testDifferentModeParents() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/differentModeParents.kt");
+          }
+
+          @Test
+          @TestMetadata("differentModeParentsAnnotatedClass.kt")
+          public void testDifferentModeParentsAnnotatedClass() {
+            runTest("compiler/testData/codegen/bytecodeListing/jvm8/defaults/noCompatibility/differentModeParentsAnnotatedClass.kt");
           }
 
           @Test

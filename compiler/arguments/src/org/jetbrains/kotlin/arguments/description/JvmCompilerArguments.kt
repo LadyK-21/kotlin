@@ -527,6 +527,15 @@ problems with parentheses in identifiers on certain platforms.""".asReleaseDepen
     }
 
     compilerArgument {
+        name = "Xjvm-expose-boxed"
+        description = "Expose inline classes and functions, accepting and returning them, to Java.".asReleaseDependent()
+        valueType = BooleanType.defaultFalse
+        additionalAnnotations(Enables(LanguageFeature.ImplicitJvmExposeBoxed))
+
+        stubLifecycle()
+    }
+
+    compilerArgument {
         name = "Xstring-concat"
         description = """Select the code generation scheme for string concatenation:
 -Xstring-concat=indy-with-constants  Concatenate strings using 'invokedynamic' and 'makeConcatWithConstants'. This requires '-jvm-target 9' or greater.
@@ -714,6 +723,15 @@ It has no effect when -language-version is 2.0 or higher.""".asReleaseDependent(
         description = """Enable debug mode for compilation.
 Currently this includes spilling all variables in a suspending context regardless of whether they are alive.
 If API Level >= 2.2 -- no-op.""".asReleaseDependent()
+        valueType = BooleanType.defaultFalse
+
+        stubLifecycle()
+    }
+
+    compilerArgument {
+        name = "Xenhanced-coroutines-debugging"
+        description = """Generate additional linenumber instruction for compiler-generated code
+inside suspend functions and lambdas to distinguish them from user code by debugger.""".asReleaseDependent()
         valueType = BooleanType.defaultFalse
 
         stubLifecycle()

@@ -111,7 +111,6 @@ fun CompilerConfiguration.setupJvmSpecificArguments(arguments: K2JVMCompilerArgu
     handleClosureGenerationSchemeArgument("-Xsam-conversions", arguments.samConversions, JVMConfigurationKeys.SAM_CONVERSIONS)
     handleClosureGenerationSchemeArgument("-Xlambdas", arguments.lambdas, JVMConfigurationKeys.LAMBDAS)
 
-    put(JVMConfigurationKeys.INDY_ALLOW_ANNOTATED_LAMBDAS, arguments.indyAllowAnnotatedLambdas)
     addAll(JVMConfigurationKeys.ADDITIONAL_JAVA_MODULES, arguments.additionalJavaModules?.asList())
 }
 
@@ -288,6 +287,7 @@ fun CompilerConfiguration.configureAdvancedJvmOptions(arguments: K2JVMCompilerAr
     put(JVMConfigurationKeys.LINK_VIA_SIGNATURES, arguments.linkViaSignatures)
 
     put(JVMConfigurationKeys.ENABLE_DEBUG_MODE, arguments.enableDebugMode)
+    put(JVMConfigurationKeys.ENHANCED_COROUTINES_DEBUGGING, arguments.enhancedCoroutinesDebugging)
     put(JVMConfigurationKeys.NO_NEW_JAVA_ANNOTATION_TARGETS, arguments.noNewJavaAnnotationTargets)
     put(JVMConfigurationKeys.ENABLE_IR_INLINER, arguments.enableIrInliner)
     put(JVMConfigurationKeys.USE_INLINE_SCOPES_NUMBERS, arguments.useInlineScopesNumbers)

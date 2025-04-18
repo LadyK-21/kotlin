@@ -65,8 +65,22 @@ abstract class JsAbstractInvalidationTest(
     override val environment: KotlinCoreEnvironment =
         KotlinCoreEnvironment.createForParallelTests(rootDisposable, CompilerConfiguration(), EnvironmentConfigFiles.JS_CONFIG_FILES)
 
-    override fun createConfiguration(moduleName: String, language: List<String>, moduleKind: ModuleKind): CompilerConfiguration {
-        val copy = super.createConfiguration(moduleName, language, moduleKind)
+    override fun createConfiguration(
+        moduleName: String,
+        moduleKind: ModuleKind,
+        languageFeatures: List<String>,
+        allLibraries: List<String>,
+        friendLibraries: List<String>,
+        includedLibrary: String?,
+    ): CompilerConfiguration {
+        val copy = super.createConfiguration(
+            moduleName = moduleName,
+            moduleKind = moduleKind,
+            languageFeatures = languageFeatures,
+            allLibraries = allLibraries,
+            friendLibraries = friendLibraries,
+            includedLibrary = includedLibrary,
+        )
         copy.put(JSConfigurationKeys.USE_ES6_CLASSES, targetBackend == TargetBackend.JS_IR_ES6)
         copy.put(JSConfigurationKeys.COMPILE_SUSPEND_AS_JS_GENERATOR, targetBackend == TargetBackend.JS_IR_ES6)
         return copy
@@ -106,8 +120,16 @@ abstract class JsAbstractInvalidationTest(
                     error("module ${it.moduleName} has friends, but only main module may have the friends")
                 }
 
-                val configuration = createConfiguration(projStep.order.last(), projStep.language, projectInfo.moduleKind)
-                    .apply { put(JSConfigurationKeys.GENERATE_DTS, projectInfo.checkTypeScriptDefinitions) }
+                val configuration = createConfiguration(
+                    moduleName = projStep.order.last(),
+                    moduleKind = projectInfo.moduleKind,
+                    languageFeatures = projStep.language,
+                    allLibraries = testInfo.mapTo(mutableListOf(stdlibKLib, kotlinTestKLib)) { it.modulePath },
+                    friendLibraries = mainModuleInfo.friends,
+                    includedLibrary = mainModuleInfo.modulePath,
+                ).apply {
+                    put(JSConfigurationKeys.GENERATE_DTS, projectInfo.checkTypeScriptDefinitions)
+                }
 
                 val dirtyData = when (granularity) {
                     JsGenerationGranularity.PER_FILE -> projStep.dirtyJsFiles
@@ -123,9 +145,6 @@ abstract class JsAbstractInvalidationTest(
 
 
                 val cacheUpdater = CacheUpdater(
-                    mainModule = mainModuleInfo.modulePath,
-                    allModules = testInfo.mapTo(mutableListOf(stdlibKLib, kotlinTestKLib)) { it.modulePath },
-                    mainModuleFriends = mainModuleInfo.friends,
                     cacheDir = buildDir.resolve("incremental-cache").absolutePath,
                     compilerConfiguration = configuration,
                     icContext = icContext

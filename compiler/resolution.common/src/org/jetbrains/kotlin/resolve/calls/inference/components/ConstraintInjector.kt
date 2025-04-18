@@ -7,7 +7,6 @@ package org.jetbrains.kotlin.resolve.calls.inference.components
 
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
-import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystemOperation
 import org.jetbrains.kotlin.resolve.calls.inference.ForkPointBranchDescription
 import org.jetbrains.kotlin.resolve.calls.inference.ForkPointData
 import org.jetbrains.kotlin.resolve.calls.inference.extractAllContainingTypeVariables
@@ -47,11 +46,6 @@ class ConstraintInjector(
 
         fun addInitialConstraint(initialConstraint: InitialConstraint)
         fun addError(error: ConstraintSystemError)
-
-        fun addMissedConstraints(
-            position: IncorporationConstraintPosition,
-            constraints: MutableList<Pair<TypeVariableMarker, Constraint>>
-        )
 
         fun resolveForkPointsConstraints()
 
@@ -112,12 +106,7 @@ class ConstraintInjector(
         typeCheckerState.setConstrainingTypesToPrintDebugInfo(lowerType, upperType)
         typeCheckerState.runIsSubtypeOf(lowerType, upperType)
 
-        // Missed constraints are constraints which we skipped in the constraints processor by mistake (incorrect optimization)
-        val missedConstraints = processConstraints(c, typeCheckerState)
-
-        if (missedConstraints != null) {
-            c.addMissedConstraints(typeCheckerState.position, missedConstraints)
-        }
+        processConstraints(c, typeCheckerState)
     }
 
     private fun addEqualityConstraintAndIncorporateIt(
@@ -129,30 +118,7 @@ class ConstraintInjector(
         typeCheckerState.setConstrainingTypesToPrintDebugInfo(typeVariable, equalType)
         typeCheckerState.addEqualityConstraint(typeVariable.typeConstructor(c), equalType)
 
-        // Missed constraints are constraints which we skipped in the constraints processor by mistake (incorrect optimization)
-        val missedConstraints = processConstraints(c, typeCheckerState)
-
-        if (missedConstraints != null) {
-            c.addMissedConstraints(typeCheckerState.position, missedConstraints)
-        }
-    }
-
-    fun processMissedConstraints(
-        c: Context,
-        position: IncorporationConstraintPosition,
-        missedConstraints: List<Pair<TypeVariableMarker, Constraint>>
-    ) {
-        val properConstraintsProcessingEnabled =
-            languageVersionSettings.supportsFeature(LanguageFeature.ProperTypeInferenceConstraintsProcessing)
-
-        // If proper constraints processing is enabled, then we don't have missed constraints
-        if (properConstraintsProcessingEnabled) return
-
-        val typeCheckerState = TypeCheckerStateForConstraintInjector(c, position)
-        for ((variable, constraint) in missedConstraints) {
-            typeCheckerState.addPossibleNewConstraint(variable, constraint)
-        }
-        processConstraints(c, typeCheckerState, skipProperEqualityConstraints = false)
+        processConstraints(c, typeCheckerState)
     }
 
     fun processGivenForkPointBranchConstraints(
@@ -167,58 +133,36 @@ class ConstraintInjector(
             constraintSet,
         )
         if (languageVersionSettings.supportsFeature(LanguageFeature.InferenceEnhancementsIn21)) {
-            processConstraintsIgnoringForksData(typeCheckerState, c, skipProperEqualityConstraints = true)
+            processConstraintsIgnoringForksData(typeCheckerState, c)
         }
     }
 
     private fun processConstraints(
         c: Context,
-        typeCheckerState: TypeCheckerStateForConstraintInjector,
-        skipProperEqualityConstraints: Boolean = true
-    ): MutableList<Pair<TypeVariableMarker, Constraint>>? {
-        return processConstraintsIgnoringForksData(typeCheckerState, c, skipProperEqualityConstraints).also {
-            typeCheckerState.extractForkPointsData()?.let { allForkPointsData ->
-                allForkPointsData.mapTo(c.constraintsFromAllForkPoints) { forkPointData ->
-                    typeCheckerState.position to forkPointData
-                }
+        typeCheckerState: TypeCheckerStateForConstraintInjector
+    ) {
+        processConstraintsIgnoringForksData(typeCheckerState, c)
+        typeCheckerState.extractForkPointsData()?.let { allForkPointsData ->
+            allForkPointsData.mapTo(c.constraintsFromAllForkPoints) { forkPointData ->
+                typeCheckerState.position to forkPointData
+            }
 
-                c.onNewConstraintOrForkPoint()
+            c.onNewConstraintOrForkPoint()
 
-                // During completion, we start processing fork constrains immediately
-                if (c.atCompletionState) {
-                    c.resolveForkPointsConstraints()
-                }
+            // During completion, we start processing fork constrains immediately
+            if (c.atCompletionState) {
+                c.resolveForkPointsConstraints()
             }
         }
     }
 
     private fun processConstraintsIgnoringForksData(
         typeCheckerState: TypeCheckerStateForConstraintInjector,
-        c: Context,
-        skipProperEqualityConstraints: Boolean
-    ): MutableList<Pair<TypeVariableMarker, Constraint>>? {
-        val properConstraintsProcessingEnabled =
-            languageVersionSettings.supportsFeature(LanguageFeature.ProperTypeInferenceConstraintsProcessing)
-
+        c: Context
+    ) {
         while (typeCheckerState.hasConstraintsToProcess()) {
             processGivenConstraints(c, typeCheckerState, typeCheckerState.extractAllConstraints()!!)
-
-            val contextOps = c as? ConstraintSystemOperation
-
-            val useIncorrectOptimization = skipProperEqualityConstraints && !properConstraintsProcessingEnabled
-
-            if (!useIncorrectOptimization) continue
-
-            // Optimization below is wrong and it's going to be removed after finished the corresponding deprecation cycle
-            val hasProperEqualityConstraintForEachVariable = contextOps != null && c.notFixedTypeVariables.all { typeVariable ->
-                typeVariable.value.constraints.any { constraint ->
-                    constraint.kind == EQUALITY && contextOps.isProperType(constraint.type)
-                }
-            }
-
-            if (hasProperEqualityConstraintForEachVariable) return typeCheckerState.extractAllConstraints()
         }
-        return null
     }
 
     private fun processGivenConstraints(

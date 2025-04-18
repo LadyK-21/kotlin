@@ -38,14 +38,10 @@ import org.jetbrains.kotlin.ir.backend.js.checkers.WasmStandardLibrarySpecialCom
 import org.jetbrains.kotlin.js.config.*
 import org.jetbrains.kotlin.library.KotlinLibrary
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.platform.js.JsPlatforms
-import org.jetbrains.kotlin.platform.wasm.WasmPlatforms
-import org.jetbrains.kotlin.platform.wasm.WasmTarget
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.util.PerformanceManager
 import org.jetbrains.kotlin.util.PhaseType
 import org.jetbrains.kotlin.util.PotentiallyIncorrectPhaseTimeMeasurement
-import org.jetbrains.kotlin.wasm.config.WasmConfigurationKeys
 
 object WebFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, WebFrontendPipelineArtifact>(
     name = "JsFrontendPipelinePhase",
@@ -64,7 +60,13 @@ object WebFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, W
         val friendLibraries = configuration.friendLibraries
 
         val mainModule = MainModule.SourceFiles(environmentForJS.getSourceFiles())
-        val moduleStructure = ModulesStructure(environmentForJS.project, mainModule, configuration, libraries, friendLibraries)
+        val moduleStructure = ModulesStructure(
+            project = environmentForJS.project,
+            mainModule = mainModule,
+            compilerConfiguration = configuration,
+            libraryPaths = libraries,
+            friendDependenciesPaths = friendLibraries
+        )
 
         val isWasm = configuration.wasmCompilation
         runStandardLibrarySpecialCompatibilityChecks(moduleStructure.allDependencies, isWasm = isWasm, messageCollector)
@@ -217,12 +219,6 @@ object WebFrontendPipelinePhase : PipelinePhase<ConfigurationPipelineArtifact, W
 
         val mainModuleName = moduleStructure.compilerConfiguration.get(CommonConfigurationKeys.MODULE_NAME)!!
         val escapedMainModuleName = Name.special("<$mainModuleName>")
-        val platform = if (useWasmPlatform) {
-            when (moduleStructure.compilerConfiguration.get(WasmConfigurationKeys.WASM_TARGET, WasmTarget.JS)) {
-                WasmTarget.JS -> WasmPlatforms.wasmJs
-                WasmTarget.WASI -> WasmPlatforms.wasmWasi
-            }
-        } else JsPlatforms.defaultJsPlatform
         val dependencyList = DependencyListForCliModule.build(escapedMainModuleName) {
             dependencies(libraries)
             friendDependencies(friendLibraries)

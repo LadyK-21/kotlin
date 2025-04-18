@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
 import org.jetbrains.kotlin.backend.jvm.ir.*
 import org.jetbrains.kotlin.backend.jvm.mapping.mapType
 import org.jetbrains.kotlin.backend.jvm.mapping.mapTypeAsDeclaration
+import org.jetbrains.kotlin.backend.jvm.mapping.mapTypeParameter
 import org.jetbrains.kotlin.codegen.AsmUtil
 import org.jetbrains.kotlin.codegen.inline.*
 import org.jetbrains.kotlin.codegen.state.JvmBackendConfig
@@ -25,6 +26,8 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.load.java.JavaDescriptorVisibilities
+import org.jetbrains.kotlin.load.kotlin.TypeMappingMode
+import org.jetbrains.kotlin.name.JvmStandardClassIds
 import org.jetbrains.kotlin.name.JvmStandardClassIds.JVM_SYNTHETIC_ANNOTATION_FQ_NAME
 import org.jetbrains.kotlin.name.JvmStandardClassIds.STRICTFP_ANNOTATION_FQ_NAME
 import org.jetbrains.kotlin.name.JvmStandardClassIds.SYNCHRONIZED_ANNOTATION_FQ_NAME
@@ -122,6 +125,7 @@ class FunctionCodegen(private val irFunction: IrFunction, private val classCodeg
             try {
                 val adapter = InstructionAdapter(methodVisitor)
                 ExpressionCodegen(irFunction, signature, frameMap, adapter, classCodegen, sourceMapper, reifiedTypeParameters).generate()
+                postReifyEvaluatorGeneratedMethod(methodNode)
             } finally {
                 context.state.globalInlineContext.exitDeclaration()
             }
@@ -130,6 +134,24 @@ class FunctionCodegen(private val irFunction: IrFunction, private val classCodeg
         }
         methodVisitor.visitEnd()
         return SMAPAndMethodNode(methodNode, smap)
+    }
+
+    private fun postReifyEvaluatorGeneratedMethod(methodNode: MethodNode) {
+        if (context.evaluatorData?.evaluatorGeneratedFunction != irFunction) return
+        val mappings = TypeParameterMappings(
+            classCodegen.typeMapper.typeSystem,
+            context.evaluatorData!!.capturedTypeParametersMapping,
+            allReified = false,
+            classCodegen.typeMapper::mapTypeParameter
+        )
+        val reifiedTypeInliner = ReifiedTypeInliner(
+            mappings,
+            IrInlineIntrinsicsSupport(classCodegen, irFunction, irFunction.fileParent),
+            context.typeSystem,
+            context.config.languageVersionSettings,
+            context.config.unifiedNullChecks,
+        )
+        reifiedTypeInliner.reifyInstructions(methodNode)
     }
 
     private fun shouldGenerateAnnotationsOnValueParameters(): Boolean =
@@ -260,10 +282,16 @@ class FunctionCodegen(private val irFunction: IrFunction, private val classCodeg
             frameMap.enter(it, classCodegen.typeMapper.mapTypeAsDeclaration(it.type))
         }
         for (parameter in nonDispatchParameters) {
-            frameMap.enter(parameter, classCodegen.typeMapper.mapType(parameter))
+            val type = classCodegen.typeMapper.mapType(parameter.type, wrapInlineClassesForExposedFunctions(this, parameter))
+            frameMap.enter(parameter, type)
         }
         return frameMap
     }
+
+    private fun wrapInlineClassesForExposedFunctions(function: IrFunction, parameter: IrValueParameter): TypeMappingMode =
+        if (function.hasAnnotation(JvmStandardClassIds.JVM_EXPOSE_BOXED_ANNOTATION_FQ_NAME) && parameter.type.isInlineClassType())
+            TypeMappingMode.DEFAULT.wrapInlineClassesMode()
+        else TypeMappingMode.DEFAULT
 
     private fun generateParameterAnnotations(
         irFunction: IrFunction,

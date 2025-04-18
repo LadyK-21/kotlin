@@ -62,8 +62,6 @@ object JvmConfigurationKeysContainer : KeysContainer("org.jetbrains.kotlin.confi
 
     val LAMBDAS by key<JvmClosureGenerationScheme>("Lambdas code generation scheme")
 
-    val INDY_ALLOW_ANNOTATED_LAMBDAS by key<Boolean>("Allow using indy for lambdas with annotations")
-
     val KLIB_PATHS by key<List<String>>("Paths to .klib libraries")
 
     val ABI_STABILITY by key<JvmAbiStability>("ABI stability of class files produced by JVM IR and/or FIR")
@@ -89,6 +87,8 @@ object JvmConfigurationKeysContainer : KeysContainer("org.jetbrains.kotlin.confi
     val LINK_VIA_SIGNATURES by key<Boolean>("Link JVM IR symbols via signatures, instead of by descriptors on the K1 frontend")
 
     val ENABLE_DEBUG_MODE by key<Boolean>("Enable debug mode")
+
+    val ENHANCED_COROUTINES_DEBUGGING by key<Boolean>("Mark compiled generated code in coroutines")
 
     val NO_NEW_JAVA_ANNOTATION_TARGETS by key<Boolean>("Do not generate Java 1.8+ targets for Kotlin annotation classes")
 

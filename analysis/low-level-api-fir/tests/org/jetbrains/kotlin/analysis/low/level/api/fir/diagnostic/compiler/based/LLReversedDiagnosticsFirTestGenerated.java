@@ -862,6 +862,114 @@ public class LLReversedDiagnosticsFirTestGenerated extends AbstractLLReversedDia
       public void testKt55286() {
         runTest("compiler/fir/analysis-tests/testData/resolve/annotations/kt55286.kt");
       }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithFakeOverrideAsImportedArgument.kt")
+      public void testRequiredAnnotationWithFakeOverrideAsImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithFakeOverrideAsImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithImportedArgument.kt")
+      public void testRequiredAnnotationWithImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithImportedExplicitJavaArgument.kt")
+      public void testRequiredAnnotationWithImportedExplicitJavaArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithImportedExplicitJavaArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithImportedJavaArgument.kt")
+      public void testRequiredAnnotationWithImportedJavaArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithImportedJavaArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithImportedStarJavaArgument.kt")
+      public void testRequiredAnnotationWithImportedStarJavaArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithImportedStarJavaArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithIncorrectExplicitJavaArgument.kt")
+      public void testRequiredAnnotationWithIncorrectExplicitJavaArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithIncorrectExplicitJavaArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithIncorrectImportedArgument.kt")
+      public void testRequiredAnnotationWithIncorrectImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithIncorrectImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithIncorrectImportedJavaArgument.kt")
+      public void testRequiredAnnotationWithIncorrectImportedJavaArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithIncorrectImportedJavaArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithIncorrectImportedObjectArgument.kt")
+      public void testRequiredAnnotationWithIncorrectImportedObjectArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithIncorrectImportedObjectArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithStarFakeOverrideAsImportedArgument.kt")
+      public void testRequiredAnnotationWithStarFakeOverrideAsImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithStarFakeOverrideAsImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithStarImportedArgument.kt")
+      public void testRequiredAnnotationWithStarImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithStarImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithStarIncorrectImportedArgument.kt")
+      public void testRequiredAnnotationWithStarIncorrectImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithStarIncorrectImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithStarIncorrectImportedJavaArgument.kt")
+      public void testRequiredAnnotationWithStarIncorrectImportedJavaArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithStarIncorrectImportedJavaArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithStarIncorrectImportedObjectArgument.kt")
+      public void testRequiredAnnotationWithStarIncorrectImportedObjectArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithStarIncorrectImportedObjectArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithStarTypealiasedImportedArgument.kt")
+      public void testRequiredAnnotationWithStarTypealiasedImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithStarTypealiasedImportedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithTypealiasedArgument.kt")
+      public void testRequiredAnnotationWithTypealiasedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithTypealiasedArgument.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithTypealiasedArgumentAsMetaAnnotation.kt")
+      public void testRequiredAnnotationWithTypealiasedArgumentAsMetaAnnotation() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithTypealiasedArgumentAsMetaAnnotation.kt");
+      }
+
+      @Test
+      @TestMetadata("requiredAnnotationWithTypealiasedImportedArgument.kt")
+      public void testRequiredAnnotationWithTypealiasedImportedArgument() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/annotations/requiredAnnotationWithTypealiasedImportedArgument.kt");
+      }
     }
 
     @Nested
@@ -2338,6 +2446,16 @@ public class LLReversedDiagnosticsFirTestGenerated extends AbstractLLReversedDia
       }
 
       @Nested
+      @TestMetadata("compiler/fir/analysis-tests/testData/resolve/contextParameters/parsing")
+      @TestDataPath("$PROJECT_ROOT")
+      public class Parsing {
+        @Test
+        public void testAllFilesPresentInParsing() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/fir/analysis-tests/testData/resolve/contextParameters/parsing"), Pattern.compile("^([^.]+)\\.kt$"), null, true);
+        }
+      }
+
+      @Nested
       @TestMetadata("compiler/fir/analysis-tests/testData/resolve/contextParameters/smartcast")
       @TestDataPath("$PROJECT_ROOT")
       public class Smartcast {
@@ -3123,6 +3241,12 @@ public class LLReversedDiagnosticsFirTestGenerated extends AbstractLLReversedDia
       @TestMetadata("valOnAnnotationParameter.kt")
       public void testValOnAnnotationParameter() {
         runTest("compiler/fir/analysis-tests/testData/resolve/diagnostics/valOnAnnotationParameter.kt");
+      }
+
+      @Test
+      @TestMetadata("VirtualMemberHiddenOnMemberFromMappedJavaScope.kt")
+      public void testVirtualMemberHiddenOnMemberFromMappedJavaScope() {
+        runTest("compiler/fir/analysis-tests/testData/resolve/diagnostics/VirtualMemberHiddenOnMemberFromMappedJavaScope.kt");
       }
 
       @Nested
@@ -4799,6 +4923,28 @@ public class LLReversedDiagnosticsFirTestGenerated extends AbstractLLReversedDia
       @TestMetadata("reservedMethodsInInterfaces.kt")
       public void testReservedMethodsInInterfaces() {
         runTest("compiler/fir/analysis-tests/testData/resolve/inlineClasses/reservedMethodsInInterfaces.kt");
+      }
+
+      @Nested
+      @TestMetadata("compiler/fir/analysis-tests/testData/resolve/inlineClasses/jvmExposeBoxed")
+      @TestDataPath("$PROJECT_ROOT")
+      public class JvmExposeBoxed {
+        @Test
+        public void testAllFilesPresentInJvmExposeBoxed() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/fir/analysis-tests/testData/resolve/inlineClasses/jvmExposeBoxed"), Pattern.compile("^([^.]+)\\.kt$"), null, true);
+        }
+
+        @Test
+        @TestMetadata("jvmName.kt")
+        public void testJvmName() {
+          runTest("compiler/fir/analysis-tests/testData/resolve/inlineClasses/jvmExposeBoxed/jvmName.kt");
+        }
+
+        @Test
+        @TestMetadata("simple.kt")
+        public void testSimple() {
+          runTest("compiler/fir/analysis-tests/testData/resolve/inlineClasses/jvmExposeBoxed/simple.kt");
+        }
       }
     }
 
@@ -8054,6 +8200,12 @@ public class LLReversedDiagnosticsFirTestGenerated extends AbstractLLReversedDia
       }
 
       @Test
+      @TestMetadata("javaFunctionParamNullability.kt")
+      public void testJavaFunctionParamNullability() {
+        runTest("compiler/fir/analysis-tests/testData/resolveWithStdlib/intellij/javaFunctionParamNullability.kt");
+      }
+
+      @Test
       @TestMetadata("lambdaForKfunction.kt")
       public void testLambdaForKfunction() {
         runTest("compiler/fir/analysis-tests/testData/resolveWithStdlib/intellij/lambdaForKfunction.kt");
@@ -8643,6 +8795,12 @@ public class LLReversedDiagnosticsFirTestGenerated extends AbstractLLReversedDia
       @TestMetadata("receiverResolutionInLambda.kt")
       public void testReceiverResolutionInLambda() {
         runTest("compiler/fir/analysis-tests/testData/resolveWithStdlib/problems/receiverResolutionInLambda.kt");
+      }
+
+      @Test
+      @TestMetadata("reifiedToNothing.kt")
+      public void testReifiedToNothing() {
+        runTest("compiler/fir/analysis-tests/testData/resolveWithStdlib/problems/reifiedToNothing.kt");
       }
 
       @Test

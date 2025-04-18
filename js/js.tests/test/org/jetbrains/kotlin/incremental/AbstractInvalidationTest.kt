@@ -30,6 +30,9 @@ import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.builders.LanguageVersionSettingsBuilder
 import org.jetbrains.kotlin.test.util.JUnit4Assertions
 import org.jetbrains.kotlin.cli.common.disposeRootInWriteAction
+import org.jetbrains.kotlin.js.config.friendLibraries
+import org.jetbrains.kotlin.js.config.includes
+import org.jetbrains.kotlin.js.config.libraries
 import org.jetbrains.kotlin.test.utils.TestDisposable
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
 import org.junit.jupiter.api.AfterEach
@@ -135,7 +138,14 @@ abstract class AbstractInvalidationTest(
         return File(File(buildDir, moduleName), "$moduleName.klib")
     }
 
-    protected open fun createConfiguration(moduleName: String, language: List<String>, moduleKind: ModuleKind): CompilerConfiguration {
+    protected open fun createConfiguration(
+        moduleName: String,
+        moduleKind: ModuleKind,
+        languageFeatures: List<String>,
+        allLibraries: List<String>,
+        friendLibraries: List<String>,
+        includedLibrary: String? = null,
+    ): CompilerConfiguration {
         val copy = environment.configuration.copy()
         copy.put(CommonConfigurationKeys.MODULE_NAME, moduleName)
         copy.put(JSConfigurationKeys.MODULE_KIND, moduleKind)
@@ -146,7 +156,7 @@ abstract class AbstractInvalidationTest(
         copy.put(JSConfigurationKeys.COMPILE_LAMBDAS_AS_ES6_ARROW_FUNCTIONS, targetBackend == TargetBackend.JS_IR_ES6)
 
         copy.languageVersionSettings = with(LanguageVersionSettingsBuilder()) {
-            language.forEach {
+            languageFeatures.forEach {
                 val switchLanguageFeature = when {
                     it.startsWith("+") -> this::enable
                     it.startsWith("-") -> this::disable
@@ -157,6 +167,10 @@ abstract class AbstractInvalidationTest(
             }
             build()
         }
+
+        copy.libraries = allLibraries
+        copy.friendLibraries = friendLibraries
+        includedLibrary?.let { copy.includes = includedLibrary }
 
         zipAccessor.reset()
         copy.put(JSConfigurationKeys.ZIP_FILE_SYSTEM_ACCESSOR, zipAccessor)
@@ -217,10 +231,16 @@ abstract class AbstractInvalidationTest(
                         friends += klibFile
                     }
                 }
-                val configuration = createConfiguration(module, projStep.language, projectInfo.moduleKind)
+                val configuration = createConfiguration(
+                    moduleName = module,
+                    moduleKind = projectInfo.moduleKind,
+                    languageFeatures = projStep.language,
+                    allLibraries = dependencies.map { it.canonicalPath },
+                    friendLibraries = friends.map { it.canonicalPath },
+                )
                 configuration.enableKlibRelativePaths(moduleSourceDir)
                 outputKlibFile.delete()
-                buildKlib(configuration, module, moduleSourceDir, dependencies, friends, outputKlibFile)
+                buildKlib(configuration, module, moduleSourceDir, outputKlibFile)
             }
 
             val dtsFile = moduleStep.expectedDTS.ifNotEmpty {
@@ -353,8 +373,6 @@ abstract class AbstractInvalidationTest(
         configuration: CompilerConfiguration,
         moduleName: String,
         sourceDir: File,
-        dependencies: Collection<File>,
-        friends: Collection<File>,
         outputKlibFile: File,
     )
 }

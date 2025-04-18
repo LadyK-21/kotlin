@@ -114,21 +114,15 @@ public class ReplViaApiEvaluationTestGenerated extends AbstractReplViaApiEvaluat
   }
 
   @Test
-  @TestMetadata("property_with_custom_accessors_different_snippet.repl.kts")
-  public void testProperty_with_custom_accessors_different_snippet_repl() {
-    runTest("plugins/scripting/scripting-tests/testData/codegen/repl/property_with_custom_accessors_different_snippet.repl.kts");
-  }
-
-  @Test
-  @TestMetadata("property_with_custom_accessors_same_snippet.repl.kts")
-  public void testProperty_with_custom_accessors_same_snippet_repl() {
-    runTest("plugins/scripting/scripting-tests/testData/codegen/repl/property_with_custom_accessors_same_snippet.repl.kts");
-  }
-
-  @Test
   @TestMetadata("property_with_lambda.repl.kts")
   public void testProperty_with_lambda_repl() {
     runTest("plugins/scripting/scripting-tests/testData/codegen/repl/property_with_lambda.repl.kts");
+  }
+
+  @Test
+  @TestMetadata("resolve_annotations.repl.kts")
+  public void testResolve_annotations_repl() {
+    runTest("plugins/scripting/scripting-tests/testData/codegen/repl/resolve_annotations.repl.kts");
   }
 
   @Test

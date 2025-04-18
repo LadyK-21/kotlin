@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.calls.*
 import org.jetbrains.kotlin.fir.resolve.dfa.DataFlowAnalyzerContext
 import org.jetbrains.kotlin.fir.resolve.inference.FirInferenceSession
-import org.jetbrains.kotlin.fir.resolve.inference.FirPCLAInferenceSession
 import org.jetbrains.kotlin.fir.resolve.transformers.ReturnTypeCalculator
 import org.jetbrains.kotlin.fir.resolve.transformers.withScopeCleanup
 import org.jetbrains.kotlin.fir.scopes.FirScope
@@ -39,10 +38,9 @@ import org.jetbrains.kotlin.name.SpecialNames.UNDERSCORE_FOR_UNUSED_VAR
 import org.jetbrains.kotlin.util.PrivateForInline
 
 class BodyResolveContext(
-    val returnTypeCalculator: ReturnTypeCalculator,
+    @set:PrivateForInline
+    var returnTypeCalculator: ReturnTypeCalculator,
     val dataFlowAnalyzerContext: DataFlowAnalyzerContext,
-    val targetedLocalClasses: Set<FirClassLikeDeclaration> = emptySet(),
-    val outerLocalClassForNested: MutableMap<FirClassLikeSymbol<*>, FirClassLikeSymbol<*>> = mutableMapOf()
 ) {
     val fileImportsScope: MutableList<FirScope> = mutableListOf()
 
@@ -121,6 +119,11 @@ class BodyResolveContext(
     val anonymousFunctionsAnalyzedInDependentContext: MutableSet<FirFunctionSymbol<*>> = mutableSetOf()
 
     var containingClassDeclarations: ArrayDeque<FirClass> = ArrayDeque()
+
+    @set:PrivateForInline
+    var targetedLocalClasses: Set<FirClassLikeDeclaration> = emptySet()
+
+    val outerLocalClassForNested: MutableMap<FirClassLikeSymbol<*>, FirClassLikeSymbol<*>> = mutableMapOf()
 
     @OptIn(PrivateForInline::class)
     inline fun <T> withTowerDataContexts(newContexts: FirRegularTowerDataContexts, f: () -> T): T {
@@ -400,27 +403,36 @@ class BodyResolveContext(
     }
 
     @OptIn(PrivateForInline::class)
-    fun createSnapshotForLocalClasses(
+    inline fun <T> forLocalClasses(
         returnTypeCalculator: ReturnTypeCalculator,
-        targetedLocalClasses: Set<FirClassLikeDeclaration>
-    ): BodyResolveContext =
-        BodyResolveContext(returnTypeCalculator, dataFlowAnalyzerContext, targetedLocalClasses, outerLocalClassForNested).apply {
-            file = this@BodyResolveContext.file
-            fileImportsScope += this@BodyResolveContext.fileImportsScope
-            specialTowerDataContexts.putAll(this@BodyResolveContext.specialTowerDataContexts)
-            containers = this@BodyResolveContext.containers
-            containingClassDeclarations = ArrayDeque(this@BodyResolveContext.containingClassDeclarations)
-            containingRegularClass = this@BodyResolveContext.containingRegularClass
-            replaceTowerDataContext(this@BodyResolveContext.towerDataContext)
-            anonymousFunctionsAnalyzedInDependentContext.addAll(this@BodyResolveContext.anonymousFunctionsAnalyzedInDependentContext)
-            // Looks like we should copy this session only for builder inference to be able
-            // to use information from local class inside it.
-            // However, we should not copy other kinds of inference sessions,
-            // otherwise we can "inherit" type variables from there provoking inference problems
-            if (this@BodyResolveContext.inferenceSession is FirPCLAInferenceSession) {
-                inferenceSession = this@BodyResolveContext.inferenceSession
-            }
+        targetedLocalClasses: Set<FirClassLikeDeclaration>,
+        f: () -> T,
+    ): T {
+        val oldReturnTypeCalculator = this.returnTypeCalculator
+        val oldTargetedLocalClasses = this.targetedLocalClasses
+        return try {
+            this.returnTypeCalculator = returnTypeCalculator
+            this.targetedLocalClasses = targetedLocalClasses
+            f()
+        } finally {
+            this.returnTypeCalculator = oldReturnTypeCalculator
+            this.targetedLocalClasses = oldTargetedLocalClasses
         }
+    }
+
+    @OptIn(PrivateForInline::class)
+    inline fun <T> withReturnTypeCalculator(
+        returnTypeCalculator: ReturnTypeCalculator,
+        f: () -> T,
+    ): T {
+        val oldReturnTypeCalculator = this.returnTypeCalculator
+        return try {
+            this.returnTypeCalculator = returnTypeCalculator
+            f()
+        } finally {
+            this.returnTypeCalculator = oldReturnTypeCalculator
+        }
+    }
 
     // withElement PUBLIC API
 
@@ -888,6 +900,15 @@ class BodyResolveContext(
         return withTypeParametersOf(property) {
             withContainer(property, f)
         }
+    }
+
+    @OptIn(PrivateForInline::class)
+    inline fun <T> withVariableAsContainerIfNeeded(
+        variable: FirProperty,
+        treatAsProperty: Boolean,
+        f: () -> T
+    ): T {
+        return if (treatAsProperty) withProperty(variable, f) else f()
     }
 
     @OptIn(PrivateForInline::class)

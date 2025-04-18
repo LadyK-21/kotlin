@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.generators.tests.analysis.api
 
 import org.jetbrains.kotlin.analysis.api.fir.test.cases.imports.AbstractKaDefaultImportsProviderTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.annotations.*
+import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.components.analysisScopeProvider.AbstractCanBeAnalysedTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.components.compileTimeConstantProvider.AbstractCompileTimeConstantEvaluatorTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.components.compilerFacility.AbstractCompilerFacilityTest
 import org.jetbrains.kotlin.analysis.api.impl.base.test.cases.components.compilerFacility.AbstractFirPluginPrototypeCompilerFacilityTestWithAnalysis
@@ -142,7 +143,11 @@ internal fun AnalysisApiTestGroup.generateAnalysisApiTests() {
                 and analysisSessionModeIs(AnalysisSessionMode.Normal)
                 and analysisApiModeIs(AnalysisApiMode.Ide)
     ) {
-        test<AbstractCompilerFacilityTest>(filter = testModuleKindIs(TestModuleKind.Source, TestModuleKind.LibrarySource)) {
+        test<AbstractCompilerFacilityTest>(filter = testModuleKindIs(TestModuleKind.LibrarySource)) {
+            model("compilation", pattern = TestGeneratorUtil.KT, excludeDirs = listOf("codeFragments/reifiedTypeParams"))
+        }
+
+        test<AbstractCompilerFacilityTest>(filter = testModuleKindIs(TestModuleKind.Source)) {
             model("compilation", pattern = TestGeneratorUtil.KT)
         }
 
@@ -359,6 +364,12 @@ private fun AnalysisApiTestGroup.generateAnalysisApiNonComponentsTests() {
 }
 
 private fun AnalysisApiTestGroup.generateAnalysisApiComponentsTests() {
+    component("analysisScopeProvider", filter = frontendIs(FrontendKind.Fir) and analysisSessionModeIs(AnalysisSessionMode.Normal)) {
+        test<AbstractCanBeAnalysedTest> {
+            model(it, "canBeAnalysed")
+        }
+    }
+
     component("compileTimeConstantProvider") {
         test<AbstractCompileTimeConstantEvaluatorTest> {
             model(it, "evaluate")
@@ -449,7 +460,9 @@ private fun AnalysisApiTestGroup.generateAnalysisApiComponentsTests() {
             model(it, "containingDeclarationByDelegatedMemberScope")
         }
 
-        test<AbstractContainingModuleByFileTest> {
+        // The containing module of a file in dependent analysis is always the dangling file module, so there's no sense in generating
+        // dependent analysis tests here.
+        test<AbstractContainingModuleByFileTest>(filter = analysisSessionModeIs(AnalysisSessionMode.Normal)) {
             model(it, "containingModuleByFile")
         }
     }

@@ -57,7 +57,7 @@ object FirAnnotationExpressionChecker : FirAnnotationCallChecker(MppCheckerKind.
 
         checkAnnotationsWithVersion(fqName, expression, context, reporter)
         checkDeprecatedSinceKotlin(expression.source, fqName, argumentMapping, context, reporter)
-        checkAnnotationUsedAsAnnotationArgument(expression, context, reporter)
+        checkAnnotationsInsideAnnotationCall(expression, context, reporter)
         checkNotAClass(expression, context, reporter)
         checkErrorSuppression(annotationClassId, argumentMapping, reporter, context)
         checkContextFunctionTypeParams(expression.source, annotationClassId, reporter, context)
@@ -204,15 +204,28 @@ object FirAnnotationExpressionChecker : FirAnnotationCallChecker(MppCheckerKind.
         }
     }
 
-    private fun checkAnnotationUsedAsAnnotationArgument(
-        expression: FirAnnotationCall,
+    private fun checkAnnotationsInsideAnnotationCall(
+        expression: FirCall,
         context: CheckerContext,
         reporter: DiagnosticReporter
     ) {
         val args = expression.argumentList.arguments
         for (arg in args) {
-            for (ann in arg.unwrapArgument().annotations) {
-                reporter.reportOn(ann.source, FirErrors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT, context)
+            val unwrapped = arg.unwrapArgument()
+            val unwrappedErrorExpression = unwrapped.unwrapErrorExpression()
+            val errorFactory = if (unwrapped is FirErrorExpression && unwrapped.expression == null) {
+                // The error is reported if only a syntax error is reported as well (empty element) that leads to some duplication.
+                // However, the `ANNOTATION_USED_AS_ANNOTATION_ARGUMENT` allows applying the `RemoveAtFromAnnotationArgument` quick-fix.
+                // That's why it's useful to have it.
+                FirErrors.ANNOTATION_USED_AS_ANNOTATION_ARGUMENT
+            } else {
+                FirErrors.ANNOTATION_ON_ANNOTATION_ARGUMENT
+            }
+            for (ann in unwrappedErrorExpression.annotations) {
+                reporter.reportOn(ann.source, errorFactory, context)
+            }
+            if (unwrappedErrorExpression is FirArrayLiteral) {
+                checkAnnotationsInsideAnnotationCall(unwrappedErrorExpression, context, reporter)
             }
         }
     }

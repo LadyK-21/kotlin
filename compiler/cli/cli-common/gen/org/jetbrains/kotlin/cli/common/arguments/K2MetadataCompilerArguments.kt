@@ -6,7 +6,9 @@ package org.jetbrains.kotlin.cli.common.arguments
 
 import com.intellij.util.xmlb.annotations.Transient
 
-// This file was generated automatically. See compiler/cli/cli-arguments-generator
+// This file was generated automatically. See generator in :compiler:cli:cli-arguments-generator
+// Please declare arguments in compiler/arguments/src/org/jetbrains/kotlin/arguments/description/MetadataCompilerArguments.kt
+// DO NOT MODIFY IT MANUALLY.
 
 class K2MetadataCompilerArguments : CommonCompilerArguments() {
     @Argument(
@@ -41,16 +43,6 @@ class K2MetadataCompilerArguments : CommonCompilerArguments() {
         set(value) {
             checkFrozen()
             field = if (value.isNullOrEmpty()) null else value
-        }
-
-    @Argument(
-        value = "-Xjps",
-        description = "Enable in JPS.",
-    )
-    var enabledInJps: Boolean = false
-        set(value) {
-            checkFrozen()
-            field = value
         }
 
     @Argument(
