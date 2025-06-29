@@ -4,10 +4,12 @@ import java.util.HashSet
 import org.gradle.internal.os.OperatingSystem
 
 val disableInputsCheck = project.providers.gradleProperty("kotlin.test.instrumentation.disable.inputs.check").orNull?.toBoolean() == true
-// Disable checks on windows until we fix KTI-2322
-if (!disableInputsCheck && !OperatingSystem.current().isWindows) {
-    tasks.withType<Test>().names.forEach { taskName ->
-        tasks.named<Test>(taskName) {
+tasks.withType<Test>().names.forEach { taskName ->
+    tasks.named<Test>(taskName) {
+        val testInputsCheck = extensions.create<TestInputsCheckExtension>("testInputsCheck")
+
+        // Disable checks on windows until we fix KTI-2322
+        if (!disableInputsCheck && !OperatingSystem.current().isWindows) {
             val permissionsTemplateFile = rootProject.file("tests-permissions.template.policy")
             inputs.file(permissionsTemplateFile).withPathSensitivity(PathSensitivity.RELATIVE)
             val policyFileProvider: Provider<RegularFile> = layout.buildDirectory.file("permissions-for-$taskName.policy")
@@ -18,6 +20,14 @@ if (!disableInputsCheck && !OperatingSystem.current().isWindows) {
             val javaVersion = provider { tasks.named<Test>(taskName).map { it.javaLauncher.get().metadata.languageVersion.asInt() }.get() }
             val defineJDKEnvVariables: List<Int> = listOf(8, 11, 17, 21)
             inputs.property("javaVersion", javaVersion)
+
+            val nativeHome = project.providers.gradleProperty("kotlin.internal.native.test.nativeHome").orElse(
+                project.providers.gradleProperty("kn.nativeHome")
+            )
+            val konanDataDir: String =
+                project.extra.has("konan.data.dir").let { if (it) project.extra["konan.data.dir"] else null } as String?
+                    ?: System.getenv("KONAN_DATA_DIR")
+                    ?: (System.getProperty("user.home") + File.separator + ".konan")
 
             doFirst {
                 if (!permissionsTemplateFile.exists()) {
@@ -68,7 +78,9 @@ if (!disableInputsCheck && !OperatingSystem.current().isWindows) {
                             """permission java.io.FilePermission "${file.absolutePath}/", "read";""",
                             """permission java.io.FilePermission "${file.absolutePath}/-", "read${
                                 // We write to the testData folder from tests...
-                                if (file.canonicalPath.contains("/testData/")) ",write" else ""
+                                if (file.canonicalPath.contains("/testData")) ",write"
+                                else if (file.canonicalPath.endsWith("/dist")) ",write,delete"
+                                else ""
                             }";""",
                         )
                     } else if (file.extension == "class") {
@@ -109,6 +121,42 @@ if (!disableInputsCheck && !OperatingSystem.current().isWindows) {
                 try {
                     policyFile.writeText(
                         permissionsTemplateFile.readText()
+                            .replace(
+                                "{{native}}",
+                                if (testInputsCheck.isNative.get()) {
+                                    val konanPermissions: MutableList<String> = mutableListOf(
+                                        """permission java.util.PropertyPermission "kotlin.native.home", "write";""",
+                                        """permission java.util.PropertyPermission "kotlinc.test.allow.testonly.language.features", "write";""",
+
+                                        //This is scary because it's too broad
+                                        """permission java.util.PropertyPermission "*", "write";""", // org/jetbrains/kotlin/konan/test/blackbox/support/util/SafeEnvironment.kt:48
+
+                                        """permission java.io.FilePermission "some/non/existent/path/early-access-registry.txt", "read";""", // com.intellij.openapi.util.registry.EarlyAccessRegistryManager
+
+                                        """permission java.io.FilePermission "$konanDataDir/-", "read,write,delete,execute";""",
+                                        """permission java.io.FilePermission "$konanDataDir", "read";""",
+                                        """permission java.io.FilePermission "/bin/sh", "execute";""",
+                                    )
+                                    if (nativeHome.isPresent) {
+                                        konanPermissions.add("""permission java.io.FilePermission "${nativeHome.get()}/-" , "read,write,delete";""")
+                                    }
+                                    if (testInputsCheck.useXcode.get()) {
+                                        // Should we consider those files inputs? I need to think about the execute permission
+                                        // in any case I need to check where those paths come from to avoid hardcoding
+                                        konanPermissions.addAll(
+                                            listOf(
+                                                """permission java.io.FilePermission "/bin/bash", "execute";""",
+                                                """permission java.io.FilePermission "/usr/bin/xcrun", "execute";""",
+                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool", "execute";""",
+                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang", "read";""",
+                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld", "execute";""",
+                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil", "execute";""",
+                                            )
+                                        )
+                                    }
+                                    konanPermissions.joinToString("\n    ")
+                                } else ""
+                            )
                             .replace(
                                 "{{temp_dir}}",
                                 (parentsReadPermission(File(tempDir)) +
