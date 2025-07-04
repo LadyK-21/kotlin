@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.backend.common.compilationException
 import org.jetbrains.kotlin.backend.common.descriptors.synthesizedString
 import org.jetbrains.kotlin.backend.common.lower.ClosureAnnotator.ClosureBuilder
 import org.jetbrains.kotlin.backend.common.lower.LocalDeclarationsLowering.ScopeWithCounter
+import org.jetbrains.kotlin.backend.common.customNameInReflection
 import org.jetbrains.kotlin.backend.common.runOnFilePostfix
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
@@ -134,7 +135,7 @@ open class LocalDeclarationsLowering(
     val newParameterToOld: MutableMap<IrValueParameter, IrValueParameter> = mutableMapOf(),
     val oldParameterToNew: MutableMap<IrValueParameter, IrValueParameter> = mutableMapOf(),
 ) : BodyLoweringPass {
-    internal val methodScopesWithCounter: MutableMap<IrClass, MutableMap<Name, ScopeWithCounter>> = mutableMapOf()
+    internal val declarationScopesWithCounter: MutableMap<IrClass, MutableMap<Name, ScopeWithCounter>> = mutableMapOf()
 
     open val invalidChars: Set<Char>
         get() = emptySet()
@@ -222,9 +223,14 @@ open class LocalDeclarationsLowering(
     private fun IrSymbolOwner.getOrCreateScopeWithCounter(): ScopeWithCounter =
         scopeWithCounter ?: ScopeWithCounter(this).also { scopeWithCounter = it }
 
+    private fun IrField.getOrCreateScopeWithCounter(): ScopeWithCounter? {
+        val klass = parentClassOrNull ?: return null
+        return declarationScopesWithCounter.getOrPut(klass, ::mutableMapOf)
+            .getOrPut(this.name) { ScopeWithCounter(this) }
+    }
     private fun IrFunction.getOrCreateScopeWithCounter(): ScopeWithCounter? {
         val klass = parentClassOrNull ?: return null
-        return methodScopesWithCounter.getOrPut(klass, ::mutableMapOf)
+        return declarationScopesWithCounter.getOrPut(klass, ::mutableMapOf)
             .getOrPut(this.name) { ScopeWithCounter(this) }
     }
 
@@ -678,9 +684,6 @@ open class LocalDeclarationsLowering(
                 val oldFunction = expression.symbol.owner
                 val newFunction = oldFunction.transformed
                 if (newFunction != null) {
-                    require(newFunction.parameters.size == oldFunction.parameters.size) {
-                        "Capturing variables is not supported for raw function references"
-                    }
                     expression.symbol = newFunction.symbol
                 }
                 return expression
@@ -988,6 +991,7 @@ open class LocalDeclarationsLowering(
 
             newDeclaration.annotations = oldDeclaration.annotations
             newDeclaration.sourceFileWhenInlined = localFunctionContext.sourceFileWhenInlined
+            newDeclaration.customNameInReflection = oldDeclaration.name
 
             transformedDeclarations[oldDeclaration] = newDeclaration
         }
@@ -1242,6 +1246,9 @@ open class LocalDeclarationsLowering(
         private fun collectLocalDeclarations() {
             val enclosingPackageFragment = container.getPackageFragment()
             val enclosingClass = getEnclosing<IrClass>()
+            val enclosingField = getEnclosing<IrField>().takeIf {
+                it?.parentClassOrNull != null
+            }
             val enclosingFunction = getEnclosing<IrFunction>().takeIf {
                 it !is IrConstructor && it?.parentClassOrNull != null
             }
@@ -1304,6 +1311,7 @@ open class LocalDeclarationsLowering(
 
                     if (declaration.visibility == DescriptorVisibilities.LOCAL) {
                         val enclosingScope = data.currentScope
+                            ?: enclosingField?.getOrCreateScopeWithCounter()
                             ?: enclosingFunction?.getOrCreateScopeWithCounter()
                             ?: enclosingClass?.getOrCreateScopeWithCounter()
                             // File is required for K/N because file declarations are not split by classes.
@@ -1316,11 +1324,15 @@ open class LocalDeclarationsLowering(
                             data.currentScope?.let {
                                 when (it.irElement) {
                                     is IrDeclarationContainer -> OwnerForLoweredDeclaration.DeclarationContainer(it.irElement)
+                                    is IrField -> OwnerForLoweredDeclaration.DeclarationContainer(it.irElement.parentClassOrNull!!)
                                     is IrFunction -> localFunctions[enclosingScope.irElement]!!.ownerForLoweredDeclaration
                                     else -> error("Unknown owner for lowered declaration")
                                 }
                             }
                                 ?: (irElement as? IrBlock)?.let { OwnerForLoweredDeclaration.Block(irElement, closestParent!!) }
+                                ?: (enclosingScope.irElement as? IrField)?.let { enclosingField ->
+                                    OwnerForLoweredDeclaration.DeclarationContainer(enclosingField.parentClassOrNull!!)
+                                }
                                 ?: (enclosingScope.irElement as? IrFunction)?.let { enclosingFunction ->
                                     OwnerForLoweredDeclaration.DeclarationContainer(enclosingFunction.parentClassOrNull!!)
                                 }

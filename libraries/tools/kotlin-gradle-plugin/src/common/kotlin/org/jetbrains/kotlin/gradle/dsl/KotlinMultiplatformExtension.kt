@@ -11,6 +11,7 @@ import org.gradle.api.NamedDomainObjectCollection
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionContainer
+import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
@@ -18,6 +19,8 @@ import org.jetbrains.kotlin.gradle.internal.dsl.KotlinMultiplatformSourceSetConv
 import org.jetbrains.kotlin.gradle.internal.syncCommonMultiplatformOptions
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginLifecycle.Stage.AfterFinaliseDsl
+import org.jetbrains.kotlin.gradle.plugin.diagnostics.KotlinToolingDiagnostics
+import org.jetbrains.kotlin.gradle.plugin.diagnostics.reportDiagnostic
 import org.jetbrains.kotlin.gradle.plugin.hierarchy.KotlinHierarchyDslImpl
 import org.jetbrains.kotlin.gradle.plugin.hierarchy.redundantDependsOnEdgesTracker
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
@@ -27,7 +30,9 @@ import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinWasmJsTargetDsl
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinWasmWasiTargetDsl
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinWasmTargetPreset
 import org.jetbrains.kotlin.gradle.utils.KotlinCommonCompilerOptionsDefault
+import org.jetbrains.kotlin.gradle.utils.addConfigurationMetrics
 import org.jetbrains.kotlin.gradle.utils.newInstance
+import org.jetbrains.kotlin.statistics.metrics.BooleanMetrics
 import javax.inject.Inject
 
 internal fun ExtensionContainer.KotlinMultiplatformExtension(
@@ -109,6 +114,27 @@ internal constructor(
             presetFunctions.presets.getByName("wasmWasi") as KotlinWasmTargetPreset,
             configure
         )
+
+    fun dependencies(configure: Action<KotlinDependencies>) = dependencies { configure.execute(this) }
+
+    fun dependencies(configure: KotlinDependencies.() -> Unit) {
+        project.addConfigurationMetrics {
+            it.put(BooleanMetrics.KMP_TOP_LEVEL_DEPENDENCIES_BLOCK, true)
+        }
+        when (val dependencies = dependencies) {
+            KotlinTopLevelDependenciesBlock.UnavailableInCurrentGradleVersion -> {
+                project.reportDiagnostic(
+                    KotlinToolingDiagnostics.KotlinTopLevelDependenciesUsedInIncompatibleGradleVersion(
+                        currentGradleVersion = GradleVersion.current(),
+                        minimumSupportedGradleVersion = MinSupportedGradleVersionWithDependencyCollectors,
+                    )
+                )
+            }
+            is KotlinTopLevelDependenciesBlock.Dependencies -> {
+                dependencies.block.configure()
+            }
+        }
+    }
 
     @Deprecated(
         "Because only the IR compiler is left, it's no longer necessary to know about the compiler type in properties. Scheduled for removal in Kotlin 2.3.",

@@ -1221,7 +1221,7 @@ open class FirDeclarationsResolveTransformer(
         anonymousFunctionExpression: FirAnonymousFunctionExpression,
         expectedTypeData: ResolutionMode.WithExpectedType?,
     ): FirStatement = when {
-        session.languageVersionSettings.supportsFeature(LanguageFeature.ResolveTopLevelLambdasAsSyntheticCallArgument) ->
+        LanguageFeature.ResolveTopLevelLambdasAsSyntheticCallArgument.isEnabled() ->
             components.syntheticCallGenerator.resolveAnonymousFunctionExpressionWithSyntheticOuterCall(
                 anonymousFunctionExpression, expectedTypeData, resolutionContext
             )
@@ -1284,10 +1284,10 @@ open class FirDeclarationsResolveTransformer(
                         moduleData = session.moduleData
                         origin = FirDeclarationOrigin.Source
                         name = SpecialNames.UNDERSCORE_FOR_UNUSED_VAR
-                        symbol = FirValueParameterSymbol(name)
+                        symbol = FirValueParameterSymbol()
                         returnTypeRef = receiverType
                             .toFirResolvedTypeRef(lambda.source?.fakeElement(KtFakeSourceElementKind.LambdaContextParameter))
-                        valueParameterKind = if (session.languageVersionSettings.supportsFeature(LanguageFeature.ContextParameters)) {
+                        valueParameterKind = if (LanguageFeature.ContextParameters.isEnabled()) {
                             FirValueParameterKind.ContextParameter
                         } else {
                             FirValueParameterKind.LegacyContextReceiver
@@ -1384,7 +1384,7 @@ open class FirDeclarationsResolveTransformer(
                         source = lambda.source?.fakeElement(KtFakeSourceElementKind.ImplicitReturnTypeOfLambdaValueParameter)
                     )
                     this.name = name
-                    symbol = FirValueParameterSymbol(name)
+                    symbol = FirValueParameterSymbol()
                     isCrossinline = false
                     isNoinline = false
                     isVararg = false

@@ -267,8 +267,7 @@ org.jetbrains.kotlin.lang.BinaryOperationPrecedence.INFIX
 org.jetbrains.kotlin.lang.BinaryOperationPrecedence.IN_OR_IS
 org.jetbrains.kotlin.lang.BinaryOperationPrecedence.MULTIPLICATIVE
 org.jetbrains.kotlin.lang.BinaryOperationPrecedence.RANGE
-org.jetbrains.kotlin.lang.BinaryOperationPrecedence.tokens
-org.jetbrains.kotlin.lang.BinaryOperationPrecedence:constructor(BinaryOperationPrecedence?, IElementType)
+org.jetbrains.kotlin.lang.BinaryOperationPrecedence.tokenSet
 org.jetbrains.kotlin.psi.BuilderByPattern
 org.jetbrains.kotlin.psi.BuilderByPattern.appendChildRange(PsiChildRange)
 org.jetbrains.kotlin.psi.BuilderByPattern.appendExpression(KtExpression?)
@@ -778,7 +777,6 @@ org.jetbrains.kotlin.psi.KtNamedFunction:getFunKeyword()
 org.jetbrains.kotlin.psi.KtNamedFunction:hasTypeParameterListBeforeFunctionName()
 org.jetbrains.kotlin.psi.KtNamedFunction:isAnonymous()
 org.jetbrains.kotlin.psi.KtNamedFunction:isTopLevel()
-org.jetbrains.kotlin.psi.KtNamedFunction:mayHaveContract()
 org.jetbrains.kotlin.psi.KtNamedFunction:mayHaveContract(boolean)
 org.jetbrains.kotlin.psi.KtNamedFunction:shouldChangeModificationCount(PsiElement)
 org.jetbrains.kotlin.psi.KtNullableType
@@ -1995,7 +1993,6 @@ org.jetbrains.kotlin.psi.stubs.KotlinConstantExpressionStub
 org.jetbrains.kotlin.psi.stubs.KotlinConstantExpressionStub.kind()
 org.jetbrains.kotlin.psi.stubs.KotlinConstantExpressionStub.value()
 org.jetbrains.kotlin.psi.stubs.KotlinConstructorStub
-org.jetbrains.kotlin.psi.stubs.KotlinConstructorStub.hasBody()
 org.jetbrains.kotlin.psi.stubs.KotlinConstructorStub.isDelegatedCallToThis()
 org.jetbrains.kotlin.psi.stubs.KotlinConstructorStub.isExplicitDelegationCall()
 org.jetbrains.kotlin.psi.stubs.KotlinContextReceiverStub
@@ -2008,10 +2005,7 @@ org.jetbrains.kotlin.psi.stubs.KotlinFileStub.findImportsByAlias(String)
 org.jetbrains.kotlin.psi.stubs.KotlinFileStub.getPackageFqName()
 org.jetbrains.kotlin.psi.stubs.KotlinFileStub.isScript()
 org.jetbrains.kotlin.psi.stubs.KotlinFunctionStub
-org.jetbrains.kotlin.psi.stubs.KotlinFunctionStub.hasBlockBody()
-org.jetbrains.kotlin.psi.stubs.KotlinFunctionStub.hasBody()
 org.jetbrains.kotlin.psi.stubs.KotlinFunctionStub.hasTypeParameterListBeforeFunctionName()
-org.jetbrains.kotlin.psi.stubs.KotlinFunctionStub.mayHaveContract()
 org.jetbrains.kotlin.psi.stubs.KotlinFunctionTypeStub
 org.jetbrains.kotlin.psi.stubs.KotlinImportAliasStub
 org.jetbrains.kotlin.psi.stubs.KotlinImportAliasStub.getName()
@@ -2034,8 +2028,6 @@ org.jetbrains.kotlin.psi.stubs.KotlinPlaceHolderStub
 org.jetbrains.kotlin.psi.stubs.KotlinPlaceHolderWithTextStub
 org.jetbrains.kotlin.psi.stubs.KotlinPlaceHolderWithTextStub.text()
 org.jetbrains.kotlin.psi.stubs.KotlinPropertyAccessorStub
-org.jetbrains.kotlin.psi.stubs.KotlinPropertyAccessorStub.hasBlockBody()
-org.jetbrains.kotlin.psi.stubs.KotlinPropertyAccessorStub.hasBody()
 org.jetbrains.kotlin.psi.stubs.KotlinPropertyAccessorStub.isGetter()
 org.jetbrains.kotlin.psi.stubs.KotlinPropertyStub
 org.jetbrains.kotlin.psi.stubs.KotlinPropertyStub.hasDelegate()
@@ -2081,7 +2073,6 @@ org.jetbrains.kotlin.psi.stubs.elements.KtClassLiteralExpressionElementType
 org.jetbrains.kotlin.psi.stubs.elements.KtCollectionLiteralExpressionElementType
 org.jetbrains.kotlin.psi.stubs.elements.KtConstantExpressionElementType
 org.jetbrains.kotlin.psi.stubs.elements.KtConstantExpressionElementType.Companion.kindToConstantElementType(ConstantValueKind)
-org.jetbrains.kotlin.psi.stubs.elements.KtConstructorElementType
 org.jetbrains.kotlin.psi.stubs.elements.KtContextReceiverElementType
 org.jetbrains.kotlin.psi.stubs.elements.KtContractEffectElementType
 org.jetbrains.kotlin.psi.stubs.elements.KtContractEffectListElementType
@@ -2255,7 +2246,6 @@ org.jetbrains.kotlin.psi.stubs.impl.KotlinConstantValueKind.UBYTE
 org.jetbrains.kotlin.psi.stubs.impl.KotlinConstantValueKind.UINT
 org.jetbrains.kotlin.psi.stubs.impl.KotlinConstantValueKind.ULONG
 org.jetbrains.kotlin.psi.stubs.impl.KotlinConstantValueKind.USHORT
-org.jetbrains.kotlin.psi.stubs.impl.KotlinConstructorStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinContextReceiverStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinContractConstantValues
 org.jetbrains.kotlin.psi.stubs.impl.KotlinContractConstantValues.FALSE
@@ -2304,10 +2294,12 @@ org.jetbrains.kotlin.psi.stubs.impl.KotlinParameterStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinPlaceHolderStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinPlaceHolderStubImpl:constructor(StubElement, IStubElementType)
 org.jetbrains.kotlin.psi.stubs.impl.KotlinPlaceHolderWithTextStubImpl
+org.jetbrains.kotlin.psi.stubs.impl.KotlinPrimaryConstructorStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinPropertyAccessorStubImpl
-org.jetbrains.kotlin.psi.stubs.impl.KotlinPropertyAccessorStubImpl:constructor(StubElement, boolean, boolean, boolean)
+org.jetbrains.kotlin.psi.stubs.impl.KotlinPropertyAccessorStubImpl:constructor(StubElement, boolean, boolean, boolean, boolean)
 org.jetbrains.kotlin.psi.stubs.impl.KotlinPropertyStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinScriptStubImpl
+org.jetbrains.kotlin.psi.stubs.impl.KotlinSecondaryConstructorStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinStringInterpolationPrefixStubImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinStubBaseImpl
 org.jetbrains.kotlin.psi.stubs.impl.KotlinStubOrigin

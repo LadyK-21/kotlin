@@ -747,7 +747,7 @@ internal class InconsistentTypeParameterValuesImpl(
     override val bounds: List<KaType>,
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
-) : KaAbstractFirDiagnostic<KtClass>(firDiagnostic, token), KaFirDiagnostic.InconsistentTypeParameterValues
+) : KaAbstractFirDiagnostic<KtClassOrObject>(firDiagnostic, token), KaFirDiagnostic.InconsistentTypeParameterValues
 
 internal class InconsistentTypeParameterBoundsImpl(
     override val typeParameter: KaTypeParameterSymbol,
@@ -1622,7 +1622,6 @@ internal class WrongModifierTargetImpl(
 
 internal class OperatorModifierRequiredImpl(
     override val functionSymbol: KaFunctionSymbol,
-    override val name: String,
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
 ) : KaAbstractFirDiagnostic<PsiElement>(firDiagnostic, token), KaFirDiagnostic.OperatorModifierRequired
@@ -1658,6 +1657,12 @@ internal class InapplicableOperatorModifierImpl(
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
 ) : KaAbstractFirDiagnostic<PsiElement>(firDiagnostic, token), KaFirDiagnostic.InapplicableOperatorModifier
+
+internal class InapplicableOperatorModifierWarningImpl(
+    override val message: String,
+    firDiagnostic: KtPsiDiagnostic,
+    token: KaLifetimeToken,
+) : KaAbstractFirDiagnostic<PsiElement>(firDiagnostic, token), KaFirDiagnostic.InapplicableOperatorModifierWarning
 
 internal class NoExplicitVisibilityInApiModeImpl(
     firDiagnostic: KtPsiDiagnostic,
@@ -1990,6 +1995,12 @@ internal class HasNextFunctionTypeMismatchImpl(
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
 ) : KaAbstractFirDiagnostic<KtExpression>(firDiagnostic, token), KaFirDiagnostic.HasNextFunctionTypeMismatch
+
+internal class IllegalTypeArgumentForVarargParameterWarningImpl(
+    override val type: KaType,
+    firDiagnostic: KtPsiDiagnostic,
+    token: KaLifetimeToken,
+) : KaAbstractFirDiagnostic<KtElement>(firDiagnostic, token), KaFirDiagnostic.IllegalTypeArgumentForVarargParameterWarning
 
 internal class OverloadResolutionAmbiguityImpl(
     override val candidates: List<KaSymbol>,
@@ -2659,6 +2670,12 @@ internal class MutablePropertyWithCapturedTypeImpl(
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
 ) : KaAbstractFirDiagnostic<PsiElement>(firDiagnostic, token), KaFirDiagnostic.MutablePropertyWithCapturedType
+
+internal class UnsupportedReflectionApiImpl(
+    override val unsupportedReflectionAPI: String,
+    firDiagnostic: KtPsiDiagnostic,
+    token: KaLifetimeToken,
+) : KaAbstractFirDiagnostic<KtElement>(firDiagnostic, token), KaFirDiagnostic.UnsupportedReflectionApi
 
 internal class NothingToOverrideImpl(
     override val declaration: KaCallableSymbol,
@@ -4147,6 +4164,7 @@ internal class TypecheckerHasRunIntoRecursiveProblemImpl(
 ) : KaAbstractFirDiagnostic<KtExpression>(firDiagnostic, token), KaFirDiagnostic.TypecheckerHasRunIntoRecursiveProblem
 
 internal class ReturnValueNotUsedImpl(
+    override val functionName: Name?,
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
 ) : KaAbstractFirDiagnostic<KtElement>(firDiagnostic, token), KaFirDiagnostic.ReturnValueNotUsed
@@ -5305,6 +5323,14 @@ internal class NullabilityMismatchBasedOnJavaAnnotationsImpl(
     firDiagnostic: KtPsiDiagnostic,
     token: KaLifetimeToken,
 ) : KaAbstractFirDiagnostic<PsiElement>(firDiagnostic, token), KaFirDiagnostic.NullabilityMismatchBasedOnJavaAnnotations
+
+internal class NullabilityMismatchBasedOnExplicitTypeArgumentsForJavaImpl(
+    override val actualType: KaType,
+    override val expectedType: KaType,
+    override val messageSuffix: String,
+    firDiagnostic: KtPsiDiagnostic,
+    token: KaLifetimeToken,
+) : KaAbstractFirDiagnostic<PsiElement>(firDiagnostic, token), KaFirDiagnostic.NullabilityMismatchBasedOnExplicitTypeArgumentsForJava
 
 internal class TypeMismatchWhenFlexibilityChangesImpl(
     override val actualType: KaType,

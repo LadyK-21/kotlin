@@ -27544,6 +27544,12 @@ public class JsIrDeserializationCodegenBoxTestGenerated extends AbstractJsIrDese
       public void testLambda_kt49360_wrapBlock() {
         runTest("compiler/testData/codegen/box/lambda/lambda_kt49360_wrapBlock.kt");
       }
+
+      @Test
+      @TestMetadata("lambda_kt78666.kt")
+      public void testLambda_kt78666() {
+        runTest("compiler/testData/codegen/box/lambda/lambda_kt78666.kt");
+      }
     }
 
     @Nested
@@ -40154,6 +40160,18 @@ public class JsIrDeserializationCodegenBoxTestGenerated extends AbstractJsIrDese
       }
 
       @Test
+      @TestMetadata("overrideResolution.kt")
+      public void testOverrideResolution() {
+        runTest("compiler/testData/codegen/box/reified/overrideResolution.kt");
+      }
+
+      @Test
+      @TestMetadata("overrideResolutionWithInlinedFunInKlib.kt")
+      public void testOverrideResolutionWithInlinedFunInKlib() {
+        runTest("compiler/testData/codegen/box/reified/overrideResolutionWithInlinedFunInKlib.kt");
+      }
+
+      @Test
       @TestMetadata("recursiveNewArray.kt")
       public void testRecursiveNewArray() {
         runTest("compiler/testData/codegen/box/reified/recursiveNewArray.kt");
@@ -44264,6 +44282,34 @@ public class JsIrDeserializationCodegenBoxTestGenerated extends AbstractJsIrDese
         @TestMetadata("withoutElse.kt")
         public void testWithoutElse() {
           runTest("compiler/testData/codegen/box/when/enumOptimization/withoutElse.kt");
+        }
+      }
+
+      @Nested
+      @TestMetadata("compiler/testData/codegen/box/when/exhaustiveness")
+      @TestDataPath("$PROJECT_ROOT")
+      public class Exhaustiveness {
+        @Test
+        public void testAllFilesPresentInExhaustiveness() {
+          KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/when/exhaustiveness"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("exhaustiveWithNegativeBoolean.kt")
+        public void testExhaustiveWithNegativeBoolean() {
+          runTest("compiler/testData/codegen/box/when/exhaustiveness/exhaustiveWithNegativeBoolean.kt");
+        }
+
+        @Test
+        @TestMetadata("exhaustiveWithNegativeEnum.kt")
+        public void testExhaustiveWithNegativeEnum() {
+          runTest("compiler/testData/codegen/box/when/exhaustiveness/exhaustiveWithNegativeEnum.kt");
+        }
+
+        @Test
+        @TestMetadata("exhaustiveWithNegativeSealed.kt")
+        public void testExhaustiveWithNegativeSealed() {
+          runTest("compiler/testData/codegen/box/when/exhaustiveness/exhaustiveWithNegativeSealed.kt");
         }
       }
 

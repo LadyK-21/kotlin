@@ -228,7 +228,7 @@ private class FunctionClsStubBuilder(
             isTopLevel,
             c.containerFqName.child(callableName),
             isExtension = functionProto.hasReceiver(),
-            hasBlockBody = true,
+            hasNoExpressionBody = true,
             hasBody = Flags.MODALITY.get(functionProto.flags) != Modality.ABSTRACT,
             hasTypeParameterListBeforeFunctionName = functionProto.typeParameterList.isNotEmpty(),
             mayHaveContract = hasContract,
@@ -345,7 +345,8 @@ private class PropertyClsStubBuilder(
             /* parent = */ callableStub,
             /* isGetter = */ true,
             /* hasBody = */ isNotDefault,
-            /* hasBlockBody = */ true, // KT-77302: The value is always true due to a current hasBlockBody semantic
+            /* hasNoExpressionBody = */ true,
+            /* mayHaveContract = */ false, // property accessors don't have contracts in metadata yet
         )
 
         createModifierListAndAnnotationStubsForAccessor(
@@ -380,7 +381,8 @@ private class PropertyClsStubBuilder(
             /* parent = */ callableStub,
             /* isGetter = */ false,
             /* hasBody = */ isNotDefault,
-            /* hasBlockBody = */ true, // KT-77302: The value is always true due to a current hasBlockBody semantic
+            /* hasNoExpressionBody = */ true,
+            /* mayHaveContract = */ false, // property accessors don't have contracts in metadata yet
         )
 
         createModifierListAndAnnotationStubsForAccessor(
@@ -577,16 +579,18 @@ private class ConstructorClsStubBuilder(
         // delegated call is not to this (as there is no this keyword) and it has body (while primary does not have one)
         // This info is anyway irrelevant for the purposes these stubs are used
         return if (Flags.IS_SECONDARY.get(constructorProto.flags))
-            KotlinConstructorStubImpl(
-                parent, KtStubElementTypes.SECONDARY_CONSTRUCTOR, name, hasBody = true,
+            KotlinSecondaryConstructorStubImpl(
+                parent = parent,
+                containingClassName = name,
+                hasBody = true,
                 isDelegatedCallToThis = false,
                 isExplicitDelegationCall = false,
+                mayHaveContract = false, // constructors don't have contracts in the metadata yet
             )
         else
-            KotlinConstructorStubImpl(
-                parent, KtStubElementTypes.PRIMARY_CONSTRUCTOR, name, hasBody = false,
-                isDelegatedCallToThis = false,
-                isExplicitDelegationCall = false,
+            KotlinPrimaryConstructorStubImpl(
+                parent = parent,
+                containingClassName = name,
             )
     }
 }

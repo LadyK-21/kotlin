@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.resolve.calls.inference.components
 
+import org.jetbrains.kotlin.builtins.functions.AllowedToUsedOnlyInK1
 import org.jetbrains.kotlin.config.LanguageFeature.InferenceEnhancementsIn21
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.types.*
@@ -278,9 +279,14 @@ abstract class TypeCheckerStateForConstraintSystem(
                      */
                     typeVariable.isMarkedNullable() -> {
                         val typeVariableTypeConstructor = typeVariable.typeConstructor()
-                        val needToMakeDefNotNull = subTypeConstructor.isTypeVariable() ||
-                                typeVariableTypeConstructor !is TypeVariableTypeConstructorMarker ||
-                                !typeVariableTypeConstructor.isContainedInInvariantOrContravariantPositions()
+
+                        check(typeVariableTypeConstructor is TypeVariableTypeConstructorMarker) {
+                            "Unexpected ${typeVariableTypeConstructor::class} class for $typeVariable/$typeVariableTypeConstructor"
+                        }
+
+                        val needToMakeDefNotNull =
+                            subTypeConstructor.isTypeVariable() ||
+                                    !typeVariableTypeConstructor.isContainedInInvariantOrContravariantPositions()
 
                         val resultType = if (needToMakeDefNotNull) {
                             subType.makeDefinitelyNotNullOrNotNull()
@@ -294,7 +300,13 @@ abstract class TypeCheckerStateForConstraintSystem(
                             }
                             notNullType
                         }
-                        resultType.withCapturedNonNullProjection()
+
+                        when {
+                            isK2 -> resultType
+                            else ->
+                                @OptIn(AllowedToUsedOnlyInK1::class)
+                                resultType.withCapturedNonNullProjection()
+                        }
                     }
                     // Foo <: T => Foo <: T
                     else -> subType
@@ -379,7 +391,7 @@ abstract class TypeCheckerStateForConstraintSystem(
         if (dnnSubType == notNullSubType) return false
 
         runForkingPoint {
-            for (variant in listOf(notNullSubType, dnnSubType).map { it.withCapturedNonNullProjection() }) {
+            for (variant in listOf(notNullSubType, dnnSubType)) {
                 fork {
                     addLowerConstraint(typeVariableTypeConstructor, variant, isFromNullabilityConstraint, isNoInfer)
                     true
@@ -390,9 +402,9 @@ abstract class TypeCheckerStateForConstraintSystem(
         return true
     }
 
+    @AllowedToUsedOnlyInK1
     private fun KotlinTypeMarker.withCapturedNonNullProjection(): KotlinTypeMarker =
         if (this is CapturedTypeMarker) {
-            // TODO: KT-71134 (consider getting rid of withNotNullProjection)
             with(extensionTypeContext) { withNotNullProjection() }
         } else {
             this

@@ -80,7 +80,7 @@ internal fun Project.getPlatformCinteropDependenciesOrEmpty(
         val compilation = compilations.singleOrNull() as? KotlinNativeCompilation ?: return@files emptySet<File>()
 
         /* Apple-specific cinterops can't be produced on non-MacOs machines, so just return an empty dependencies collection */
-        if (!compilation.target.konanTarget.enabledOnCurrentHostForKlibCompilation(kotlinPropertiesProvider)) return@files emptySet<File>()
+        if (!compilation.target.enabledOnCurrentHostForKlibCompilation) return@files emptySet<File>()
 
         (compilation.associatedCompilations + compilation)
             .filterIsInstance<KotlinNativeCompilation>()
@@ -106,7 +106,6 @@ private fun Project.getAllCInteropOutputFiles(compilation: KotlinNativeCompilati
                 compilation.maybeCreateKlibPackingTask(
                     interopTask.settings.classifier,
                     interopTask.klibDirectory,
-                    interopTask
                 )
             }
         }

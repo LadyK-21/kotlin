@@ -34011,6 +34011,18 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
       }
 
       @Test
+      @TestMetadata("runtimeAnnotationImplicit.kt")
+      public void testRuntimeAnnotationImplicit() {
+        runTest("compiler/testData/codegen/box/invokedynamic/lambdas/runtimeAnnotationImplicit.kt");
+      }
+
+      @Test
+      @TestMetadata("runtimeAnnotationImplicit_allowAnnotatedLambdas.kt")
+      public void testRuntimeAnnotationImplicit_allowAnnotatedLambdas() {
+        runTest("compiler/testData/codegen/box/invokedynamic/lambdas/runtimeAnnotationImplicit_allowAnnotatedLambdas.kt");
+      }
+
+      @Test
       @TestMetadata("runtimeAnnotation_allowAnnotatedLambdas.kt")
       public void testRuntimeAnnotation_allowAnnotatedLambdas() {
         runTest("compiler/testData/codegen/box/invokedynamic/lambdas/runtimeAnnotation_allowAnnotatedLambdas.kt");
@@ -39407,6 +39419,12 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
     @TestMetadata("lambda_kt49360_wrapBlock.kt")
     public void testLambda_kt49360_wrapBlock() {
       runTest("compiler/testData/codegen/box/lambda/lambda_kt49360_wrapBlock.kt");
+    }
+
+    @Test
+    @TestMetadata("lambda_kt78666.kt")
+    public void testLambda_kt78666() {
+      runTest("compiler/testData/codegen/box/lambda/lambda_kt78666.kt");
     }
   }
 
@@ -54561,6 +54579,12 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
       }
 
       @Test
+      @TestMetadata("contextParametersToString.kt")
+      public void testContextParametersToString() {
+        runTest("compiler/testData/codegen/box/reflection/methodsFromAny/contextParametersToString.kt");
+      }
+
+      @Test
       @TestMetadata("extensionPropertyReceiverToString.kt")
       public void testExtensionPropertyReceiverToString() {
         runTest("compiler/testData/codegen/box/reflection/methodsFromAny/extensionPropertyReceiverToString.kt");
@@ -54884,6 +54908,12 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
       @Test
       public void testAllFilesPresentInParameters() {
         KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/reflection/parameters"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+      }
+
+      @Test
+      @TestMetadata("anonymousContextParameter.kt")
+      public void testAnonymousContextParameter() {
+        runTest("compiler/testData/codegen/box/reflection/parameters/anonymousContextParameter.kt");
       }
 
       @Test
@@ -56286,6 +56316,12 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
     }
 
     @Test
+    @TestMetadata("java2kotlinDelegation.kt")
+    public void testJava2kotlinDelegation() {
+      runTest("compiler/testData/codegen/box/regressions/java2kotlinDelegation.kt");
+    }
+
+    @Test
     @TestMetadata("kt10143.kt")
     public void testKt10143() {
       runTest("compiler/testData/codegen/box/regressions/kt10143.kt");
@@ -56971,6 +57007,18 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
     @TestMetadata("nullableNothingArrayAsStringArray.kt")
     public void testNullableNothingArrayAsStringArray() {
       runTest("compiler/testData/codegen/box/reified/nullableNothingArrayAsStringArray.kt");
+    }
+
+    @Test
+    @TestMetadata("overrideResolution.kt")
+    public void testOverrideResolution() {
+      runTest("compiler/testData/codegen/box/reified/overrideResolution.kt");
+    }
+
+    @Test
+    @TestMetadata("overrideResolutionWithInlinedFunInKlib.kt")
+    public void testOverrideResolutionWithInlinedFunInKlib() {
+      runTest("compiler/testData/codegen/box/reified/overrideResolutionWithInlinedFunInKlib.kt");
     }
 
     @Test
@@ -63030,6 +63078,34 @@ public class FirLightTreeBlackBoxCodegenTestGenerated extends AbstractFirLightTr
       @TestMetadata("withoutElse.kt")
       public void testWithoutElse() {
         runTest("compiler/testData/codegen/box/when/enumOptimization/withoutElse.kt");
+      }
+    }
+
+    @Nested
+    @TestMetadata("compiler/testData/codegen/box/when/exhaustiveness")
+    @TestDataPath("$PROJECT_ROOT")
+    public class Exhaustiveness {
+      @Test
+      public void testAllFilesPresentInExhaustiveness() {
+        KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/when/exhaustiveness"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+      }
+
+      @Test
+      @TestMetadata("exhaustiveWithNegativeBoolean.kt")
+      public void testExhaustiveWithNegativeBoolean() {
+        runTest("compiler/testData/codegen/box/when/exhaustiveness/exhaustiveWithNegativeBoolean.kt");
+      }
+
+      @Test
+      @TestMetadata("exhaustiveWithNegativeEnum.kt")
+      public void testExhaustiveWithNegativeEnum() {
+        runTest("compiler/testData/codegen/box/when/exhaustiveness/exhaustiveWithNegativeEnum.kt");
+      }
+
+      @Test
+      @TestMetadata("exhaustiveWithNegativeSealed.kt")
+      public void testExhaustiveWithNegativeSealed() {
+        runTest("compiler/testData/codegen/box/when/exhaustiveness/exhaustiveWithNegativeSealed.kt");
       }
     }
 

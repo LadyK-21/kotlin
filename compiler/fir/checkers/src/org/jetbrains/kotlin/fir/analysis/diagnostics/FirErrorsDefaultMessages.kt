@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.KOTL
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.MODULE_DATA
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.NAME_OF_CONTAINING_DECLARATION_OR_FILE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.NAME_OF_DECLARATION_OR_FILE
+import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.OF_OPTIONAL_NAME
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.OPTIONAL_SENTENCE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.RENDER_CLASS_OR_OBJECT_NAME_QUOTED
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.RENDER_CLASS_OR_OBJECT_QUOTED
@@ -375,6 +376,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.ILLEGAL_RESTRICTE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.ILLEGAL_SELECTOR
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.ILLEGAL_SUSPEND_FUNCTION_CALL
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.ILLEGAL_SUSPEND_PROPERTY_ACCESS
+import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.ILLEGAL_TYPE_ARGUMENT_FOR_VARARG_PARAMETER_WARNING
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.ILLEGAL_UNDERSCORE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.IMPLEMENTATION_BY_DELEGATION_IN_EXPECT_CLASS
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.IMPLICIT_BOXING_IN_IDENTITY_EQUALS
@@ -387,6 +389,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_FILE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_INFIX_MODIFIER
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_LATEINIT_MODIFIER
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_OPERATOR_MODIFIER
+import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_OPERATOR_MODIFIER_WARNING
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_PARAM_TARGET
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_TARGET_ON_PROPERTY
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.INAPPLICABLE_TARGET_ON_PROPERTY_WARNING
@@ -1476,12 +1479,17 @@ object FirErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
         map.put(INCOMPATIBLE_MODIFIERS, "Modifier ''{0}'' is incompatible with ''{1}''.", TO_STRING, TO_STRING)
         map.put(REDUNDANT_OPEN_IN_INTERFACE, "Modifier 'open' is redundant for abstract interface members.")
         map.put(WRONG_MODIFIER_TARGET, "Modifier ''{0}'' is not applicable to ''{1}''.", TO_STRING, STRING)
-        map.put(OPERATOR_MODIFIER_REQUIRED, "''operator'' modifier is required on ''{0}'' in ''{1}''.", TO_STRING, STRING)
+        map.put(OPERATOR_MODIFIER_REQUIRED, "''operator'' modifier is required on {0}.", SYMBOL_WITH_CONTAINING_DECLARATION)
         map.put(OPERATOR_CALL_ON_CONSTRUCTOR, "Constructor of ''{0}'' cannot be used as an operator.", STRING)
-        map.put(INFIX_MODIFIER_REQUIRED, "''infix'' modifier is required on ''{0}''.", TO_STRING)
+        map.put(INFIX_MODIFIER_REQUIRED, "''infix'' modifier is required on ''{0}''.", SYMBOL)
         map.put(WRONG_MODIFIER_CONTAINING_DECLARATION, "Modifier ''{0}'' is not applicable inside ''{1}''.", TO_STRING, STRING)
         map.put(DEPRECATED_MODIFIER_CONTAINING_DECLARATION, "Modifier ''{0}'' is deprecated inside ''{1}''.", TO_STRING, STRING)
         map.put(INAPPLICABLE_OPERATOR_MODIFIER, "''operator'' modifier is not applicable to function: {0}.", STRING)
+        map.put(
+            INAPPLICABLE_OPERATOR_MODIFIER_WARNING,
+            "''operator'' modifier is not applicable to function: {0}.".toDeprecationWarningMessage(LanguageFeature.ForbidGetSetValueWithTooManyParameters),
+            STRING
+        )
 
         // Classes and interfaces
         map.put(SUPERTYPE_NOT_INITIALIZED, "This type has a constructor, so it must be initialized here.")
@@ -1626,6 +1634,12 @@ object FirErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
         map.put(
             HAS_NEXT_FUNCTION_TYPE_MISMATCH,
             "The ''iterator().hasNext()'' function of the loop range must return ''Boolean'', but returns ''{0}''.",
+            RENDER_TYPE,
+        )
+
+        map.put(
+            ILLEGAL_TYPE_ARGUMENT_FOR_VARARG_PARAMETER_WARNING,
+            "''{0}'' is inferred as the vararg parameter type, which might lead to exceptions at runtime. Consider specifying the type argument explicitly.",
             RENDER_TYPE,
         )
 
@@ -2450,7 +2464,7 @@ object FirErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
         )
         map.put(TYPECHECKER_HAS_RUN_INTO_RECURSIVE_PROBLEM, "Type checking has run into a recursive problem. Easiest workaround: specify the types of your declarations explicitly.")
 
-        map.put(RETURN_VALUE_NOT_USED, "Unused return value.")
+        map.put(RETURN_VALUE_NOT_USED, "Unused return value{0}.", OF_OPTIONAL_NAME)
 
         map.put(MUST_BE_INITIALIZED, "Property must be initialized.")
         map.put(

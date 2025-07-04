@@ -8,7 +8,10 @@ package org.jetbrains.kotlin.fir.resolve.inference
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.fakeElement
+import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.SessionHolder
 import org.jetbrains.kotlin.fir.expressions.FirExpression
+import org.jetbrains.kotlin.fir.isEnabled
 import org.jetbrains.kotlin.fir.languageVersionSettings
 import org.jetbrains.kotlin.fir.lookupTracker
 import org.jetbrains.kotlin.fir.recordTypeResolveAsLookup
@@ -56,7 +59,10 @@ class PostponedArgumentsAnalyzer(
     private val lambdaAnalyzer: LambdaAnalyzer,
     private val components: InferenceComponents,
     private val callResolver: FirCallResolver,
-) {
+) : SessionHolder {
+
+    override val session: FirSession
+        get() = resolutionContext.session
 
     fun analyze(
         c: PostponedArgumentsAnalyzerContext,
@@ -244,7 +250,7 @@ class PostponedArgumentsAnalyzer(
             //
             // NB: It's explicitly put below the unit case
             // (see testData/diagnostics/tests/inference/pcla/lambdaBelongsToOuterCallUnitConstraint.kt)
-            withPCLASession && resolutionContext.session.languageVersionSettings.supportsFeature(LanguageFeature.PCLAEnhancementsIn21) ->
+            withPCLASession && LanguageFeature.PCLAEnhancementsIn21.isEnabled() ->
                 substitute(lambdaReturnType)
 
             else -> null

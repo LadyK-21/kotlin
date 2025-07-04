@@ -130,10 +130,6 @@ public class SirVisibilityCheckerImpl(
             unsupportedDeclarationReporter.report(this@isExported, "suspend functions are not supported yet.")
             return@withSessions false
         }
-        if (isOperator) {
-            unsupportedDeclarationReporter.report(this@isExported, "operators are not supported yet.")
-            return@withSessions false
-        }
         if (isInline) {
             unsupportedDeclarationReporter.report(this@isExported, "inline functions are not supported yet.")
             return@withSessions false
@@ -176,11 +172,6 @@ public class SirVisibilityCheckerImpl(
 
         if (!(isAllSuperTypesExported(this) { this.isExported() is SirAvailability.Available})) {
             return@withSessions SirAvailability.Hidden("Some super type isn't available")
-        }
-
-        if (hasTypeParameter(this)) {
-            unsupportedDeclarationReporter.report(this@isExported, "generics are not supported yet.")
-            return@withSessions SirAvailability.Unavailable("Has type parameter(s)")
         }
 
         if (isInline) {

@@ -355,7 +355,7 @@ class FirMemberDeserializer(private val c: FirDeserializationContext) {
         val flags = if (proto.hasFlags()) proto.flags else loadOldFlags(proto.oldFlags)
         val callableName = c.nameResolver.getName(proto.name)
         val callableId = CallableId(c.packageFqName, c.relativeClassName, callableName)
-        val symbol = FirPropertySymbol(callableId)
+        val symbol = FirRegularPropertySymbol(callableId)
         val local = c.childContext(proto.typeParameterList, containingDeclarationSymbol = symbol)
 
         // Per documentation on Property.getter_flags in metadata.proto, if an accessor flags field is absent, its value should be computed
@@ -576,7 +576,7 @@ class FirMemberDeserializer(private val c: FirDeserializationContext) {
             this.moduleData = c.moduleData
             this.origin = origin
             this.name = SpecialNames.UNDERSCORE_FOR_UNUSED_VAR
-            this.symbol = FirValueParameterSymbol(name)
+            this.symbol = FirValueParameterSymbol()
             this.returnTypeRef = typeRef
             this.containingDeclarationSymbol = containingDeclarationSymbol
             this.valueParameterKind = FirValueParameterKind.LegacyContextReceiver
@@ -790,14 +790,17 @@ class FirMemberDeserializer(private val c: FirDeserializationContext) {
     ) {
         valueParameters.mapIndexedTo(destination) { index, proto ->
             val flags = if (proto.hasFlags()) proto.flags else 0
-            val name = c.nameResolver.getName(proto.name)
+            val name = if (kind == FirValueParameterKind.ContextParameter && !proto.hasName())
+                SpecialNames.UNDERSCORE_FOR_UNUSED_VAR
+            else
+                c.nameResolver.getName(proto.name)
             buildValueParameter {
                 moduleData = c.moduleData
                 this.containingDeclarationSymbol = containingDeclarationSymbol
                 origin = FirDeclarationOrigin.Library
                 returnTypeRef = proto.type(c.typeTable).toTypeRef(c)
                 this.name = name
-                symbol = FirValueParameterSymbol(name)
+                symbol = FirValueParameterSymbol()
                 resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
                 defaultValue = defaultValue(flags)
                 if (addDefaultValue) {

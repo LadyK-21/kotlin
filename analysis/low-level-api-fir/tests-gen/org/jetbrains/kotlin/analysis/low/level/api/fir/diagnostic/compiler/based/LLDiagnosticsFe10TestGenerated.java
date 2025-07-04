@@ -292,12 +292,6 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
     }
 
     @Test
-    @TestMetadata("classVsClassIsCheck.kt")
-    public void testClassVsClassIsCheck() {
-      runTest("compiler/testData/diagnostics/tests/classVsClassIsCheck.kt");
-    }
-
-    @Test
     @TestMetadata("companionObjectInEnumAccess.kt")
     public void testCompanionObjectInEnumAccess() {
       runTest("compiler/testData/diagnostics/tests/companionObjectInEnumAccess.kt");
@@ -952,6 +946,12 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
     }
 
     @Test
+    @TestMetadata("inlineFunctionContextBug.kt")
+    public void testInlineFunctionContextBug() {
+      runTest("compiler/testData/diagnostics/tests/inlineFunctionContextBug.kt");
+    }
+
+    @Test
     @TestMetadata("intersectedVisibilitiesAccessorDifferences_Huge.kt")
     public void testIntersectedVisibilitiesAccessorDifferences_Huge() {
       runTest("compiler/testData/diagnostics/tests/intersectedVisibilitiesAccessorDifferences_Huge.kt");
@@ -1261,6 +1261,12 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
     @TestMetadata("LocalClassAndShortSubpackageNames.kt")
     public void testLocalClassAndShortSubpackageNames() {
       runTest("compiler/testData/diagnostics/tests/LocalClassAndShortSubpackageNames.kt");
+    }
+
+    @Test
+    @TestMetadata("localClassesInInlineFunctions.kt")
+    public void testLocalClassesInInlineFunctions() {
+      runTest("compiler/testData/diagnostics/tests/localClassesInInlineFunctions.kt");
     }
 
     @Test
@@ -6232,6 +6238,42 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
       @TestMetadata("checkCastToNullableType.kt")
       public void testCheckCastToNullableType() {
         runTest("compiler/testData/diagnostics/tests/cast/checkCastToNullableType.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheck.kt")
+      public void testClassVsClassIsCheck() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheck.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckAndIntersectionType.kt")
+      public void testClassVsClassIsCheckAndIntersectionType() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckAndIntersectionType.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckJava.kt")
+      public void testClassVsClassIsCheckJava() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckJava.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckNullable.kt")
+      public void testClassVsClassIsCheckNullable() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckNullable.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckTypealias.kt")
+      public void testClassVsClassIsCheckTypealias() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckTypealias.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckWithTypeParameter.kt")
+      public void testClassVsClassIsCheckWithTypeParameter() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckWithTypeParameter.kt");
       }
 
       @Test
@@ -11565,9 +11607,21 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
       }
 
       @Test
+      @TestMetadata("wrongCountOfParametersInGetForbidden.kt")
+      public void testWrongCountOfParametersInGetForbidden() {
+        runTest("compiler/testData/diagnostics/tests/delegatedProperty/wrongCountOfParametersInGetForbidden.kt");
+      }
+
+      @Test
       @TestMetadata("wrongCountOfParametersInSet.kt")
       public void testWrongCountOfParametersInSet() {
         runTest("compiler/testData/diagnostics/tests/delegatedProperty/wrongCountOfParametersInSet.kt");
+      }
+
+      @Test
+      @TestMetadata("wrongCountOfParametersInSetForbidden.kt")
+      public void testWrongCountOfParametersInSetForbidden() {
+        runTest("compiler/testData/diagnostics/tests/delegatedProperty/wrongCountOfParametersInSetForbidden.kt");
       }
 
       @Test
@@ -18138,6 +18192,18 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
       @TestMetadata("recursiveGenericExtensionReceiver.kt")
       public void testRecursiveGenericExtensionReceiver() {
         runTest("compiler/testData/diagnostics/tests/inference/recursiveGenericExtensionReceiver.kt");
+      }
+
+      @Test
+      @TestMetadata("recursiveGenericsNullableInferenceAfter.kt")
+      public void testRecursiveGenericsNullableInferenceAfter() {
+        runTest("compiler/testData/diagnostics/tests/inference/recursiveGenericsNullableInferenceAfter.kt");
+      }
+
+      @Test
+      @TestMetadata("recursiveGenericsNullableInferenceBefore.kt")
+      public void testRecursiveGenericsNullableInferenceBefore() {
+        runTest("compiler/testData/diagnostics/tests/inference/recursiveGenericsNullableInferenceBefore.kt");
       }
 
       @Test
@@ -33640,6 +33706,12 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
         }
 
         @Test
+        @TestMetadata("inconsistentTypeParameterValuesOnAnonymousObject.kt")
+        public void testInconsistentTypeParameterValuesOnAnonymousObject() {
+          runTest("compiler/testData/diagnostics/tests/override/clashesOnInheritance/inconsistentTypeParameterValuesOnAnonymousObject.kt");
+        }
+
+        @Test
         @TestMetadata("intersectionReturnTypeMismatchSubsumed.kt")
         public void testIntersectionReturnTypeMismatchSubsumed() {
           runTest("compiler/testData/diagnostics/tests/override/clashesOnInheritance/intersectionReturnTypeMismatchSubsumed.kt");
@@ -47194,6 +47266,12 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
         }
 
         @Test
+        @TestMetadata("exhaustiveWithComplementaryLowersFromNegativeCheck.kt")
+        public void testExhaustiveWithComplementaryLowersFromNegativeCheck() {
+          runTest("compiler/testData/diagnostics/tests/when/exhaustive/exhaustiveWithComplementaryLowersFromNegativeCheck.kt");
+        }
+
+        @Test
         @TestMetadata("exhaustiveWithNegativeBooleans.kt")
         public void testExhaustiveWithNegativeBooleans() {
           runTest("compiler/testData/diagnostics/tests/when/exhaustive/exhaustiveWithNegativeBooleans.kt");
@@ -47281,6 +47359,18 @@ public class LLDiagnosticsFe10TestGenerated extends AbstractLLDiagnosticsTest {
         @TestMetadata("exhaustiveWithUntrustworthyExpectAny.kt")
         public void testExhaustiveWithUntrustworthyExpectAny() {
           runTest("compiler/testData/diagnostics/tests/when/exhaustive/exhaustiveWithUntrustworthyExpectAny.kt");
+        }
+
+        @Test
+        @TestMetadata("exhaustivenessWithSelfType.kt")
+        public void testExhaustivenessWithSelfType() {
+          runTest("compiler/testData/diagnostics/tests/when/exhaustive/exhaustivenessWithSelfType.kt");
+        }
+
+        @Test
+        @TestMetadata("exhaustivenessWithSelfTypeCornerCases.kt")
+        public void testExhaustivenessWithSelfTypeCornerCases() {
+          runTest("compiler/testData/diagnostics/tests/when/exhaustive/exhaustivenessWithSelfTypeCornerCases.kt");
         }
       }
 

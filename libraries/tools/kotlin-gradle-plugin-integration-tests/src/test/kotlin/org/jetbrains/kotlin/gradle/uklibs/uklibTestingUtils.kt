@@ -115,6 +115,13 @@ fun TestProject.publishReturn(
     }
 }
 
+/**
+ * Configures and publishes a Kotlin publication to a temporary directory. The returned [PublishedProject][org.jetbrains.kotlin.gradle.uklibs.PublishedProject]
+ * can be added to the repositories list using [addPublishedProjectToRepositories][org.jetbrains.kotlin.gradle.uklibs.addPublishedProjectToRepositories]
+ * and added to dependencies using [PublishedProject.rootCoordinate][org.jetbrains.kotlin.gradle.uklibs.PublishedProject.rootCoordinate]
+ *
+ * See [BuildScriptInjectionIT.publishAndConsumeProject][org.jetbrains.kotlin.gradle.BuildScriptInjectionIT.publishAndConsumeProject] for an example of usage
+ */
 fun TestProject.publish(
     vararg buildArguments: String = emptyArray(),
     publisherConfiguration: PublisherConfiguration = PublisherConfiguration(
@@ -134,6 +141,11 @@ fun TestProject.publish(
     )
 }
 
+/**
+ * Publish a Java publication to a temporary repository
+ *
+ * @see TestProject.publish
+ */
 fun TestProject.publishJava(
     publisherConfiguration: PublisherConfiguration = PublisherConfiguration(
         group = "default_java_${generateIdentifier()}"
@@ -148,6 +160,42 @@ fun TestProject.publishJava(
 
             publishingExtension.publications.create("java", MavenPublication::class.java) {
                 it.from(project.components.getByName("java"))
+            }
+        }
+    }
+    return buildScriptReturn {
+        PublishedProject(
+            project.layout.projectDirectory.dir(publisherConfiguration.repoPath).asFile,
+            publisherConfiguration.group,
+            project.name,
+            publisherConfiguration.version,
+        )
+    }.buildAndReturn(
+        "publishAllPublicationsTo${repositoryIdentifier}Repository",
+        "-P${repositoryIdentifier}",
+        deriveBuildOptions = deriveBuildOptions,
+    )
+}
+
+/**
+ * Publish a Java platform publication to a temporary repository
+ *
+ * @see TestProject.publish
+ */
+fun TestProject.publishJavaPlatform(
+    publisherConfiguration: PublisherConfiguration = PublisherConfiguration(
+        group = "default_javaPlatform_${generateIdentifier()}"
+    ),
+    deriveBuildOptions: TestProject.() -> BuildOptions = { buildOptions },
+): PublishedProject {
+    val repositoryIdentifier = "_JavaPlatformPublication_${generateIdentifier()}_"
+    buildScriptInjection {
+        if (project.hasProperty(repositoryIdentifier)) {
+            project.setupMavenPublication(repositoryIdentifier, publisherConfiguration)
+            val publishingExtension = project.extensions.getByType(PublishingExtension::class.java)
+
+            publishingExtension.publications.create("javaPlatform", MavenPublication::class.java) {
+                it.from(project.components.getByName("javaPlatform"))
             }
         }
     }
@@ -256,16 +304,9 @@ internal fun Project.setUklibPublicationStrategy(strategy: KmpPublicationStrateg
         strategy.propertyName,
     )
     when (strategy) {
-        KmpPublicationStrategy.UklibPublicationInASingleComponentWithKMPPublication -> enableCrossCompilation()
+        KmpPublicationStrategy.UklibPublicationInASingleComponentWithKMPPublication -> Unit
         KmpPublicationStrategy.StandardKMPPublication -> Unit
     }
-}
-
-fun Project.enableCrossCompilation(enable: Boolean = true) {
-    propertiesExtension.set(
-        PropertiesProvider.PropertyNames.KOTLIN_NATIVE_ENABLE_KLIBS_CROSSCOMPILATION,
-        enable.toString(),
-    )
 }
 
 internal fun Project.setUklibResolutionStrategy(strategy: KmpResolutionStrategy = KmpResolutionStrategy.InterlibraryUklibAndPSMResolution_PreferUklibs) {

@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.fir.types
 
+import org.jetbrains.kotlin.builtins.functions.AllowedToUsedOnlyInK1
 import org.jetbrains.kotlin.builtins.functions.FunctionTypeKind
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.descriptors.Modality
@@ -327,9 +328,11 @@ interface ConeInferenceContext : TypeSystemInferenceExtensionContext, ConeTypeCo
         require(constructorProjection is ConeTypeProjection)
         @Suppress("UNCHECKED_CAST")
         return ConeCapturedType(
-            captureStatus,
-            lowerType,
-            constructor = ConeCapturedTypeConstructor(constructorProjection, constructorSupertypes as List<ConeKotlinType>)
+            constructor = ConeCapturedTypeConstructor(
+                constructorProjection,
+                lowerType, captureStatus,
+                constructorSupertypes as List<ConeKotlinType>
+            )
         )
     }
 
@@ -390,14 +393,14 @@ interface ConeInferenceContext : TypeSystemInferenceExtensionContext, ConeTypeCo
         return this.constructor.typeParameterMarker
     }
 
+    @AllowedToUsedOnlyInK1
     override fun CapturedTypeMarker.withNotNullProjection(): KotlinTypeMarker {
-        require(this is ConeCapturedType)
-        return copy(isProjectionNotNull = true)
+        error("AllowedToUsedOnlyInK1")
     }
 
+    @AllowedToUsedOnlyInK1
     override fun CapturedTypeMarker.isProjectionNotNull(): Boolean {
-        require(this is ConeCapturedType)
-        return isProjectionNotNull
+        return false
     }
 
     override fun CapturedTypeMarker.hasRawSuperType(): Boolean {
@@ -465,7 +468,7 @@ interface ConeInferenceContext : TypeSystemInferenceExtensionContext, ConeTypeCo
 
     override fun CapturedTypeMarker.captureStatus(): CaptureStatus {
         require(this is ConeCapturedType)
-        return this.captureStatus
+        return this.constructor.captureStatus
     }
 
     override fun CapturedTypeMarker.isOldCapturedType(): Boolean = false

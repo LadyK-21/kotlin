@@ -115,7 +115,7 @@ data class BuildOptions(
 
     enum class IsolatedProjectsMode {
 
-        /** Enable Gradle Isolated Projects For [TestVersions.Gradle.MAX_SUPPORTED]; Disabled in other cases */
+        /** Enable Gradle Isolated Projects For [TestVersions.Gradle.G_8_5]; Disabled in other cases */
         AUTO,
 
         /** Always disable Isolated Projects */
@@ -396,7 +396,6 @@ data class BuildOptions(
         nativeOptions.enableKlibsCrossCompilation?.let {
             arguments.add("-Pkotlin.native.enableKlibsCrossCompilation=${it}")
         }
-
     }
 
     enum class ConfigurationCacheProblems {
@@ -446,10 +445,25 @@ fun BuildOptions.disableConfigurationCacheForGradle7(
 // TODO: KT-70416 :resolveIdeDependencies doesn't support Configuration Cache & Project Isolation
 fun BuildOptions.disableConfigurationCache_KT70416() = copy(configurationCache = BuildOptions.ConfigurationCacheValue.DISABLED)
 
+fun BuildOptions.disableKlibsCrossCompilation() = copy(
+    nativeOptions = nativeOptions.copy(enableKlibsCrossCompilation = false)
+)
+
 fun BuildOptions.disableKmpIsolatedProjectSupport() = copy(kmpIsolatedProjectsSupport = KmpIsolatedProjectsSupport.DISABLE)
 
 fun BuildOptions.enableIsolatedProjects() = copy(isolatedProjects = IsolatedProjectsMode.ENABLED)
 fun BuildOptions.disableIsolatedProjects() = copy(isolatedProjects = IsolatedProjectsMode.DISABLED)
+
+/**
+ * Before 8.12 Gradle fails IP CC serialization with "cannot access 'Project.group' functionality on another project"
+ */
+fun BuildOptions.disableIsolatedProjectsBecauseOfSubprojectGroupAccessInPublicationBeforeGradle12(
+    currentGradleVersion: GradleVersion,
+) = copy(
+    isolatedProjects =
+        if (currentGradleVersion > GradleVersion.version(TestVersions.Gradle.G_8_11)) isolatedProjects
+        else IsolatedProjectsMode.DISABLED
+)
 
 fun BuildOptions.suppressWarningFromAgpWithGradle813(
     currentGradleVersion: GradleVersion
@@ -492,3 +506,5 @@ fun BuildOptions.suppressAgpWarningSinceGradle814(
         else -> this
     }
 }
+
+fun rerunTask(taskName: String) = arrayOf(taskName, "--rerun")

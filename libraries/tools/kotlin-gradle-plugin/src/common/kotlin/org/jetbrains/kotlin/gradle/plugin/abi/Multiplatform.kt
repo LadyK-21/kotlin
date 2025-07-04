@@ -12,9 +12,8 @@ import org.jetbrains.kotlin.gradle.dsl.abi.AbiValidationMultiplatformVariantSpec
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.PropertiesProvider.Companion.kotlinPropertiesProvider
-import org.jetbrains.kotlin.gradle.plugin.diagnostics.KotlinToolingDiagnostics
-import org.jetbrains.kotlin.gradle.plugin.diagnostics.reportDiagnosticOncePerBuild
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.enabledOnCurrentHostForKlibCompilation
 
 /**
  * Finalizes the configuration of the report variant for the Kotlin Multiplatform Gradle Plugin.
@@ -71,7 +70,8 @@ private fun Project.processJvmKindTargets(
             abiValidationTaskSet.addJvmTarget(target.targetName, classfiles)
 
             target.compilations.all { compilation ->
-                if (!compilation.androidVariant.isTestVariant) {
+                @Suppress("DEPRECATION")
+                if (compilation.androidVariant?.isTestVariant != true) {
                     classfiles.from(compilation.output.classesDirs)
                 }
             }
@@ -90,7 +90,7 @@ private fun Project.processNonJvmTargets(
         .forEach { target ->
             val klibTarget = target.toKlibTarget()
 
-            if (targetIsSupported(target, kotlinPropertiesProvider) && klibTarget.configurableName !in bannedInTests) {
+            if (target.enabledOnCurrentHostForKlibCompilation && klibTarget.configurableName !in bannedInTests) {
                 target.compilations.withMainCompilationIfExists {
                     abiValidationTaskSet.addKlibTarget(klibTarget, output.classesDirs)
                 }

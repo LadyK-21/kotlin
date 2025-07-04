@@ -362,10 +362,10 @@ internal class ScopeBasedTowerLevel(
     private val withHideMembersOnly: Boolean,
     private val constructorFilter: ConstructorFilter,
     private val dispatchReceiverForStatics: ExpressionReceiverValue?
-) : TowerLevel() {
-    private val session: FirSession get() = bodyResolveComponents.session
+) : TowerLevel(), SessionHolder {
+    override val session: FirSession get() = bodyResolveComponents.session
 
-    private val scope = if (session.languageVersionSettings.supportsFeature(LanguageFeature.MultiPlatformProjects)) {
+    private val scope = if (LanguageFeature.MultiPlatformProjects.isEnabled()) {
         FirActualizingScope(givenScope)
     } else {
         givenScope
@@ -401,7 +401,7 @@ internal class ScopeBasedTowerLevel(
                 return when {
                     lookupTag != null -> {
                         bodyResolveComponents.implicitValueStorage.lastDispatchReceiver { implicitReceiverValue ->
-                            implicitReceiverValue.type.fullyExpandedType(session).lookupTagIfAny == lookupTag
+                            implicitReceiverValue.type.fullyExpandedType().lookupTagIfAny == lookupTag
                         }
                     }
                     else -> null

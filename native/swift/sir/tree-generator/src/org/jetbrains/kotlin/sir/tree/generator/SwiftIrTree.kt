@@ -166,6 +166,8 @@ object SwiftIrTree : AbstractSwiftIrTreeBuilder() {
         +field("extensionReceiverParameter", parameterType, nullable = true)
         +listField("parameters", parameterType)
         +field("returnType", typeType)
+        +field("fixity", fixityType, nullable = true)
+
     }
 
     val accessor by sealedElement {
@@ -191,6 +193,19 @@ object SwiftIrTree : AbstractSwiftIrTreeBuilder() {
 
         +field("name", string)
         +field("type", typeType)
+
+        +field("getter", getter)
+        +field("setter", setter, nullable = true)
+    }
+
+    val subscript by element {
+        customParentInVisitor = declaration
+        parent(declaration)
+        parent(declarationParent)
+        parent(classMemberDeclaration)
+
+        +listField("parameters", parameterType)
+        +field("returnType", typeType)
 
         +field("getter", getter)
         +field("setter", setter, nullable = true)

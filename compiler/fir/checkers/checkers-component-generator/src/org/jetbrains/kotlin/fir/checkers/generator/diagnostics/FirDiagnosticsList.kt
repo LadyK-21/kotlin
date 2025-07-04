@@ -308,14 +308,14 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
             parameter<ConeKotlinType>("type")
         }
         val PROJECTION_IN_IMMEDIATE_ARGUMENT_TO_SUPERTYPE by error<KtModifierListOwner>(PositioningStrategy.VARIANCE_MODIFIER)
-        val INCONSISTENT_TYPE_PARAMETER_VALUES by error<KtClass>(PositioningStrategy.SUPERTYPES_LIST) {
+        val INCONSISTENT_TYPE_PARAMETER_VALUES by error<KtClassOrObject>(PositioningStrategy.SUPERTYPES_LIST) {
             parameter<FirTypeParameterSymbol>("typeParameter")
-            parameter<FirRegularClassSymbol>("type")
+            parameter<FirClassSymbol<*>>("type")
             parameter<Collection<ConeKotlinType>>("bounds")
         }
         val INCONSISTENT_TYPE_PARAMETER_BOUNDS by error<PsiElement> {
             parameter<FirTypeParameterSymbol>("typeParameter")
-            parameter<FirRegularClassSymbol>("type")
+            parameter<FirClassSymbol<*>>("type")
             parameter<Collection<ConeKotlinType>>("bounds")
         }
         val AMBIGUOUS_SUPER by error<KtSuperExpression> {
@@ -577,7 +577,6 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         }
         val OPERATOR_MODIFIER_REQUIRED by error<PsiElement> {
             parameter<FirNamedFunctionSymbol>("functionSymbol")
-            parameter<String>("name")
         }
         val OPERATOR_CALL_ON_CONSTRUCTOR by error<PsiElement> {
             parameter<String>("name")
@@ -594,6 +593,9 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
             parameter<String>("target")
         }
         val INAPPLICABLE_OPERATOR_MODIFIER by error<PsiElement>(PositioningStrategy.OPERATOR_MODIFIER) {
+            parameter<String>("message")
+        }
+        val INAPPLICABLE_OPERATOR_MODIFIER_WARNING by warning<PsiElement>(PositioningStrategy.OPERATOR_MODIFIER) {
             parameter<String>("message")
         }
 
@@ -743,6 +745,10 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
 
         val HAS_NEXT_FUNCTION_TYPE_MISMATCH by error<KtExpression> {
             parameter<ConeKotlinType>("actualType")
+        }
+
+        val ILLEGAL_TYPE_ARGUMENT_FOR_VARARG_PARAMETER_WARNING by warning<KtElement>(PositioningStrategy.REFERENCE_BY_QUALIFIED) {
+            parameter<ConeKotlinType>("type")
         }
     }
 
@@ -1689,7 +1695,9 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val SENSELESS_NULL_IN_WHEN by warning<KtElement>()
         val TYPECHECKER_HAS_RUN_INTO_RECURSIVE_PROBLEM by error<KtExpression>()
 
-        val RETURN_VALUE_NOT_USED by warning<KtElement>()
+        val RETURN_VALUE_NOT_USED by warning<KtElement> {
+            parameter<Name?>("functionName")
+        }
     }
 
     val NULLABILITY by object : DiagnosticGroup("Nullability") {

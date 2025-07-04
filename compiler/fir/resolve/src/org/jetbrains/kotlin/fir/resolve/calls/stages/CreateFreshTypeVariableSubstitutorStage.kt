@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.fir.resolve.calls.stages
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.ExplicitTypeArgumentIfMadeFlexibleSyntheticallyTypeAttribute
+import org.jetbrains.kotlin.fir.isEnabled
 import org.jetbrains.kotlin.fir.languageVersionSettings
 import org.jetbrains.kotlin.fir.renderWithType
 import org.jetbrains.kotlin.fir.resolve.calls.InapplicableCandidate
@@ -67,7 +68,7 @@ internal object CreateFreshTypeVariableSubstitutorStage : ResolutionStage() {
                     getTypePreservingFlexibilityWrtTypeVariable(
                         typeArgument.typeRef.coneType,
                         typeParameter,
-                    ).fullyExpandedType(context.session),
+                    ).fullyExpandedType(),
                     ConeExplicitTypeParameterConstraintPosition(typeArgument)
                 )
                 is FirStarProjection -> csBuilder.addEqualityConstraint(
@@ -161,7 +162,7 @@ internal object CreateFreshTypeVariableSubstitutorStage : ResolutionStage() {
                     isTrivial = false,
                 )
             }.run {
-                if (session.languageVersionSettings.supportsFeature(LanguageFeature.DontMakeExplicitJavaTypeArgumentsFlexible)) {
+                if (LanguageFeature.DontMakeExplicitJavaTypeArgumentsFlexible.isEnabled()) {
                     return@run this
                 }
                 if (!type.isMarkedNullable) {

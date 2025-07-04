@@ -267,8 +267,8 @@ object FirErrors : KtDiagnosticsContainer() {
     val CYCLIC_INHERITANCE_HIERARCHY: KtDiagnosticFactory0 = KtDiagnosticFactory0("CYCLIC_INHERITANCE_HIERARCHY", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val EXPANDED_TYPE_CANNOT_BE_INHERITED: KtDiagnosticFactory1<ConeKotlinType> = KtDiagnosticFactory1("EXPANDED_TYPE_CANNOT_BE_INHERITED", ERROR, SourceElementPositioningStrategies.DEFAULT, KtTypeReference::class, getRendererFactory())
     val PROJECTION_IN_IMMEDIATE_ARGUMENT_TO_SUPERTYPE: KtDiagnosticFactory0 = KtDiagnosticFactory0("PROJECTION_IN_IMMEDIATE_ARGUMENT_TO_SUPERTYPE", ERROR, SourceElementPositioningStrategies.VARIANCE_MODIFIER, KtModifierListOwner::class, getRendererFactory())
-    val INCONSISTENT_TYPE_PARAMETER_VALUES: KtDiagnosticFactory3<FirTypeParameterSymbol, FirRegularClassSymbol, Collection<ConeKotlinType>> = KtDiagnosticFactory3("INCONSISTENT_TYPE_PARAMETER_VALUES", ERROR, SourceElementPositioningStrategies.SUPERTYPES_LIST, KtClass::class, getRendererFactory())
-    val INCONSISTENT_TYPE_PARAMETER_BOUNDS: KtDiagnosticFactory3<FirTypeParameterSymbol, FirRegularClassSymbol, Collection<ConeKotlinType>> = KtDiagnosticFactory3("INCONSISTENT_TYPE_PARAMETER_BOUNDS", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
+    val INCONSISTENT_TYPE_PARAMETER_VALUES: KtDiagnosticFactory3<FirTypeParameterSymbol, FirClassSymbol<*>, Collection<ConeKotlinType>> = KtDiagnosticFactory3("INCONSISTENT_TYPE_PARAMETER_VALUES", ERROR, SourceElementPositioningStrategies.SUPERTYPES_LIST, KtClassOrObject::class, getRendererFactory())
+    val INCONSISTENT_TYPE_PARAMETER_BOUNDS: KtDiagnosticFactory3<FirTypeParameterSymbol, FirClassSymbol<*>, Collection<ConeKotlinType>> = KtDiagnosticFactory3("INCONSISTENT_TYPE_PARAMETER_BOUNDS", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val AMBIGUOUS_SUPER: KtDiagnosticFactory1<List<ConeKotlinType>> = KtDiagnosticFactory1("AMBIGUOUS_SUPER", ERROR, SourceElementPositioningStrategies.DEFAULT, KtSuperExpression::class, getRendererFactory())
 
     // Constructor problems
@@ -399,12 +399,13 @@ object FirErrors : KtDiagnosticsContainer() {
     val INCOMPATIBLE_MODIFIERS: KtDiagnosticFactory2<KtModifierKeywordToken, KtModifierKeywordToken> = KtDiagnosticFactory2("INCOMPATIBLE_MODIFIERS", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val REDUNDANT_OPEN_IN_INTERFACE: KtDiagnosticFactory0 = KtDiagnosticFactory0("REDUNDANT_OPEN_IN_INTERFACE", WARNING, SourceElementPositioningStrategies.OPEN_MODIFIER, KtModifierListOwner::class, getRendererFactory())
     val WRONG_MODIFIER_TARGET: KtDiagnosticFactory2<KtModifierKeywordToken, String> = KtDiagnosticFactory2("WRONG_MODIFIER_TARGET", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
-    val OPERATOR_MODIFIER_REQUIRED: KtDiagnosticFactory2<FirNamedFunctionSymbol, String> = KtDiagnosticFactory2("OPERATOR_MODIFIER_REQUIRED", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
+    val OPERATOR_MODIFIER_REQUIRED: KtDiagnosticFactory1<FirNamedFunctionSymbol> = KtDiagnosticFactory1("OPERATOR_MODIFIER_REQUIRED", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val OPERATOR_CALL_ON_CONSTRUCTOR: KtDiagnosticFactory1<String> = KtDiagnosticFactory1("OPERATOR_CALL_ON_CONSTRUCTOR", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val INFIX_MODIFIER_REQUIRED: KtDiagnosticFactory1<FirNamedFunctionSymbol> = KtDiagnosticFactory1("INFIX_MODIFIER_REQUIRED", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val WRONG_MODIFIER_CONTAINING_DECLARATION: KtDiagnosticFactory2<KtModifierKeywordToken, String> = KtDiagnosticFactory2("WRONG_MODIFIER_CONTAINING_DECLARATION", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val DEPRECATED_MODIFIER_CONTAINING_DECLARATION: KtDiagnosticFactory2<KtModifierKeywordToken, String> = KtDiagnosticFactory2("DEPRECATED_MODIFIER_CONTAINING_DECLARATION", WARNING, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val INAPPLICABLE_OPERATOR_MODIFIER: KtDiagnosticFactory1<String> = KtDiagnosticFactory1("INAPPLICABLE_OPERATOR_MODIFIER", ERROR, SourceElementPositioningStrategies.OPERATOR_MODIFIER, PsiElement::class, getRendererFactory())
+    val INAPPLICABLE_OPERATOR_MODIFIER_WARNING: KtDiagnosticFactory1<String> = KtDiagnosticFactory1("INAPPLICABLE_OPERATOR_MODIFIER_WARNING", WARNING, SourceElementPositioningStrategies.OPERATOR_MODIFIER, PsiElement::class, getRendererFactory())
     val NO_EXPLICIT_VISIBILITY_IN_API_MODE: KtDiagnosticFactory0 = KtDiagnosticFactory0("NO_EXPLICIT_VISIBILITY_IN_API_MODE", ERROR, SourceElementPositioningStrategies.DECLARATION_START_TO_NAME, KtDeclaration::class, getRendererFactory())
     val NO_EXPLICIT_VISIBILITY_IN_API_MODE_WARNING: KtDiagnosticFactory0 = KtDiagnosticFactory0("NO_EXPLICIT_VISIBILITY_IN_API_MODE_WARNING", WARNING, SourceElementPositioningStrategies.DECLARATION_START_TO_NAME, KtDeclaration::class, getRendererFactory())
     val NO_EXPLICIT_RETURN_TYPE_IN_API_MODE: KtDiagnosticFactory0 = KtDiagnosticFactory0("NO_EXPLICIT_RETURN_TYPE_IN_API_MODE", ERROR, SourceElementPositioningStrategies.DECLARATION_NAME, KtDeclaration::class, getRendererFactory())
@@ -466,6 +467,7 @@ object FirErrors : KtDiagnosticsContainer() {
     val NESTED_CLASS_ACCESSED_VIA_INSTANCE_REFERENCE: KtDiagnosticFactory1<FirClassLikeSymbol<*>> = KtDiagnosticFactory1("NESTED_CLASS_ACCESSED_VIA_INSTANCE_REFERENCE", ERROR, SourceElementPositioningStrategies.DEFAULT, PsiElement::class, getRendererFactory())
     val COMPARE_TO_TYPE_MISMATCH: KtDiagnosticFactory1<ConeKotlinType> = KtDiagnosticFactory1("COMPARE_TO_TYPE_MISMATCH", ERROR, SourceElementPositioningStrategies.OPERATOR, KtExpression::class, getRendererFactory())
     val HAS_NEXT_FUNCTION_TYPE_MISMATCH: KtDiagnosticFactory1<ConeKotlinType> = KtDiagnosticFactory1("HAS_NEXT_FUNCTION_TYPE_MISMATCH", ERROR, SourceElementPositioningStrategies.DEFAULT, KtExpression::class, getRendererFactory())
+    val ILLEGAL_TYPE_ARGUMENT_FOR_VARARG_PARAMETER_WARNING: KtDiagnosticFactory1<ConeKotlinType> = KtDiagnosticFactory1("ILLEGAL_TYPE_ARGUMENT_FOR_VARARG_PARAMETER_WARNING", WARNING, SourceElementPositioningStrategies.REFERENCE_BY_QUALIFIED, KtElement::class, getRendererFactory())
 
     // Ambiguity
     val OVERLOAD_RESOLUTION_AMBIGUITY: KtDiagnosticFactory1<Collection<FirBasedSymbol<*>>> = KtDiagnosticFactory1("OVERLOAD_RESOLUTION_AMBIGUITY", ERROR, SourceElementPositioningStrategies.REFERENCE_BY_QUALIFIED, PsiElement::class, getRendererFactory())
@@ -838,7 +840,7 @@ object FirErrors : KtDiagnosticsContainer() {
     val SENSELESS_COMPARISON: KtDiagnosticFactory1<Boolean> = KtDiagnosticFactory1("SENSELESS_COMPARISON", WARNING, SourceElementPositioningStrategies.DEFAULT, KtExpression::class, getRendererFactory())
     val SENSELESS_NULL_IN_WHEN: KtDiagnosticFactory0 = KtDiagnosticFactory0("SENSELESS_NULL_IN_WHEN", WARNING, SourceElementPositioningStrategies.DEFAULT, KtElement::class, getRendererFactory())
     val TYPECHECKER_HAS_RUN_INTO_RECURSIVE_PROBLEM: KtDiagnosticFactory0 = KtDiagnosticFactory0("TYPECHECKER_HAS_RUN_INTO_RECURSIVE_PROBLEM", ERROR, SourceElementPositioningStrategies.DEFAULT, KtExpression::class, getRendererFactory())
-    val RETURN_VALUE_NOT_USED: KtDiagnosticFactory0 = KtDiagnosticFactory0("RETURN_VALUE_NOT_USED", WARNING, SourceElementPositioningStrategies.DEFAULT, KtElement::class, getRendererFactory())
+    val RETURN_VALUE_NOT_USED: KtDiagnosticFactory1<Name?> = KtDiagnosticFactory1("RETURN_VALUE_NOT_USED", WARNING, SourceElementPositioningStrategies.DEFAULT, KtElement::class, getRendererFactory())
 
     // Nullability
     val UNSAFE_CALL: KtDiagnosticFactory2<ConeKotlinType, FirExpression?> = KtDiagnosticFactory2("UNSAFE_CALL", ERROR, SourceElementPositioningStrategies.DOT_BY_QUALIFIED, PsiElement::class, getRendererFactory())

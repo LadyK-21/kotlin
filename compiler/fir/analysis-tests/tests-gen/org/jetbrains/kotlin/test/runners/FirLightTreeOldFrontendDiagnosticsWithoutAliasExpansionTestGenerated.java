@@ -311,6 +311,18 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
       public void testAsTypeAlias() {
         runTest("compiler/testData/diagnostics/tests/cast/AsTypeAlias.kt");
       }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckTypealias.kt")
+      public void testClassVsClassIsCheckTypealias() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckTypealias.kt");
+      }
+
+      @Test
+      @TestMetadata("classVsClassIsCheckWithTypeParameter.kt")
+      public void testClassVsClassIsCheckWithTypeParameter() {
+        runTest("compiler/testData/diagnostics/tests/cast/classVsClassIsCheckWithTypeParameter.kt");
+      }
     }
 
     @Nested
@@ -1100,6 +1112,16 @@ public class FirLightTreeOldFrontendDiagnosticsWithoutAliasExpansionTestGenerate
     @TestMetadata("compiler/testData/diagnostics/tests/override")
     @TestDataPath("$PROJECT_ROOT")
     public class Override {
+      @Nested
+      @TestMetadata("compiler/testData/diagnostics/tests/override/clashesOnInheritance")
+      @TestDataPath("$PROJECT_ROOT")
+      public class ClashesOnInheritance {
+        @Test
+        @TestMetadata("inconsistentTypeParameterValuesOnAnonymousObject.kt")
+        public void testInconsistentTypeParameterValuesOnAnonymousObject() {
+          runTest("compiler/testData/diagnostics/tests/override/clashesOnInheritance/inconsistentTypeParameterValuesOnAnonymousObject.kt");
+        }
+      }
     }
 
     @Nested

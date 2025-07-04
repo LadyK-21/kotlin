@@ -66,18 +66,6 @@ fun main(args: Array<String>) {
             }
         }
 
-        testGroup("js/js.tests/klib-compatibility/tests-gen", "compiler/testData/klib/versionCompatibility") {
-            testClass<AbstractJsKlibCompatibilityNoICTestCase>(annotations = listOf(*legacyFrontend())) {
-                model(pattern = "^([^_](.+))$", targetBackend = TargetBackend.JS_IR, recursive = false)
-            }
-            testClass<AbstractJsKlibCompatibilityNoICES6TestCase>(annotations = listOf(*legacyFrontend(), *es6())) {
-                model(pattern = "^([^_](.+))$", targetBackend = TargetBackend.JS_IR_ES6, recursive = false)
-            }
-            testClass<AbstractJsKlibCompatibilityWithICTestCase>(annotations = listOf(*legacyFrontend())) {
-                model(pattern = "^([^_](.+))$", targetBackend = TargetBackend.JS_IR, recursive = false)
-            }
-        }
-
         testGroup("js/js.tests/tests-gen", "js/js.translator/testData/incremental") {
             testClass<AbstractJsIrInvalidationPerFileTest>(annotations = listOf(*legacyFrontend())) {
                 model("invalidation/", pattern = "^([^_](.+))$", targetBackend = TargetBackend.JS_IR, recursive = false)
@@ -204,6 +192,9 @@ fun main(args: Array<String>) {
             testClass<AbstractFirJsLineNumberTest> {
                 model()
             }
+            testClass<AbstractFirJsLineNumberWithInlinedFunInKlibTest> {
+                model()
+            }
         }
 
         testGroup("js/js.tests/tests-gen", "compiler/testData/codegen", testRunnerMethodName = "runTest0") {
@@ -241,6 +232,10 @@ fun main(args: Array<String>) {
             }
 
             testClass<AbstractFirJsCodegenInlineTest> {
+                model("boxInline")
+            }
+
+            testClass<AbstractFirJsCodegenInlineWithInlinedFunInKlibTest> {
                 model("boxInline")
             }
 
@@ -349,6 +344,12 @@ fun main(args: Array<String>) {
             testClass<AbstractFirJsDiagnosticWithBackendWithInlinedFunInKlibTestBase>(suiteTestClassName = "FirJsOldFrontendDiagnosticsWithBackendWithInlinedFunInKlibTestGenerated") {
                 model(
                     relativeRootPath = "testsWithJsStdLibAndBackendCompilation",
+                    pattern = "^([^_](.+))\\.kt$",
+                    excludedPattern = excludedFirTestdataPattern,
+                    targetBackend = TargetBackend.JS_IR
+                )
+                model(
+                    relativeRootPath = "testsWithAnyBackend",
                     pattern = "^([^_](.+))\\.kt$",
                     excludedPattern = excludedFirTestdataPattern,
                     targetBackend = TargetBackend.JS_IR

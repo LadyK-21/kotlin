@@ -401,7 +401,6 @@ enum class LanguageFeature(
     MultiDollarInterpolation(KOTLIN_2_2, "KT-2425"),
     JvmDefaultEnableByDefault(KOTLIN_2_2, "KT-71768"),
     ForbidExposureOfPrivateTypesInNonPrivateInlineFunctionsInKlibs(sinceVersion = KOTLIN_2_2, enabledInProgressiveMode = true, "KT-70916"),
-    JvmIndyAllowLambdasWithAnnotations(KOTLIN_2_2, "KT-76606"),
     FixationEnhancementsIn22(KOTLIN_2_2, "KT-76345"), // KT-76345, KT-71854
     ForbidCrossFileIrFieldAccessInKlibs(KOTLIN_2_2, enabledInProgressiveMode = true, "KT-71138"),
     AllowExpectDeclarationsInJsExport(KOTLIN_2_2, "KT-64951"),
@@ -416,8 +415,7 @@ enum class LanguageFeature(
     ReportExposedTypeForInternalTypeParameterBounds(KOTLIN_2_3, enabledInProgressiveMode = true, "KTLC-275"),
     EnableDfaWarningsInK2(KOTLIN_2_3, "KT-50965"),
     ForbidParenthesizedLhsInAssignments(KOTLIN_2_3, enabledInProgressiveMode = true, "KT-70507"),
-    AllowEagerSupertypeAccessibilityChecks(KOTLIN_2_3, "KT-73611"),
-    DontMakeExplicitJavaTypeArgumentsFlexible(KOTLIN_2_3, "KT-71718"),
+    DontMakeExplicitJavaTypeArgumentsFlexible(KOTLIN_2_3, "KTLC-284"),
     DontIgnoreUpperBoundViolatedOnImplicitArguments(KOTLIN_2_3, "KT-67146"),
     ResolveTopLevelLambdasAsSyntheticCallArgument(KOTLIN_2_3, "KT-67869"),
     DataFlowBasedExhaustiveness(sinceVersion = KOTLIN_2_3, issue = "KT-76635"),
@@ -425,7 +423,7 @@ enum class LanguageFeature(
     ForbidAnnotationsWithUseSiteTargetOnExpressions(KOTLIN_2_3, enabledInProgressiveMode = true, "KT-75242"),
     ProhibitNullableTypeThroughTypealias(KOTLIN_2_3, enabledInProgressiveMode = true, "KTLC-279"),
     ForbidObjectDelegationToItself(KOTLIN_2_3, enabledInProgressiveMode = true, "KT-17417"),
-    ForbidInferOfInvisibleTypeAsReifiedVarargOrReturnType(KOTLIN_2_3, enabledInProgressiveMode = true, issue = "KT-25513"),
+    JvmIndyAllowLambdasWithAnnotations(KOTLIN_2_3, "KT-76606"),
 
     AllowCheckForErasedTypesInContracts(KOTLIN_2_3, "KT-45683"),
     AllowContractsOnSomeOperators(KOTLIN_2_3, "KT-32313"),
@@ -433,12 +431,15 @@ enum class LanguageFeature(
     ConditionImpliesReturnsContracts(KOTLIN_2_3, "KT-8889"),
     HoldsInContracts(KOTLIN_2_3, "KT-32993"),
 
+    InferenceEnhancementsIn23(KOTLIN_2_3, "KT-76826"),
+
     // 2.4
 
     ForbidExposingLessVisibleTypesInInline(KOTLIN_2_4, enabledInProgressiveMode = true, "KTLC-283"),
     ForbidCaptureInlinableLambdasInJsCode(KOTLIN_2_4, enabledInProgressiveMode = true, "KT-69297"),
     ForbidInitializationBeforeDeclarationInAnonymous(KOTLIN_2_4, enabledInProgressiveMode = true, "KT-77156"),
     AllowReifiedTypeInCatchClause(KOTLIN_2_4, issue = "KT-54363"),
+    ForbidGetSetValueWithTooManyParameters(KOTLIN_2_4, issue = "KT-77131"),
 
     // End of 2.* language features --------------------------------------------------
 
@@ -514,6 +515,7 @@ enum class LanguageFeature(
     IrInlinerBeforeKlibSerialization(sinceVersion = null, forcesPreReleaseBinaries = true, issue = "KT-69765"),
     NestedTypeAliases(sinceVersion = null, forcesPreReleaseBinaries = true, issue = "KT-45285"),
     ForbidUsingSupertypesWithInaccessibleContentInTypeArguments(sinceVersion = null, enabledInProgressiveMode = true, "KT-66691"), // KT-66691, KT-66742
+    AllowEagerSupertypeAccessibilityChecks(sinceVersion = null, enabledInProgressiveMode = true, "KT-73611"),
     UnnamedLocalVariables(sinceVersion = null, forcesPreReleaseBinaries = false, issue = "KT-74809"),
     ContextSensitiveResolutionUsingExpectedType(sinceVersion = null, "KT-16768"),
     AnnotationsInMetadata(sinceVersion = null, "KT-57919"),
@@ -521,6 +523,7 @@ enum class LanguageFeature(
     DisableWarningsForIdentitySensitiveOperationsOnValueClassesAndPrimitives(sinceVersion = null, "KT-70722"),
     IrRichCallableReferencesInKlibs(sinceVersion = null, "KT-72734"), // KT-72734, KT-74384, KT-74392
     ExportKlibToOlderAbiVersion(sinceVersion = null, forcesPreReleaseBinaries = true, issue = "KT-76131"),
+    ForbidInferOfInvisibleTypeAsReifiedVarargOrReturnType(sinceVersion = null, enabledInProgressiveMode = true, issue = "KTLC-14"),
     ;
 
     constructor(

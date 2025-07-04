@@ -10,10 +10,11 @@ import org.jetbrains.kotlin.builtins.functions.FunctionTypeKind
 import org.jetbrains.kotlin.builtins.functions.isBasicFunctionOrKFunction
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.SessionHolder
 import org.jetbrains.kotlin.fir.declarations.FirAnonymousFunction
 import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
 import org.jetbrains.kotlin.fir.expressions.*
-import org.jetbrains.kotlin.fir.languageVersionSettings
+import org.jetbrains.kotlin.fir.isEnabled
 import org.jetbrains.kotlin.fir.resolve.calls.*
 import org.jetbrains.kotlin.fir.resolve.calls.candidate.Candidate
 import org.jetbrains.kotlin.fir.resolve.calls.candidate.CheckerSink
@@ -51,8 +52,8 @@ internal object ArgumentCheckingProcessor {
          * See [org.jetbrains.kotlin.fir.resolve.calls.ArgumentTypeMismatch.anonymousFunctionIfReturnExpression]
          */
         val anonymousFunctionIfReturnExpression: FirAnonymousFunction? = null,
-    ) {
-        val session: FirSession
+    ) : SessionHolder {
+        override val session: FirSession
             get() = context.session
 
         fun reportDiagnostic(diagnostic: ResolutionDiagnostic) {
@@ -212,7 +213,7 @@ internal object ArgumentCheckingProcessor {
         // Currently, we only apply conversions for arguments, not lambda's return expressions
         if (anonymousFunctionIfReturnExpression != null) {
             // For latest LV it's equal to `return false`
-            return !session.languageVersionSettings.supportsFeature(LanguageFeature.DoNotRunSuspendConversionForLambdaReturnStatements)
+            return !LanguageFeature.DoNotRunSuspendConversionForLambdaReturnStatements.isEnabled()
         }
         return true
     }
@@ -329,7 +330,7 @@ internal object ArgumentCheckingProcessor {
     private fun ArgumentContext.preprocessSimpleNameReferenceForContextSensitiveResolution(atom: ConeResolutionAtomWithPostponedChild) {
         val expression = atom.expression as FirPropertyAccessExpression
 
-        if (expectedType == null || !session.languageVersionSettings.supportsFeature(LanguageFeature.ContextSensitiveResolutionUsingExpectedType)) {
+        if (expectedType == null || !LanguageFeature.ContextSensitiveResolutionUsingExpectedType.isEnabled()) {
             atom.useFallbackSubAtom()
             resolveArgumentExpression(atom.subAtom!!)
             return
