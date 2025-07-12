@@ -5,6 +5,8 @@
 
 package org.jetbrains.kotlin.analysis.low.level.api.fir.util
 
+import org.jetbrains.kotlin.analysis.api.platform.KotlinDeserializedDeclarationsOrigin
+import org.jetbrains.kotlin.analysis.api.platform.KotlinPlatformSettings
 import org.jetbrains.kotlin.analysis.api.platform.projectStructure.KotlinProjectStructureProvider
 import org.jetbrains.kotlin.analysis.api.utils.errors.withClassEntry
 import org.jetbrains.kotlin.analysis.low.level.api.fir.api.services.LLFirElementByPsiElementChooser
@@ -12,17 +14,20 @@ import org.jetbrains.kotlin.analysis.low.level.api.fir.element.builder.containin
 import org.jetbrains.kotlin.analysis.low.level.api.fir.projectStructure.llFirModuleData
 import org.jetbrains.kotlin.analysis.low.level.api.fir.sessions.LLFirSession
 import org.jetbrains.kotlin.analysis.low.level.api.fir.symbolProviders.LLModuleWithDependenciesSymbolProvider
+import org.jetbrains.kotlin.analysis.low.level.api.fir.symbolProviders.ModuleSpecificSymbolProviderAccess
+import org.jetbrains.kotlin.analysis.low.level.api.fir.symbolProviders.getClassLikeSymbolMatchingPsi
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.scopes.getFunctions
 import org.jetbrains.kotlin.fir.scopes.getProperties
 import org.jetbrains.kotlin.fir.scopes.impl.declaredMemberScope
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.utils.exceptions.ExceptionAttachmentBuilder
@@ -142,41 +147,46 @@ internal class FirDeclarationForCompiledElementSearcher(private val session: LLF
     private fun findNonLocalClassLikeDeclaration(declaration: KtClassLikeDeclaration): FirClassLikeDeclaration {
         val classId = declaration.getClassId() ?: errorWithFirSpecificEntries("Non-local class should have classId", psi = declaration)
 
-        val classCandidate = when (val symbolProvider = session.symbolProvider) {
-            is LLModuleWithDependenciesSymbolProvider ->
-                symbolProvider.getDeserializedClassLikeSymbolByClassIdWithoutDependencies(classId, declaration)
+        // With the `BINARIES` origin, deserialized FIR declarations don't have associated PSI elements. Hence, we cannot use `*ByPsi*
+        // functions, as they check the candidate's associated PSI.
+        val classLikeSymbol = when (KotlinPlatformSettings.getInstance(project).deserializedDeclarationsOrigin) {
+            KotlinDeserializedDeclarationsOrigin.BINARIES -> findBinaryClassLikeSymbol(classId)
+            KotlinDeserializedDeclarationsOrigin.STUBS -> findStubClassLikeSymbol(classId, declaration)
+        }
 
+        classLikeSymbol?.let { return it.fir }
+
+        errorWithFirSpecificEntries(
+            "We should be able to find a symbol for class-like declaration",
+            psi = declaration,
+        ) {
+            withEntry("classId", classId) { it.asString() }
+
+            val contextualModule = session.llFirModuleData.ktModule
+            val moduleForFile = projectStructureProvider.getModule(declaration, contextualModule)
+            withEntry("ktModule", moduleForFile) { it.moduleDescription }
+        }
+    }
+
+    private fun findBinaryClassLikeSymbol(classId: ClassId): FirClassLikeSymbol<*>? =
+        when (val symbolProvider = session.symbolProvider) {
+            is LLModuleWithDependenciesSymbolProvider ->
+                symbolProvider.getClassLikeSymbolByClassIdWithoutDependencies(classId)
             else -> symbolProvider.getClassLikeSymbolByClassId(classId)
         }
 
-        if (
-            classCandidate != null &&
-            firElementByPsiElementChooser.isMatchingClassLikeDeclaration(classId, declaration, classCandidate.fir)
-        ) {
-            return classCandidate.fir
+    /**
+     * Note regarding [ModuleSpecificSymbolProviderAccess]: [FirDeclarationForCompiledElementSearcher] must be queried with PSI elements
+     * that are contained in the compiled element searcher's module. As such, it's also legal to call module-specific symbol provider
+     * functions on that module's symbol provider.
+     */
+    @OptIn(ModuleSpecificSymbolProviderAccess::class)
+    private fun findStubClassLikeSymbol(classId: ClassId, declaration: KtClassLikeDeclaration): FirClassLikeSymbol<*>? =
+        when (val symbolProvider = session.symbolProvider) {
+            is LLModuleWithDependenciesSymbolProvider ->
+                symbolProvider.getClassLikeSymbolByPsiWithoutDependencies(classId, declaration)
+            else -> symbolProvider.getClassLikeSymbolMatchingPsi(classId, declaration)
         }
-
-        if (classCandidate != null) {
-            // In many cases, analysis still works if we return the wrong candidate FIR declaration, since it's likely to have the same
-            // shape as the actual sought declaration. We don't log an error here because we already have enough data to implement KT-72998
-            // and want to avoid spamming our users with errors.
-            return classCandidate.fir
-        } else {
-            @Suppress("SENSELESS_COMPARISON")
-            errorWithFirSpecificEntries(
-                "We should be able to find a symbol for $classId (has candidate: ${classCandidate != null})",
-                psi = declaration,
-            ) {
-                withEntry("classId", classId) { it.asString() }
-                withPsiEntry("candidatePsi", classCandidate?.fir?.psi)
-                withFirEntry("candidateFir", classCandidate?.fir)
-
-                val contextualModule = session.llFirModuleData.ktModule
-                val moduleForFile = projectStructureProvider.getModule(declaration, contextualModule)
-                withEntry("ktModule", moduleForFile) { it.moduleDescription }
-            }
-        }
-    }
 
     private fun findConstructorOfNonLocalClass(declaration: KtConstructor<*>): FirConstructor {
         val containingClass = declaration.containingClassOrObject

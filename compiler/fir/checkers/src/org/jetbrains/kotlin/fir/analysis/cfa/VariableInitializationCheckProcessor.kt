@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.RenderingInternals
 import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -359,7 +360,7 @@ private fun CFGNode<*>.firstGraphDeclaration(): FirDeclaration? {
     return owner.enterNode.previousNodes.firstNotNullOfOrNull { it.firstGraphDeclaration() }
 }
 
-@OptIn(SymbolInternals::class)
+@OptIn(SymbolInternals::class, RenderingInternals::class)
 private fun FirBasedSymbol<*>.getDebugFqName(): FqName {
     return when (val fir = this.fir) {
         is FirFile -> fir.packageFqName.child(Name.identifier(fir.name))
@@ -368,7 +369,7 @@ private fun FirBasedSymbol<*>.getDebugFqName(): FqName {
         is FirClassLikeDeclaration -> fir.symbol.classId.asSingleFqName()
         is FirTypeParameter -> fir.containingDeclarationSymbol.getDebugFqName().child(fir.name)
         is FirAnonymousInitializer -> fir.containingDeclarationSymbol.getDebugFqName().child(Name.special("<init>"))
-        is FirCallableDeclaration -> fir.symbol.callableId.asFqNameForDebugInfo()
+        is FirCallableDeclaration -> fir.symbol.callableIdForRendering.asFqNameForDebugInfo()
         is FirCodeFragment -> FqName.topLevel(Name.special("<fragment>"))
         is FirDanglingModifierList -> FqName.topLevel(Name.special("<dangling>"))
         is FirReceiverParameter -> FqName.topLevel(Name.special("<extension-receiver-parameter>"))

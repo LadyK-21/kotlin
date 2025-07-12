@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.diagnostics.rendering.CommonRenderers.commaSeparated
 import org.jetbrains.kotlin.diagnostics.rendering.LanguageFeatureMessageRenderer
 import org.jetbrains.kotlin.diagnostics.rendering.Renderer
 import org.jetbrains.kotlin.diagnostics.rendering.toDeprecationWarningMessage
-import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.AMBIGUOUS_CALLS
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.CALLABLES_FQ_NAMES
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.CALLEE_NAME
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirDiagnosticRenderers.DECLARATION_NAME
@@ -325,6 +324,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPLICIT_BACKING_
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPLICIT_DELEGATION_CALL_REQUIRED
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPLICIT_TYPE_ARGUMENTS_IN_PROPERTY_ACCESS
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPOSED_FUNCTION_RETURN_TYPE
+import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPOSED_PACKAGE_PRIVATE_TYPE_FROM_INTERNAL_WARNING
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPOSED_PARAMETER_TYPE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPOSED_PROPERTY_TYPE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.EXPOSED_PROPERTY_TYPE_IN_CONSTRUCTOR_ERROR
@@ -655,6 +655,7 @@ import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_MODIFIE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_NULLABLE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_OPEN_IN_INTERFACE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_PROJECTION
+import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_RETURN
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_RETURN_UNIT_TYPE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_SETTER_PARAMETER_TYPE
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors.REDUNDANT_SINGLE_EXPRESSION_STRING_TEMPLATE
@@ -1463,6 +1464,15 @@ object FirErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
             TO_STRING,
             TO_STRING,
         )
+        map.put(
+            EXPOSED_PACKAGE_PRIVATE_TYPE_FROM_INTERNAL_WARNING,
+            "''{0}'' declaration exposes ''{3}'' type{2} ''{1}''."
+                .toDeprecationWarningMessage(LanguageFeature.ForbidExposingPackagePrivateInInternal),
+            TO_STRING,
+            DECLARATION_NAME,
+            TO_STRING,
+            TO_STRING,
+        )
 
         // Modifiers
         map.put(INAPPLICABLE_INFIX_MODIFIER, "'infix' modifier is inapplicable to this function.")
@@ -1904,6 +1914,8 @@ object FirErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
         map.put(TYPE_PARAMETER_OF_PROPERTY_NOT_USED_IN_RECEIVER, "Type parameter of a property must be used in its receiver type.")
 
         map.put(NO_RETURN_IN_FUNCTION_WITH_BLOCK_BODY, "Missing return statement.")
+
+        map.put(REDUNDANT_RETURN, "Return is redundant when used as expression body.")
 
         map.put(
             RETURN_TYPE_MISMATCH,
@@ -2762,18 +2774,20 @@ object FirErrorsDefaultMessages : BaseDiagnosticRendererFactory() {
         )
         map.put(
             COMPONENT_FUNCTION_AMBIGUITY,
-            "Function ''{0}()'' is ambiguous for this expression: {1}.",
+            "Operator call ''{0}()'' is ambiguous for destructuring of type ''{2}''. Applicable candidates:{1}",
             TO_STRING,
-            AMBIGUOUS_CALLS
+            SYMBOLS_ON_NEXT_LINES,
+            RENDER_TYPE,
         )
         map.put(
             COMPONENT_FUNCTION_ON_NULLABLE,
-            "Non-nullable value required to call ''{0}()'' function of destructuring declaration initializer.",
-            TO_STRING
+            "Operator call ''{0}()'' cannot be applied to destructuring of nullable type ''{1}''.",
+            TO_STRING,
+            RENDER_TYPE,
         )
         map.put(
             COMPONENT_FUNCTION_RETURN_TYPE_MISMATCH,
-            "Function ''{0}()'' returns ''{1}'', but ''{2}'' is expected.",
+            "Operator call ''{0}()'' returns ''{1}'', but ''{2}'' is expected.",
             TO_STRING,
             RENDER_TYPE,
             RENDER_TYPE

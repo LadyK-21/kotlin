@@ -53,7 +53,7 @@ where advanced options include:
                              Use traps instead of throwing exceptions.
   -Xwasm-use-new-exception-proposal
                              Use an updated version of the exception proposal with try_table.
-  -Xwasm-attach-js-exception Attach a thrown by JS-value to the JsException class
+  -Xwasm-no-jstag            Don't use WebAssembly.JSTag for throwing and catching exceptions
   -Xwasm-debugger-custom-formatters
                              Generates devtools custom formatters (https://firefox-source-docs.mozilla.org/devtools-user/custom_formatters) for Kotlin/Wasm values
   -Xwasm-source-map-include-mappings-from-unavailable-sources
@@ -186,6 +186,11 @@ where advanced options include:
                              default: 'first-only-warn' in language version 2.2+, 'first-only' in version 2.1 and before.
   -Xannotation-target-all    Enable experimental language support for @all: annotation use-site target.
   -Xallow-reified-type-in-catch Allow 'catch' parameters to have reified types.
+  -Xallow-contracts-on-more-functions
+                             Allow contracts on some operators and accessors, and allow checks for erased types.
+  -Xallow-condition-implies-returns-contracts
+                             Allow contracts that specify a limited conditional returns postcondition.
+  -Xallow-holdsin-contract   Allow contracts that specify a condition that holds true inside a lambda argument.
 
 Advanced options are non-standard and may be changed or removed without any notice.
 OK

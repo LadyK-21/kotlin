@@ -7,14 +7,11 @@ import org.jetbrains.kotlin.bitcode.CompileToBitcodeExtension
 import org.jetbrains.kotlin.cpp.CppUsage
 import org.jetbrains.kotlin.gradle.plugin.konan.tasks.KonanCacheTask
 import org.jetbrains.kotlin.gradle.plugin.konan.tasks.KonanCompileTask
-import org.jetbrains.kotlin.konan.properties.loadProperties
-import org.jetbrains.kotlin.konan.properties.saveProperties
 import org.jetbrains.kotlin.konan.target.*
-import org.jetbrains.kotlin.library.KLIB_PROPERTY_COMPILER_VERSION
-import org.jetbrains.kotlin.library.KLIB_PROPERTY_NATIVE_TARGETS
 import org.jetbrains.kotlin.library.KOTLIN_NATIVE_STDLIB_NAME
 import org.jetbrains.kotlin.nativeDistribution.nativeDistribution
-import org.jetbrains.kotlin.konan.file.File as KFile
+import org.jetbrains.kotlin.testing.native.GitDownloadTask
+import java.net.URI
 import org.jetbrains.kotlin.konan.target.Architecture as TargetArchitecture
 
 val kotlinVersion: String by rootProject.extra
@@ -29,6 +26,28 @@ if (HostManager.host == KonanTarget.MACOS_ARM64) {
     project.configureJvmToolchain(JdkMajorVersion.JDK_17_0)
 }
 
+val downloadBreakpad = tasks.register<GitDownloadTask>("downloadBreakpad") {
+    description = "Retrieves Breakpad sources"
+    repository.set(URI.create("https://github.com/google/breakpad.git"))
+    revision.set("v2024.02.16")
+    outputDirectory.set(layout.buildDirectory.dir("breakpad"))
+}
+
+val breakpadLocation = downloadBreakpad.flatMap { it.outputDirectory }
+
+val breakpadSources by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named("sources-directory"))
+        attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.DIRECTORY_TYPE)
+    }
+}
+
+artifacts {
+    add(breakpadSources.name, breakpadLocation)
+}
+
 googletest {
     revision = project.property("gtestRevision") as String
     refresh = project.hasProperty("refresh-gtest")
@@ -40,29 +59,90 @@ val targetList = enabledTargets(extensions.getByType<PlatformManager>())
 bitcode {
     allTargets {
         module("main") {
-            headersDirs.from("src/externalCallsChecker/common/cpp", "src/objcExport/cpp")
+            headersDirs.from("src/externalCallsChecker/common/cpp", "src/objcExport/cpp", "src/breakpad/cpp", "src/crashHandler/common/cpp")
             sourceSets {
                 main {
                     // TODO: Split out out `base` module and merge it together with `main` into `runtime.bc`
                     if (sanitizer == null) {
                         outputFile.set(layout.buildDirectory.file("bitcode/main/$target/runtime.bc"))
                     }
+                    // Fix Gradle Configuration Cache: this task depends on headers from breakpad; support this task being configured
+                    // before breakpad is actually downloaded.
+                    compileTask.configure {
+                        dependsOn(downloadBreakpad)
+                    }
                 }
-                testFixtures {}
-                test {}
+                testFixtures {
+                    // Fix Gradle Configuration Cache: this task depends on headers from breakpad; support this task being configured
+                    // before breakpad is actually downloaded.
+                    compileTask.configure {
+                        dependsOn(downloadBreakpad)
+                    }
+                }
+                test {
+                    // Fix Gradle Configuration Cache: this task depends on headers from breakpad; support this task being configured
+                    // before breakpad is actually downloaded.
+                    compileTask.configure {
+                        dependsOn(downloadBreakpad)
+                    }
+                }
             }
         }
 
         testsGroup("main_test") {
             testedModules.addAll("main")
             // TODO(KT-53776): Some tests depend on allocator being legacy.
-            testSupportModules.addAll("mm", "noop_externalCallsChecker", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("mm", "noop_externalCallsChecker", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         // Headers from here get reused by Swift Export, so this module should not depend on anything in the runtime
         module("objcExport") {
             // There must not be any implementation files, only headers.
             sourceSets {}
+        }
+
+        module("breakpad") {
+            srcRoot.set(breakpadLocation)
+            val sources = listOf(
+                    "client/mac/crash_generation/crash_generation_client.cc",
+                    "client/mac/handler/breakpad_nlist_64.cc",
+                    "client/mac/handler/dynamic_images.cc",
+                    "client/mac/handler/exception_handler.cc",
+                    "client/mac/handler/minidump_generator.cc",
+                    "client/mac/handler/protected_memory_allocator.cc",
+                    "client/minidump_file_writer.cc",
+                    "common/mac/MachIPC.mm",
+                    "common/mac/arch_utilities.cc",
+                    "common/mac/file_id.cc",
+                    "common/mac/macho_id.cc",
+                    "common/mac/macho_utilities.cc",
+                    "common/mac/macho_walker.cc",
+                    "common/mac/string_utilities.cc",
+                    "common/mac/bootstrap_compat.cc",
+                    "common/convert_UTF.cc",
+                    "common/md5.cc",
+                    "common/string_conversion.cc",
+            )
+            sourceSets {
+                main {
+                    inputFiles.from(srcRoot.dir("src"))
+                    inputFiles.setIncludes(sources)
+                    headersDirs.setFrom(srcRoot.dir("src"), project.layout.projectDirectory.dir("src/breakpad/cpp"))
+                    // Fix Gradle Configuration Cache: support this task being configured before breakpad sources are actually downloaded.
+                    compileTask.configure {
+                        inputFiles.setFrom(sources.map { breakpadLocation.get().dir("src").file(it) })
+                        dependsOn(downloadBreakpad)
+                    }
+                }
+            }
+
+            compilerArgs.set(listOf(
+                    "-std=c++17",
+                    "-DHAVE_MACH_O_NLIST_H",
+                    "-DHAVE_CONFIG_H",
+            ))
+
+            onlyIf { it.family == Family.OSX }
         }
 
         module("libbacktrace") {
@@ -149,7 +229,7 @@ bitcode {
 
         testsGroup("common_alloc_test") {
             testedModules.addAll("common_alloc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("std_alloc") {
@@ -173,7 +253,7 @@ bitcode {
         testsGroup("custom_alloc_test") {
             testedModules.addAll("custom_alloc")
             // TODO(KT-53776): Some tests depend on GC not being noop.
-            testSupportModules.addAll("main", "noop_externalCallsChecker", "mm", "common_alloc", "common_gc", "concurrent_ms_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "noop_externalCallsChecker", "mm", "common_alloc", "common_gc", "concurrent_ms_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("legacy_alloc") {
@@ -188,7 +268,7 @@ bitcode {
 
         testsGroup("std_legacy_alloc_test") {
             testedModules.addAll("legacy_alloc")
-            testSupportModules.addAll("main", "noop_externalCallsChecker", "mm", "common_alloc", "std_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "noop_externalCallsChecker", "mm", "common_alloc", "std_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("exceptionsSupport") {
@@ -246,7 +326,7 @@ bitcode {
 
         testsGroup("mm_test") {
             testedModules.addAll("mm")
-            testSupportModules.addAll("main", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("common_gc") {
@@ -260,7 +340,7 @@ bitcode {
 
         testsGroup("common_gc_test") {
             testedModules.addAll("common_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "noop_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("noop_gc") {
@@ -282,12 +362,12 @@ bitcode {
 
         testsGroup("stms_gc_test") {
             testedModules.addAll("same_thread_ms_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         testsGroup("stms_gc_custom_test") {
             testedModules.addAll("same_thread_ms_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("pmcs_gc") {
@@ -302,12 +382,12 @@ bitcode {
 
         testsGroup("pmcs_gc_test") {
             testedModules.addAll("pmcs_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         testsGroup("pmcs_gc_custom_test") {
             testedModules.addAll("pmcs_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("concurrent_ms_gc") {
@@ -321,12 +401,12 @@ bitcode {
 
         testsGroup("cms_gc_test") {
             testedModules.addAll("concurrent_ms_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "common_alloc", "legacy_alloc", "std_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         testsGroup("cms_gc_custom_test") {
             testedModules.addAll("concurrent_ms_gc")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "common_gcScheduler", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("common_gcScheduler") {
@@ -340,7 +420,7 @@ bitcode {
 
         testsGroup("common_gcScheduler_test") {
             testedModules.addAll("common_gcScheduler")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "manual_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "manual_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("manual_gcScheduler") {
@@ -362,7 +442,7 @@ bitcode {
 
         testsGroup("adaptive_gcScheduler_test") {
             testedModules.addAll("adaptive_gcScheduler")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("aggressive_gcScheduler") {
@@ -376,7 +456,7 @@ bitcode {
 
         testsGroup("aggressive_gcScheduler_test") {
             testedModules.addAll("aggressive_gcScheduler")
-            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "objc")
+            testSupportModules.addAll("main", "mm", "noop_externalCallsChecker", "common_alloc", "custom_alloc", "common_gc", "noop_gc", "common_gcScheduler", "objc", "noop_crashHandler")
         }
 
         module("impl_externalCallsChecker") {
@@ -390,6 +470,27 @@ bitcode {
         module("noop_externalCallsChecker") {
             srcRoot.set(layout.projectDirectory.dir("src/externalCallsChecker/noop"))
             headersDirs.from("src/externalCallsChecker/common/cpp", "src/objcExport/cpp", "src/main/cpp")
+            sourceSets {
+                main {}
+            }
+        }
+
+        module("impl_crashHandler") {
+            srcRoot.set(layout.projectDirectory.dir("src/crashHandler/impl"))
+            headersDirs.from("src/main/cpp", "src/breakpad/cpp", breakpadLocation.get().dir("src"))
+            sourceSets {
+                main {
+                    // Fix Gradle Configuration Cache: support this task being configured before breakpad sources are actually downloaded.
+                    compileTask.configure {
+                        dependsOn(downloadBreakpad)
+                    }
+                }
+            }
+            onlyIf { it.family == Family.OSX }
+        }
+
+        module("noop_crashHandler") {
+            srcRoot.set(layout.projectDirectory.dir("src/crashHandler/noop"))
             sourceSets {
                 main {}
             }

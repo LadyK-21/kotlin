@@ -179,7 +179,7 @@ class FirSignatureEnhancement(
                     }
                 }
 
-                val symbol = FirFieldSymbol(original.callableId)
+                val symbol = FirFieldSymbol(original.callableId!!)
                 buildJavaField {
                     this.containingClassSymbol = owner.symbol
                     source = firElement.source
@@ -366,15 +366,7 @@ class FirSignatureEnhancement(
                 val builder: FirAbstractConstructorBuilder = if (firMethod.isPrimary) {
                     FirPrimaryConstructorBuilder().apply {
                         val resolvedStatus = firMethod.status as? FirResolvedDeclarationStatus
-                        status = if (resolvedStatus != null) {
-                            FirResolvedDeclarationStatusImpl(
-                                resolvedStatus.visibility,
-                                Modality.FINAL,
-                                resolvedStatus.effectiveVisibility
-                            )
-                        } else {
-                            FirDeclarationStatusImpl(firMethod.visibility, Modality.FINAL)
-                        }.apply {
+                        status = resolvedStatus ?: FirDeclarationStatusImpl(firMethod.visibility, Modality.FINAL).apply {
                             isInner = firMethod.isInner
                             // Java annotation class constructors have stable names, copy flag.
                             hasStableParameterNames = firMethod.hasStableParameterNames

@@ -389,7 +389,8 @@ class ObjCFrameworkCompilation(
     override fun applySpecificArgs(argsBuilder: ArgsBuilder) = with(argsBuilder) {
         add(
             "-produce", "framework",
-            "-output", expectedArtifact.frameworkDir.absolutePath
+            "-output", expectedArtifact.frameworkDir.absolutePath,
+            "-Xbinary=minidumpLocation=${expectedArtifact.logFile.parentFile.absolutePath}",
         )
         super.applySpecificArgs(argsBuilder)
     }
@@ -635,6 +636,12 @@ abstract class FinalBinaryCompilation<A : TestCompilationArtifact>(
         super.applyDependencies(argsBuilder)
         addFlattened(dependencies.libraries) { library -> listOf("-l", library.path) }
     }
+
+    override fun applySpecificArgs(argsBuilder: ArgsBuilder) {
+        super.applySpecificArgs(argsBuilder)
+
+        argsBuilder.add("-Xbinary=minidumpLocation=${expectedArtifact.logFile.parentFile.absolutePath}")
+    }
 }
 
 class ExecutableCompilation(
@@ -686,7 +693,6 @@ class ExecutableCompilation(
         }
         applyPartialLinkageArgs(partialLinkageConfig)
         applyFileCheckArgs(expectedArtifact.fileCheckStage, expectedArtifact.fileCheckDump)
-        applyDumpSyntheticAccessorsArgs(expectedArtifact)
         super.applySpecificArgs(argsBuilder)
     }
 
@@ -726,13 +732,6 @@ class ExecutableCompilation(
                 add("-Xsave-llvm-ir-after=$it")
                 add("-Xsave-llvm-ir-directory=${fileCheckDump!!.parent}")
             }
-
-        internal fun ArgsBuilder.applyDumpSyntheticAccessorsArgs(executable: Executable) {
-            val syntheticAccessorsDumpDir = executable.syntheticAccessorsDumpDir
-            if (syntheticAccessorsDumpDir != null) {
-                add("-Xdump-synthetic-accessors-to=${syntheticAccessorsDumpDir.path}")
-            }
-        }
     }
 }
 

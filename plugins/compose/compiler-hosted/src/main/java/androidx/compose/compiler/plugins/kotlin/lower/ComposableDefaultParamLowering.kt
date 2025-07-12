@@ -24,6 +24,7 @@ import androidx.compose.compiler.plugins.kotlin.analysis.StabilityInferencer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.config.LanguageVersion
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -105,7 +106,7 @@ class ComposableDefaultParamLowering(
 
         declaration.transformIfNeeded()
 
-        return super.visitSimpleFunction(declaration)
+        return declaration
     }
 
     override fun visitCall(expression: IrCall): IrExpression {
@@ -149,6 +150,9 @@ class ComposableDefaultParamLowering(
 
     private fun IrSimpleFunction.transformIfNeeded(): IrSimpleFunction {
         if (this in originalToTransformed) return originalToTransformed[this]!!
+
+        // Visit function to ensure that calls in the body are transformed
+        this.transformChildrenVoid()
 
         val wrapper = makeDefaultParameterWrapper(this)
         originalToTransformed[this] = wrapper
@@ -220,7 +224,13 @@ class ComposableDefaultParamLowering(
             endOffset = source.endOffset,
             origin = IrDeclarationOrigin.DEFINED,
             name = Name.identifier("${source.name.asString()}\$default"),
-            visibility = source.visibility,
+            visibility = if (source.visibility.isPublicAPI) {
+                // public or protected
+                DescriptorVisibilities.PUBLIC
+            } else {
+                // private or internal
+                source.visibility
+            },
             isInline = false,
             isExpect = false,
             returnType = source.returnType,

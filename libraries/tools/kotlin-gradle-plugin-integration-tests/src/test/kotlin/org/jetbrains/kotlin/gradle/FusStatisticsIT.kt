@@ -6,13 +6,18 @@
 package org.jetbrains.kotlin.gradle
 
 import org.gradle.api.logging.configuration.WarningMode
+import org.gradle.kotlin.dsl.kotlin
 import org.gradle.util.GradleVersion
 import org.jetbrains.kotlin.build.report.metrics.GradleBuildTime
 import org.jetbrains.kotlin.gradle.report.BuildReportType
 import org.jetbrains.kotlin.gradle.testbase.*
 import org.jetbrains.kotlin.gradle.testbase.BuildOptions.IsolatedProjectsMode
+import org.jetbrains.kotlin.gradle.uklibs.applyMultiplatform
 import org.jetbrains.kotlin.gradle.util.replaceText
+import org.jetbrains.kotlin.gradle.util.swiftExportEmbedAndSignEnvVariables
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.condition.OS
+import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import kotlin.io.path.appendText
 import kotlin.io.path.deleteIfExists
@@ -529,6 +534,72 @@ class FusStatisticsIT : KGPBaseTest() {
                 assertFileContains(
                     fusStatisticsPath,
                     "ENABLED_NOOP_GC=true",
+                )
+            }
+        }
+    }
+
+    // Swift export enabled only on macOS.
+    @OsCondition(supportedOn = [OS.MAC], enabledOnCI = [OS.MAC])
+    @DisplayName("native swift export - happy path")
+    @GradleTest
+    @NativeGradlePluginTests
+    @GradleTestVersions(
+        additionalVersions = [TestVersions.Gradle.G_8_2],
+    )
+    fun testSwiftExportIsReported(gradleVersion: GradleVersion, @TempDir testBuildDir: Path) {
+        project("empty", gradleVersion) {
+            plugins {
+                kotlin("multiplatform")
+            }
+            buildScriptInjection {
+                project.applyMultiplatform {
+                    iosArm64()
+                }
+            }
+
+            // Check that we generate ENABLED_SWIFT_EXPORT=true when building Swift export.
+            build(
+                ":embedSwiftExportForXcode",
+                "-Pkotlin.session.logger.root.path=$projectPath",
+                environmentVariables = swiftExportEmbedAndSignEnvVariables(testBuildDir),
+            ) {
+                assertFileContains(
+                    fusStatisticsPath,
+                    "ENABLED_SWIFT_EXPORT=true",
+                )
+            }
+        }
+    }
+
+    // Swift export enabled only on macOS.
+    @OsCondition(supportedOn = [OS.MAC], enabledOnCI = [OS.MAC])
+    @DisplayName("native swift export - unhappy path")
+    @GradleTest
+    @NativeGradlePluginTests
+    @GradleTestVersions(
+        additionalVersions = [TestVersions.Gradle.G_8_2],
+    )
+    fun testSwiftExportIsNotReportedWithoutNeed(gradleVersion: GradleVersion) {
+        project("empty", gradleVersion) {
+            plugins {
+                kotlin("multiplatform")
+            }
+            buildScriptInjection {
+                project.applyMultiplatform {
+                    iosArm64 {
+                        binaries {
+                            framework()
+                        }
+                    }
+                }
+            }
+
+            // Check that we do not generate ENABLED_SWIFT_EXPORT=true when building other Native targets.
+            build(":linkDebugFrameworkIosArm64", "-Pkotlin.session.logger.root.path=$projectPath") {
+                assertFileDoesNotContain(
+                    fusStatisticsPath,
+                    "ENABLED_SWIFT_EXPORT=true",
                 )
             }
         }

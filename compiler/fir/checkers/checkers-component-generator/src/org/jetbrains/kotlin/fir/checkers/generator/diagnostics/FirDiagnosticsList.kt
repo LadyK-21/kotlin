@@ -539,6 +539,7 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val EXPOSED_SUPER_CLASS by exposedVisibilityError<KtElement>()
         val EXPOSED_TYPE_PARAMETER_BOUND by exposedVisibilityError<KtElement>()
         val EXPOSED_TYPE_PARAMETER_BOUND_DEPRECATION_WARNING by exposedVisibilityWarning<KtElement>()
+        val EXPOSED_PACKAGE_PRIVATE_TYPE_FROM_INTERNAL_WARNING by exposedVisibilityWarning<KtElement>()
     }
 
     val MODIFIERS by object : DiagnosticGroup("Modifiers") {
@@ -1625,9 +1626,11 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val COMPONENT_FUNCTION_AMBIGUITY by error<PsiElement> {
             parameter<Name>("functionWithAmbiguityName")
             parameter<Collection<Symbol>>("candidates")
+            parameter<ConeKotlinType>("destructingType")
         }
         val COMPONENT_FUNCTION_ON_NULLABLE by error<KtExpression> {
             parameter<Name>("componentFunctionName")
+            parameter<ConeKotlinType>("destructingType")
         }
         val COMPONENT_FUNCTION_RETURN_TYPE_MISMATCH by error<KtExpression> {
             parameter<Name>("componentFunctionName")
@@ -1933,6 +1936,7 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val RETURN_IN_FUNCTION_WITH_EXPRESSION_BODY_WARNING by warning<KtReturnExpression>(PositioningStrategy.RETURN_WITH_LABEL)
         val RETURN_IN_FUNCTION_WITH_EXPRESSION_BODY_AND_IMPLICIT_TYPE by error<KtReturnExpression>(PositioningStrategy.RETURN_WITH_LABEL)
         val NO_RETURN_IN_FUNCTION_WITH_BLOCK_BODY by error<KtDeclarationWithBody>(PositioningStrategy.DECLARATION_WITH_BODY)
+        val REDUNDANT_RETURN by warning<KtReturnExpression>(PositioningStrategy.RETURN_WITH_LABEL)
 
         val ANONYMOUS_INITIALIZER_IN_INTERFACE by error<KtAnonymousInitializer>(PositioningStrategy.DECLARATION_SIGNATURE)
     }

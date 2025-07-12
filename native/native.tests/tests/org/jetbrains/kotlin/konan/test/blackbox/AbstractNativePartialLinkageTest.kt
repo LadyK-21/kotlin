@@ -6,56 +6,63 @@
 package org.jetbrains.kotlin.konan.test.blackbox
 
 import com.intellij.testFramework.TestDataFile
-import org.jetbrains.kotlin.klib.KlibCompilerEdition
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils.Dependencies
-import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.*
-import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilationArtifact.*
-import org.jetbrains.kotlin.konan.test.blackbox.support.compilation.TestCompilationResult.Companion.assertSuccess
+import org.jetbrains.kotlin.klib.KlibCompilerChangeScenario
+import org.jetbrains.kotlin.klib.KlibCompilerInvocationTestUtils
+import org.jetbrains.kotlin.klib.PartialLinkageTestStructureExtractor
 import org.jetbrains.kotlin.konan.test.blackbox.support.group.UsePartialLinkage
+import org.jetbrains.kotlin.konan.test.blackbox.support.settings.Binaries
+import org.jetbrains.kotlin.konan.test.blackbox.support.settings.CacheMode
 import org.jetbrains.kotlin.konan.test.blackbox.support.settings.GCScheduler
+import org.jetbrains.kotlin.konan.test.blackbox.support.settings.Settings
+import org.jetbrains.kotlin.konan.test.blackbox.support.util.LAUNCHER_FILE_NAME
+import org.jetbrains.kotlin.konan.test.blackbox.support.util.generateBoxFunctionLauncher
+import org.jetbrains.kotlin.konan.test.blackbox.support.util.getAbsoluteFile
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Tag
 import java.io.File
 
 @Tag("partial-linkage")
 @UsePartialLinkage(UsePartialLinkage.Mode.DEFAULT)
-abstract class AbstractNativePartialLinkageTest : AbstractKlibLinkageTest() {
+abstract class AbstractNativePartialLinkageTest : AbstractNativeCompilerInvocationTest() {
 
     // The entry point to generated test classes.
-    protected fun runTest(@TestDataFile testPath: String) {
+    protected fun runTest(@TestDataFile testDir: String) {
         // KT-70162: Partial Linkage tests take a lot of time when aggressive scheduler is enabled.
         // There is no major profit from running these tests with this scheduler. On the other hand,
         // we have to significantly increase timeouts to make such configurations pass.
         // So let's just disable them instead of wasting CI times.
         Assumptions.assumeFalse(testRunSettings.get<GCScheduler>() == GCScheduler.AGGRESSIVE)
-        PartialLinkageTestUtils.runTest(NativeTestConfiguration(testPath))
+
+        val configuration = NativeCompilerInvocationTestConfiguration(testRunSettings)
+
+        KlibCompilerInvocationTestUtils.runTest(
+            testStructure = NativePartialLinkageTestStructureExtractor(testRunSettings).extractTestStructure(getAbsoluteFile(testDir)),
+            testConfiguration = configuration,
+            artifactBuilder = NativeCompilerInvocationTestArtifactBuilder(configuration),
+            binaryRunner = this,
+            compilerEditionChange = KlibCompilerChangeScenario.NoChange,
+        )
+    }
+}
+
+private class NativePartialLinkageTestStructureExtractor(private val settings: Settings) : PartialLinkageTestStructureExtractor() {
+    override val buildDir: File
+        get() = settings.get<Binaries>().testBinariesDir
+
+    override val testModeConstructorParameters = buildMap {
+        this["isNative"] = "true"
+
+        val cacheMode = settings.get<CacheMode>()
+        when {
+            cacheMode.useStaticCacheForUserLibraries -> this["staticCache"] = "TestMode.Scope.EVERYWHERE"
+            cacheMode.useStaticCacheForDistributionLibraries -> this["staticCache"] = "TestMode.Scope.DISTRIBUTION"
+        }
     }
 
-    override fun buildKlib(
-        moduleName: String,
-        moduleSourceDir: File,
-        dependencies: Dependencies,
-        klibFile: File,
-        compilerEdition: KlibCompilerEdition,
-        compilerArguments: List<String>,
-    ) {
-        require(compilerEdition == KlibCompilerEdition.CURRENT) { "Partial Linkage tests accept only Current compiler" }
-
-        val klibArtifact = KLIB(klibFile)
-
-        val testCase = createTestCase(moduleName, moduleSourceDir, COMPILER_ARGS.plusCompilerArgs(compilerArguments))
-
-        val compilation = LibraryCompilation(
-            settings = testRunSettings,
-            freeCompilerArgs = testCase.freeCompilerArgs,
-            sourceModules = testCase.modules,
-            dependencies = createLibraryDependencies(dependencies),
-            expectedArtifact = klibArtifact
-        )
-
-        compilation.result.assertSuccess() // <-- trigger compilation
-
-        producedKlibs += ProducedKlib(moduleName, klibArtifact, dependencies) // Remember the artifact with its dependencies.
+    override fun customizeModuleSources(moduleName: String, moduleSourceDir: File) {
+        if (moduleName == KlibCompilerInvocationTestUtils.MAIN_MODULE_NAME) {
+            // Add a "box" function launcher to the main module.
+            moduleSourceDir.resolve(LAUNCHER_FILE_NAME).writeText(generateBoxFunctionLauncher("box"))
+        }
     }
 }

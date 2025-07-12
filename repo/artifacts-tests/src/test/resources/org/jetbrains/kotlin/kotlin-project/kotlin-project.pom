@@ -113,7 +113,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.3.2</version>
+                    <version>3.14.0</version>
                     <configuration>
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
@@ -304,30 +304,6 @@
             </activation>
             <properties>
                 <jdk_1_8>${env.JDK_18}</jdk_1_8>
-            </properties>
-        </profile>
-        <profile>
-            <id>jdk_1_6_new</id>
-            <activation>
-                <property>
-                    <name>env.JDK_1_6</name>
-                </property>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <jdk_1_6>${env.JDK_1_6}</jdk_1_6>
-            </properties>
-        </profile>
-        <profile>
-            <id>jdk_1_6_old</id>
-            <activation>
-                <property>
-                    <name>!env.JDK_1_6</name>
-                </property>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <jdk_1_6>${env.JDK_16}</jdk_1_6>
             </properties>
         </profile>
         <profile>

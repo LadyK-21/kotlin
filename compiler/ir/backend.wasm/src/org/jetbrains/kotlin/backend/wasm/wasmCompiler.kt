@@ -155,13 +155,12 @@ fun compileWasm(
     useDebuggerCustomFormatters: Boolean,
     generateDwarf: Boolean
 ): WasmCompilerResult {
-    val useJsTag = configuration.getBoolean(WasmConfigurationKeys.WASM_USE_JS_TAG)
     val isWasmJsTarget = configuration.get(WasmConfigurationKeys.WASM_TARGET) != WasmTarget.WASI
 
     val wasmCompiledModuleFragment = WasmCompiledModuleFragment(
         wasmCompiledFileFragments,
         configuration.getBoolean(WasmConfigurationKeys.WASM_USE_TRAPS_INSTEAD_OF_EXCEPTIONS),
-        isWasmJsTarget && useJsTag,
+        isWasmJsTarget,
     )
 
     val linkedModule = wasmCompiledModuleFragment.linkWasmCompiledFragments()
@@ -213,6 +212,8 @@ fun compileWasm(
             jsModuleAndQualifierReferences.addAll(fragment.jsModuleAndQualifierReferences)
         }
 
+        val useJsTag = !configuration.getBoolean(WasmConfigurationKeys.WASM_NO_JS_TAG)
+
         jsUninstantiatedWrapper = generateAsyncJsWrapper(
             jsModuleImports,
             jsFuns,
@@ -229,7 +230,7 @@ fun compileWasm(
         )
     } else {
         jsUninstantiatedWrapper = null
-        jsWrapper = wasmCompiledModuleFragment.generateAsyncWasiWrapper("./$baseFileName.wasm", linkedModule.exports)
+        jsWrapper = wasmCompiledModuleFragment.generateAsyncWasiWrapper("./$baseFileName.wasm", linkedModule.exports, useDebuggerCustomFormatters)
     }
 
     return WasmCompilerResult(
@@ -247,9 +248,14 @@ fun compileWasm(
 }
 
 //language=js
-fun WasmCompiledModuleFragment.generateAsyncWasiWrapper(wasmFilePath: String, exports: List<WasmExport<*>>): String = """
+fun WasmCompiledModuleFragment.generateAsyncWasiWrapper(
+    wasmFilePath: String,
+    exports: List<WasmExport<*>>,
+    useCustomFormatters: Boolean
+): String = """
 import { WASI } from 'wasi';
 import { argv, env } from 'node:process';
+${if (useCustomFormatters) "import \"./custom-formatters.js\"" else ""}
 
 const wasi = new WASI({ version: 'preview1', args: argv, env, });
 
@@ -345,12 +351,15 @@ $jsCodeBodyIndented
     if (!isNodeJs && !isDeno && !isStandaloneJsVM && !isBrowser) {
       throw "Supported JS engine not detected";
     }
-    
+
     const wasmFilePath = $pathJsStringLiteral;
+
+    const wasmTag =${if (useJsTag) " WebAssembly.JSTag ??" else "" } new WebAssembly.Tag({ parameters: ['externref'] });
+
     const importObject = {
         js_code,
         intrinsics: {
-            ${if (useJsTag) "js_error_tag: WebAssembly.JSTag" else ""}
+            tag: wasmTag
         },
 $imports
     };

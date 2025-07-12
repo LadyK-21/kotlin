@@ -388,9 +388,9 @@ object FirFakeOverrideGenerator {
 
     fun createSymbolForSubstitutionOverride(baseSymbol: FirPropertySymbol, derivedClassId: ClassId? = null): FirRegularPropertySymbol {
         return if (derivedClassId == null) {
-            FirRegularPropertySymbol(baseSymbol.callableId)
+            FirRegularPropertySymbol(baseSymbol.callableId!!)
         } else {
-            FirRegularPropertySymbol(CallableId(derivedClassId, baseSymbol.callableId.callableName))
+            FirRegularPropertySymbol(CallableId(derivedClassId, baseSymbol.name))
         }
     }
 
@@ -418,7 +418,6 @@ object FirFakeOverrideGenerator {
         name = baseProperty.name
         isVar = baseProperty.isVar
         this.symbol = newSymbol
-        isLocal = false
         status = baseProperty.status.copy(newVisibility, newModality, isExpect = isExpect, isOverride = true)
 
         resolvePhase = origin.resolvePhaseForCopy

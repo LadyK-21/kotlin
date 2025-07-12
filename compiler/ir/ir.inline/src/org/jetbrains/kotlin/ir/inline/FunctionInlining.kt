@@ -79,8 +79,7 @@ class FunctionInlining @JvmIrInlineExperimental constructor(
 
         val actualCallee = inlineFunctionResolver.getFunctionDeclarationToInline(expression) ?: return expression
         if (expression is IrCall && Symbols.isTypeOfIntrinsic(actualCallee.symbol)) {
-            inlineFunctionResolver.callInlinerStrategy.at(data, expression)
-            return inlineFunctionResolver.callInlinerStrategy.postProcessTypeOf(expression, expression.typeArguments[0]!!)
+            return expression
         }
         if (actualCallee.body == null) {
             return expression
@@ -93,7 +92,6 @@ class FunctionInlining @JvmIrInlineExperimental constructor(
             }
         }
 
-        inlineFunctionResolver.callInlinerStrategy.at(data, expression)
         return CallInlining(
             context,
             actualCallee,
@@ -162,7 +160,7 @@ private class CallInlining(
 
                 // Leave every other parameter as is, they are visible in the inlined scope.
             }
-            InlineFunctionBodyPreprocessor(typeArgumentsMap, inlineFunctionResolver.callInlinerStrategy)
+            InlineFunctionBodyPreprocessor(typeArgumentsMap)
                 .preprocess(callee)
         }
 

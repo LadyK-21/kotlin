@@ -5,6 +5,9 @@
 
 package kotlin
 
+import kotlin.js.internal.boxedLong.BoxedLongApi
+import kotlin.js.internal.boxedLong.toStringImpl
+
 public actual fun Throwable.stackTraceToString(): String = toString()
 
 public actual fun Throwable.printStackTrace() {
@@ -24,6 +27,7 @@ public actual val Throwable.suppressedExceptions: List<Throwable>
  * @throws IllegalArgumentException when [radix] is not a valid radix for number to string conversion.
  */
 @SinceKotlin("1.2")
+@OptIn(BoxedLongApi::class)
 public fun Long.toString(radix: Int): String =
     this.toStringImpl(checkRadix(radix))
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2024 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -11,7 +11,10 @@ import org.jetbrains.kotlin.analysis.api.fir.KaSymbolByFirBuilder
 import org.jetbrains.kotlin.analysis.api.symbols.KaTypeParameterSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.pointers.KaSymbolPointer
 import org.jetbrains.kotlin.analysis.api.types.KaTypePointer
+import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeTypeParameterLookupTag
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirTypeAliasSymbol
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.ProjectionKind.*
 import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
@@ -55,12 +58,19 @@ private class ConeClassLikeTypePointer(coneType: ConeClassLikeType, builder: KaS
     private val typeArgumentPointers = coneType.typeArguments.map { ConeTypeProjectionPointer(it, builder) }
     private val isNullable = coneType.isMarkedNullable
     private val abbreviatedTypePointer = coneType.abbreviatedType?.createPointer(builder)
+    private val isTypeAlias = lookupTag.toSymbol(builder.rootSession) is FirTypeAliasSymbol
 
     // function types-specific attributes
     private val hasReceiverType = coneType.receiverType(builder.rootSession) != null
     private val contextParameterNumber = coneType.contextParameterNumberForFunctionType
 
     override fun restore(session: KaFirSession): ConeClassLikeTypeImpl? {
+        val classLikeSymbol = lookupTag.toSymbol(session.firSession) ?: return null
+        when (classLikeSymbol) {
+            is FirTypeAliasSymbol -> if (!isTypeAlias) return null
+            is FirClassSymbol -> if (isTypeAlias) return null
+        }
+
         val typeArguments = typeArgumentPointers.map { it.restore(session) ?: return null }
         val abbreviatedType = abbreviatedTypePointer?.let { it.restore(session) ?: return null }
 

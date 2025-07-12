@@ -7,6 +7,11 @@ val disableInputsCheck = project.providers.gradleProperty("kotlin.test.instrumen
 tasks.withType<Test>().names.forEach { taskName ->
     tasks.named<Test>(taskName) {
         val testInputsCheck = extensions.create<TestInputsCheckExtension>("testInputsCheck")
+        val toolchainPath = testInputsCheck.isNative
+            .filter { it }
+            .flatMap {
+                project.providers.of(XcodeToolchainValueSource::class.java) {}
+            }
 
         // Disable checks on windows until we fix KTI-2322
         if (!disableInputsCheck && !OperatingSystem.current().isWindows) {
@@ -24,6 +29,8 @@ tasks.withType<Test>().names.forEach { taskName ->
             val nativeHome = project.providers.gradleProperty("kotlin.internal.native.test.nativeHome").orElse(
                 project.providers.gradleProperty("kn.nativeHome")
             )
+            val nativeHomeDefault: Provider<Directory> =
+                testInputsCheck.isNative.filter { it }.map { project.project(":kotlin-native").isolated.projectDirectory.dir("dist") }
             val konanDataDir: String =
                 project.extra.has("konan.data.dir").let { if (it) project.extra["konan.data.dir"] else null } as String?
                     ?: System.getenv("KONAN_DATA_DIR")
@@ -79,7 +86,6 @@ tasks.withType<Test>().names.forEach { taskName ->
                             """permission java.io.FilePermission "${file.absolutePath}/-", "read${
                                 // We write to the testData folder from tests...
                                 if (file.canonicalPath.contains("/testData")) ",write"
-                                else if (file.canonicalPath.endsWith("/dist")) ",write,delete"
                                 else ""
                             }";""",
                         )
@@ -136,6 +142,7 @@ tasks.withType<Test>().names.forEach { taskName ->
                                         """permission java.io.FilePermission "$konanDataDir/-", "read,write,delete,execute";""",
                                         """permission java.io.FilePermission "$konanDataDir", "read";""",
                                         """permission java.io.FilePermission "/bin/sh", "execute";""",
+                                        """permission java.io.FilePermission "${nativeHome.getOrElse(nativeHomeDefault.get().asFile.absolutePath)}/-" , "read,write,delete";""",
                                     )
                                     if (nativeHome.isPresent) {
                                         konanPermissions.add("""permission java.io.FilePermission "${nativeHome.get()}/-" , "read,write,delete";""")
@@ -147,10 +154,7 @@ tasks.withType<Test>().names.forEach { taskName ->
                                             listOf(
                                                 """permission java.io.FilePermission "/bin/bash", "execute";""",
                                                 """permission java.io.FilePermission "/usr/bin/xcrun", "execute";""",
-                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/libtool", "execute";""",
-                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang", "read";""",
-                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld", "execute";""",
-                                                """permission java.io.FilePermission "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil", "execute";""",
+                                                """permission java.io.FilePermission "${toolchainPath.get()}/-", "read,execute";""",
                                             )
                                         )
                                     }

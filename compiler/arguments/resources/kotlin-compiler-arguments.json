@@ -350,6 +350,15 @@
                         "deprecatedVersion": null,
                         "removedVersion": null
                     }
+                },
+                {
+                    "name": "2.5",
+                    "releaseVersionsMetadata": {
+                        "introducedVersion": "2.2.20",
+                        "stabilizedVersion": null,
+                        "deprecatedVersion": null,
+                        "removedVersion": null
+                    }
                 }
             ]
         },
@@ -3296,6 +3305,99 @@
                         "deprecatedName": null,
                         "description": {
                             "current": "Allow 'catch' parameters to have reified types.",
+                            "valueInVersions": []
+                        },
+                        "delimiter": null,
+                        "valueType": {
+                            "type": "org.jetbrains.kotlin.arguments.dsl.types.BooleanType",
+                            "isNullable": {
+                                "current": false,
+                                "valueInVersions": []
+                            },
+                            "defaultValue": {
+                                "current": false,
+                                "valueInVersions": []
+                            }
+                        },
+                        "valueDescription": {
+                            "current": null,
+                            "valueInVersions": []
+                        },
+                        "releaseVersionsMetadata": {
+                            "introducedVersion": "2.2.20",
+                            "stabilizedVersion": null,
+                            "deprecatedVersion": null,
+                            "removedVersion": null
+                        }
+                    },
+                    {
+                        "name": "Xallow-contracts-on-more-functions",
+                        "shortName": null,
+                        "deprecatedName": null,
+                        "description": {
+                            "current": "Allow contracts on some operators and accessors, and allow checks for erased types.",
+                            "valueInVersions": []
+                        },
+                        "delimiter": null,
+                        "valueType": {
+                            "type": "org.jetbrains.kotlin.arguments.dsl.types.BooleanType",
+                            "isNullable": {
+                                "current": false,
+                                "valueInVersions": []
+                            },
+                            "defaultValue": {
+                                "current": false,
+                                "valueInVersions": []
+                            }
+                        },
+                        "valueDescription": {
+                            "current": null,
+                            "valueInVersions": []
+                        },
+                        "releaseVersionsMetadata": {
+                            "introducedVersion": "2.2.20",
+                            "stabilizedVersion": null,
+                            "deprecatedVersion": null,
+                            "removedVersion": null
+                        }
+                    },
+                    {
+                        "name": "Xallow-condition-implies-returns-contracts",
+                        "shortName": null,
+                        "deprecatedName": null,
+                        "description": {
+                            "current": "Allow contracts that specify a limited conditional returns postcondition.",
+                            "valueInVersions": []
+                        },
+                        "delimiter": null,
+                        "valueType": {
+                            "type": "org.jetbrains.kotlin.arguments.dsl.types.BooleanType",
+                            "isNullable": {
+                                "current": false,
+                                "valueInVersions": []
+                            },
+                            "defaultValue": {
+                                "current": false,
+                                "valueInVersions": []
+                            }
+                        },
+                        "valueDescription": {
+                            "current": null,
+                            "valueInVersions": []
+                        },
+                        "releaseVersionsMetadata": {
+                            "introducedVersion": "2.2.20",
+                            "stabilizedVersion": null,
+                            "deprecatedVersion": null,
+                            "removedVersion": null
+                        }
+                    },
+                    {
+                        "name": "Xallow-holdsin-contract",
+                        "shortName": null,
+                        "deprecatedName": null,
+                        "description": {
+                            "current": "Allow contracts that specify a condition that holds true inside a lambda argument.",
                             "valueInVersions": []
                         },
                         "delimiter": null,
@@ -6314,11 +6416,11 @@
                                         }
                                     },
                                     {
-                                        "name": "Xwasm-attach-js-exception",
+                                        "name": "Xwasm-no-jstag",
                                         "shortName": null,
                                         "deprecatedName": null,
                                         "description": {
-                                            "current": "Attach a thrown by JS-value to the JsException class",
+                                            "current": "Don't use WebAssembly.JSTag for throwing and catching exceptions",
                                             "valueInVersions": []
                                         },
                                         "delimiter": null,
@@ -10621,37 +10723,6 @@
                                             },
                                             "isNullable": {
                                                 "current": true,
-                                                "valueInVersions": []
-                                            }
-                                        },
-                                        "valueDescription": {
-                                            "current": null,
-                                            "valueInVersions": []
-                                        },
-                                        "releaseVersionsMetadata": {
-                                            "introducedVersion": "1.4.0",
-                                            "stabilizedVersion": "1.4.0",
-                                            "deprecatedVersion": null,
-                                            "removedVersion": null
-                                        }
-                                    },
-                                    {
-                                        "name": "Xdump-synthetic-accessors-to",
-                                        "shortName": null,
-                                        "deprecatedName": null,
-                                        "description": {
-                                            "current": "Path to a directory to dump synthetic accessors and their use sites.",
-                                            "valueInVersions": []
-                                        },
-                                        "delimiter": null,
-                                        "valueType": {
-                                            "type": "org.jetbrains.kotlin.arguments.dsl.types.StringType",
-                                            "isNullable": {
-                                                "current": true,
-                                                "valueInVersions": []
-                                            },
-                                            "defaultValue": {
-                                                "current": null,
                                                 "valueInVersions": []
                                             }
                                         },

@@ -10,13 +10,15 @@ import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.cliArgument
 import org.jetbrains.kotlin.cli.js.K2JSCompiler
+import org.jetbrains.kotlin.klib.KlibCompilerChangeScenario
 import org.jetbrains.kotlin.klib.KlibCompilerEdition
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils.Dependencies
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils.Dependency
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils.MAIN_MODULE_NAME
-import org.jetbrains.kotlin.klib.PartialLinkageTestUtils.ModuleBuildDirs
+import org.jetbrains.kotlin.klib.KlibCompilerInvocationTestUtils
+import org.jetbrains.kotlin.klib.KlibCompilerInvocationTestUtils.Dependencies
+import org.jetbrains.kotlin.klib.KlibCompilerInvocationTestUtils.Dependency
+import org.jetbrains.kotlin.klib.KlibCompilerInvocationTestUtils.MAIN_MODULE_NAME
+import org.jetbrains.kotlin.klib.PartialLinkageTestStructureExtractor
 import org.jetbrains.kotlin.test.TargetBackend
+import org.jetbrains.kotlin.wasm.test.AbstractWasmPartialLinkageTestCase.CompilerType
 import org.jetbrains.kotlin.wasm.test.tools.WasmVM
 import org.junit.jupiter.api.AfterEach
 import java.io.ByteArrayOutputStream
@@ -40,53 +42,78 @@ abstract class AbstractWasmPartialLinkageTestCase(private val compilerType: Comp
         buildDir.deleteRecursively()
     }
 
-    private inner class WasmTestConfiguration(testPath: String) : PartialLinkageTestUtils.TestConfiguration {
-        override val testDir: File = File(testPath).absoluteFile
-        override val buildDir: File get() = this@AbstractWasmPartialLinkageTestCase.buildDir
-        override val stdlibFile: File get() = File("libraries/stdlib/build/classes/kotlin/wasmJs/main").absoluteFile
-        override val testModeConstructorParameters = mapOf("isWasm" to "true")
-        override val targetBackend get() = TargetBackend.WASM
+    // The entry point to generated test classes.
+    fun runTest(@TestDataFile testDir: String) {
+        val configuration = WasmCompilerInvocationTestConfiguration(
+            buildDir = buildDir,
+            compilerType = compilerType,
+        )
 
-        override fun customizeModuleSources(moduleName: String, moduleSourceDir: File) {
-            if (moduleName == MAIN_MODULE_NAME) {
-                File(moduleSourceDir, "runner.kt")
-                    .writeText("@kotlin.wasm.WasmExport fun runBoxTest() = println($BOX_FUN_FQN())")
-            }
-        }
+        KlibCompilerInvocationTestUtils.runTest(
+            testStructure = WasmPartialLinkageTestStructureExtractor(buildDir).extractTestStructure(File(testDir).absoluteFile),
+            testConfiguration = configuration,
+            artifactBuilder = WasmCompilerInvocationTestArtifactBuilder(configuration),
+            binaryRunner = WasmCompilerInvocationTestBinaryRunner,
+            compilerEditionChange = KlibCompilerChangeScenario.NoChange,
+        )
+    }
+}
 
-        override fun buildKlib(
-            moduleName: String,
-            buildDirs: ModuleBuildDirs,
-            dependencies: Dependencies,
-            klibFile: File,
-            compilerEdition: KlibCompilerEdition,
-            compilerArguments: List<String>
-        ) = this@AbstractWasmPartialLinkageTestCase.buildKlib(moduleName, buildDirs, dependencies, klibFile, compilerArguments)
+internal class WasmCompilerInvocationTestConfiguration(
+    override val buildDir: File,
+    val compilerType: CompilerType,
+) : KlibCompilerInvocationTestUtils.TestConfiguration {
+    override val stdlibFile: File get() = File("libraries/stdlib/build/classes/kotlin/wasmJs/main").absoluteFile
+    override val targetBackend get() = TargetBackend.WASM
 
-        override fun buildBinaryAndRun(mainModule: Dependency, otherDependencies: Dependencies) =
-            this@AbstractWasmPartialLinkageTestCase.buildBinaryAndRun(mainModule, otherDependencies)
 
-        override fun onNonEmptyBuildDirectory(directory: File) {
-            directory.listFiles()?.forEach(File::deleteRecursively)
-        }
+    override fun onIgnoredTest() {
+        /* Do nothing specific. JUnit 3 does not support programmatic tests muting. */
+    }
+}
 
-        override fun onIgnoredTest() {
-            /* Do nothing specific. JUnit 3 does not support programmatic tests muting. */
+internal class WasmPartialLinkageTestStructureExtractor(
+    override val buildDir: File,
+) : PartialLinkageTestStructureExtractor() {
+    override val testModeConstructorParameters = mapOf("isWasm" to "true")
+
+    override fun customizeModuleSources(moduleName: String, moduleSourceDir: File) {
+        if (moduleName == KlibCompilerInvocationTestUtils.MAIN_MODULE_NAME) {
+            File(moduleSourceDir, "runner.kt")
+                .writeText("@kotlin.wasm.WasmExport fun runBoxTest() = println($BOX_FUN_FQN())")
         }
     }
 
-    // The entry point to generated test classes.
-    fun runTest(@TestDataFile testPath: String) = PartialLinkageTestUtils.runTest(WasmTestConfiguration(testPath))
+    companion object {
+        private const val BOX_FUN_FQN = "box"
+    }
+}
 
-    fun buildKlib(moduleName: String, buildDirs: ModuleBuildDirs, dependencies: Dependencies, klibFile: File, compilerArguments: List<String>) {
+internal class WasmCompilerInvocationTestBinaryArtifact(
+    val jsFiles: List<File>,
+    val binariesDir: File,
+    val runnerFileName: String,
+) : KlibCompilerInvocationTestUtils.BinaryArtifact
+
+internal class WasmCompilerInvocationTestArtifactBuilder(
+    private val configuration: WasmCompilerInvocationTestConfiguration,
+) : KlibCompilerInvocationTestUtils.ArtifactBuilder<WasmCompilerInvocationTestBinaryArtifact> {
+    override fun buildKlib(
+        module: KlibCompilerInvocationTestUtils.TestStructure.ModuleUnderTest,
+        dependencies: Dependencies,
+        compilerEdition: KlibCompilerEdition,
+        compilerArguments: List<String>,
+    ) {
+        require(compilerEdition == KlibCompilerEdition.CURRENT) { "Partial Linkage tests accept only Current compiler" }
+
         val kotlinSourceFilePaths = mutableListOf<String>()
 
-        buildDirs.sourceDir.walkTopDown().forEach { sourceFile ->
+        module.sourceDir.walkTopDown().forEach { sourceFile ->
             if (sourceFile.isFile) when (sourceFile.extension) {
                 "kt" -> kotlinSourceFilePaths += sourceFile.absolutePath
                 "js" -> {
                     // This is needed to preserve *.js files from test data which are required for tests with `external` declarations:
-                    sourceFile.copyTo(buildDirs.outputDir.resolve(sourceFile.relativeTo(buildDirs.sourceDir)), overwrite = true)
+                    sourceFile.copyTo(module.outputDir.resolve(sourceFile.relativeTo(module.sourceDir)), overwrite = true)
                 }
             }
         }
@@ -95,15 +122,8 @@ abstract class AbstractWasmPartialLinkageTestCase(private val compilerType: Comp
         runCompilerViaCLI(
             listOf(
                 K2JSCompilerArguments::irProduceKlibFile.cliArgument,
-                K2JSCompilerArguments::outputDir.cliArgument, klibFile.parentFile.absolutePath,
-                K2JSCompilerArguments::moduleName.cliArgument, moduleName,
-                // Halt on any unexpected warning.
-                K2JSCompilerArguments::allWarningsAsErrors.cliArgument,
-                // Tests suppress the INVISIBLE_REFERENCE check.
-                // However, JS doesn't produce the INVISIBLE_REFERENCE error;
-                // As result, it triggers a suppression error warning about the redundant suppression.
-                // This flag is used to disable the warning.
-                K2JSCompilerArguments::dontWarnOnErrorSuppression.cliArgument,
+                K2JSCompilerArguments::outputDir.cliArgument, module.klibFile.parentFile.absolutePath,
+                K2JSCompilerArguments::moduleName.cliArgument, module.moduleInfo.moduleName,
                 K2JSCompilerArguments::wasm.cliArgument
             ),
             dependencies.toCompilerArgs(),
@@ -112,8 +132,14 @@ abstract class AbstractWasmPartialLinkageTestCase(private val compilerType: Comp
         )
     }
 
-    private fun buildBinaryAndRun(mainModule: Dependency, otherDependencies: Dependencies) {
-        val binariesDir: File = File(buildDir, BIN_DIR_NAME).also { it.mkdirs() }
+    override fun buildBinary(
+        mainModule: Dependency,
+        otherDependencies: Dependencies,
+        compilerEdition: KlibCompilerEdition,
+    ): WasmCompilerInvocationTestBinaryArtifact {
+        require(compilerEdition == KlibCompilerEdition.CURRENT) { "Partial Linkage tests accept only Current compiler" }
+
+        val binariesDir: File = File(configuration.buildDir, BIN_DIR_NAME).also { it.mkdirs() }
 
         runCompilerViaCLI(
             listOf(
@@ -123,14 +149,11 @@ abstract class AbstractWasmPartialLinkageTestCase(private val compilerType: Comp
                 K2JSCompilerArguments::includes.cliArgument(mainModule.libraryFile.absolutePath),
                 K2JSCompilerArguments::outputDir.cliArgument, binariesDir.absolutePath,
                 K2JSCompilerArguments::moduleName.cliArgument, MAIN_MODULE_NAME,
-                // IMPORTANT: Omitting PL arguments here. The default PL mode should be in effect.
-                // "-Xpartial-linkage=enable", "-Xpartial-linkage-loglevel=INFO",
-                K2JSCompilerArguments::allWarningsAsErrors.cliArgument,
                 K2JSCompilerArguments::wasm.cliArgument,
             ),
             listOf(
-                K2JSCompilerArguments::cacheDirectory.cliArgument(buildDir.resolve("libs-cache").absolutePath),
-            ).takeIf { compilerType.useIc },
+                K2JSCompilerArguments::cacheDirectory.cliArgument(configuration.buildDir.resolve("libs-cache").absolutePath),
+            ).takeIf { configuration.compilerType.useIc },
             otherDependencies.toCompilerArgs(),
         )
 
@@ -151,8 +174,11 @@ abstract class AbstractWasmPartialLinkageTestCase(private val compilerType: Comp
         otherDependencies.regularDependencies.flatMapTo(additionalJsFiles) { getAdditionalJsFiles(it) }
         otherDependencies.friendDependencies.flatMapTo(additionalJsFiles) { getAdditionalJsFiles(it) }
 
-        val result = WasmVM.V8.run(runnerFileName, additionalJsFiles.map { it.absolutePath }, binariesDir)
-        check("OK" == result.trim())
+        return WasmCompilerInvocationTestBinaryArtifact(
+            jsFiles = additionalJsFiles,
+            binariesDir = binariesDir,
+            runnerFileName = runnerFileName,
+        )
     }
 
     private fun Dependencies.toCompilerArgs(): List<String> = buildList {
@@ -195,6 +221,18 @@ abstract class AbstractWasmPartialLinkageTestCase(private val compilerType: Comp
 
     companion object {
         private const val BIN_DIR_NAME = "_bins_wasm"
-        private const val BOX_FUN_FQN = "box"
+    }
+}
+
+internal object WasmCompilerInvocationTestBinaryRunner :
+    KlibCompilerInvocationTestUtils.BinaryRunner<WasmCompilerInvocationTestBinaryArtifact> {
+
+    override fun runBinary(binaryArtifact: WasmCompilerInvocationTestBinaryArtifact) {
+        val result = WasmVM.V8.run(
+            entryFile = binaryArtifact.runnerFileName,
+            jsFiles = binaryArtifact.jsFiles.map { it.absolutePath },
+            workingDirectory = binaryArtifact.binariesDir
+        )
+        check("OK" == result.trim())
     }
 }

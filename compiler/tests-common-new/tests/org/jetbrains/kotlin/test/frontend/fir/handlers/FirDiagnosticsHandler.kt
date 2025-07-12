@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.RenderingInternals
 import org.jetbrains.kotlin.fir.symbols.lazyDeclarationResolver
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.util.ListMultimap
@@ -311,12 +312,13 @@ class FirDiagnosticsHandler(testServices: TestServices) : FirAnalysisHandler(tes
         }
     }
 
+    @OptIn(RenderingInternals::class)
     private fun DebugDiagnosticConsumer.reportContainingClassDiagnostic(element: FirElement, reference: FirNamedReference) {
         report(KtDebugInfoDiagnostics.CALLABLE_OWNER, element) {
             val resolvedSymbol = (reference as? FirResolvedNamedReference)?.resolvedSymbol
             val callable = resolvedSymbol?.fir as? FirCallableDeclaration ?: return@report ""
             buildString {
-                append(callable.symbol.callableId.asFqNameForDebugInfo().asString())
+                append(callable.symbol.callableIdForRendering.asFqNameForDebugInfo().asString())
                 append(" in ")
                 if (callable.containingClassForStaticMemberAttr == null) {
                     append("implicit ")
@@ -359,7 +361,7 @@ class FirDiagnosticsHandler(testServices: TestServices) : FirAnalysisHandler(tes
 
     private fun FirBasedSymbol<*>.fqNameUnsafe(): FqNameUnsafe? = when (this) {
         is FirClassLikeSymbol<*> -> classId.asSingleFqName().toUnsafe()
-        is FirCallableSymbol<*> -> callableId.asFqNameForDebugInfo().toUnsafe()
+        is FirCallableSymbol<*> -> callableId?.asFqNameForDebugInfo()?.toUnsafe()
         else -> null
     }
 }

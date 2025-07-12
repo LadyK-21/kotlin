@@ -95,14 +95,13 @@ class FirScriptConfiguratorExtensionImpl(
                     parameters.add(
                         buildProperty {
                             moduleData = session.moduleData
-                            source = this@configure.source?.fakeElement(KtFakeSourceElementKind.ScriptParameter)
+                            source = this@configure.source.fakeElement(KtFakeSourceElementKind.ScriptParameter)
                             origin = FirDeclarationOrigin.ScriptCustomization.ParameterFromBaseClass
                             // TODO: copy type parameters?
                             returnTypeRef = baseCtorParameter.returnTypeRef
                             name = baseCtorParameter.name
-                            symbol = FirLocalPropertySymbol()
+                            symbol = FirRegularPropertySymbol(CallableId(name))
                             status = FirDeclarationStatusImpl(Visibilities.Local, Modality.FINAL)
-                            isLocal = true
                             isVar = false
                         }
                     )
@@ -133,7 +132,6 @@ class FirScriptConfiguratorExtensionImpl(
                     name = Name.identifier(propertyName)
                     symbol = FirLocalPropertySymbol()
                     status = FirDeclarationStatusImpl(Visibilities.Local, Modality.FINAL)
-                    isLocal = true
                     isVar = false
                 }
             )
@@ -149,7 +147,6 @@ class FirScriptConfiguratorExtensionImpl(
                     name = Name.identifier(it)
                     symbol = FirLocalPropertySymbol()
                     status = FirDeclarationStatusImpl(Visibilities.Local, Modality.FINAL)
-                    isLocal = true
                     isVar = false
                 }
             )
@@ -165,7 +162,7 @@ class FirScriptConfiguratorExtensionImpl(
                 when (val lastScriptBlockBody = lastScriptBlock?.body) {
                     is FirLazyBlock -> null
                     is FirSingleExpressionBlock -> lastScriptBlockBody.statement as? FirExpression
-                    else -> lastScriptBlockBody?.statements?.single()?.takeIf { it is FirExpression } as? FirExpression
+                    else -> lastScriptBlockBody?.statements?.singleOrNull()?.takeIf { it is FirExpression } as? FirExpression
                 }?.takeUnless { it is FirErrorExpression }
 
             if (lastExpression != null) {
@@ -194,7 +191,6 @@ class FirScriptConfiguratorExtensionImpl(
                         )
 
                         status = FirDeclarationStatusImpl(Visibilities.Public, Modality.FINAL)
-                        isLocal = false
                         isVar = false
                     }.also {
                         resultPropertyName = it.name

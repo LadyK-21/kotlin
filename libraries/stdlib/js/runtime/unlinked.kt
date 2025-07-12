@@ -5,10 +5,12 @@
 
 package kotlin.js
 
-// TODO(KT-78243): Delete this file after bootstrap advance
+// TODO(KT-78243): Delete this file after 2.2.20 branching
 
+@Deprecated("Use kotlin.internal.IrLinkageError instead", level = DeprecationLevel.HIDDEN)
 internal class IrLinkageError(message: String?) : Error(message)
 
+@Deprecated("Use kotlin.internal.throwIrLinkageError instead", level = DeprecationLevel.HIDDEN)
 internal fun throwLinkageError(message: String?): Nothing {
-    throw IrLinkageError(message)
+    kotlin.internal.throwIrLinkageError(message)
 }
