@@ -1955,32 +1955,68 @@ internal object KotlinToolingDiagnostics {
         }
     }
 
-    internal object IncompatibleWithTheNewAgpDsl :
+    internal object KotlinAndroidIsIncompatibleWithTheNewAgpDsl :
         ToolingDiagnosticFactory(FATAL, DiagnosticGroup.Kgp.Misconfiguration) {
         operator fun invoke(
             trace: Throwable,
         ) = build(throwable = trace) {
             title("Failed to apply plugin 'org.jetbrains.kotlin.android'")
-                .description("The 'org.jetbrains.kotlin.android' plugin is not compatible with AGP's 9.0 new DSL (`android.newDsl=true`).")
+                .description("The 'org.jetbrains.kotlin.android' plugin is not compatible with AGP's 9.0 new DSL (`android.newDsl=true` is enabled by default).")
                 .solution("Set `android.builtInKotlin=true` in `gradle.properties` and migrate to built-in Kotlin (see https://kotl.in/gradle/agp-built-in-kotlin for guidance), or set `android.newDsl=false` in `gradle.properties` to temporarily bypass this issue.")
                 .documentationLink(URI("https://kotl.in/gradle/agp-new-dsl"))
         }
     }
 
+    internal object KMPIsIncompatibleWithTheNewAgpDsl :
+        ToolingDiagnosticFactory(FATAL, DiagnosticGroup.Kgp.Misconfiguration) {
+        operator fun invoke(
+            androidPluginId: String,
+            trace: Throwable,
+        ) = build(throwable = trace) {
+            title("Failed to apply plugin 'org.jetbrains.kotlin.multiplatform'")
+                .description("The 'org.jetbrains.kotlin.multiplatform' plugin with `androidTarget()` enabled is not compatible with AGP's 9.0 new DSL (`android.newDsl=true` is enabled by default).")
+                .solution {
+                    if (androidPluginId == "com.android.library") {
+                        "Please use the 'com.android.kotlin.multiplatform.library' plugin instead of 'com.android.library' (read more: https://kotl.in/gradle/agp-new-kmp)," +
+                                " or set `android.newDsl=false` in `gradle.properties` to temporarily bypass this issue."
+                    } else {
+                        "Please change the structure of your project and move the usage of '$androidPluginId' into a separate subproject. " +
+                                "Then migrate this KMP subproject to the 'com.android.kotlin.multiplatform.library' plugin instead of '$androidPluginId' (see https://kotl.in/gradle/agp-new-kmp for guidance). " +
+                                "Or set `android.newDsl=false` in `gradle.properties` to temporarily bypass this issue."
+                    }
+                }
+                .documentationLink(URI("https://kotl.in/gradle/agp-new-kmp"))
+        }
+    }
+
     internal object NonKmpAgpIsDeprecated : ToolingDiagnosticFactory(WARNING, DiagnosticGroup.Kgp.Misconfiguration) {
         operator fun invoke(androidPluginId: String) = build {
-            title("The 'org.jetbrains.kotlin.multiplatform' plugin deprecated compatibility with Android Gradle plugin: '$androidPluginId'")
-                .description(
-                    """
-                    |The 'org.jetbrains.kotlin.multiplatform' plugin will not be compatible with most of the Android Gradle plugins since Android Gradle Plugin version 9.0.0. 
-                    |
-                    |Please use the 'com.android.kotlin.multiplatform.library' plugin instead. Read more: https://kotl.in/gradle/agp-new-kmp
-                    |
-                    |The change may require changing the structure of the your project. Read more: https://kotl.in/kmp-project-structure-migration
-                    """.trimMargin()
-                )
-                .solution("Please use the 'com.android.kotlin.multiplatform.library' plugin instead. Read more: https://kotl.in/gradle/agp-new-kmp")
-                .documentationLink(URI("https://kotl.in/gradle/agp-new-kmp"))
+            val titleStep = title(
+                "The 'org.jetbrains.kotlin.multiplatform' plugin deprecated compatibility with Android Gradle plugin: '$androidPluginId'"
+            )
+
+            val solutionStep = if (androidPluginId == "com.android.library") {
+                titleStep
+                    .description(
+                        """
+                        |The 'org.jetbrains.kotlin.multiplatform' plugin will not be compatible with 'com.android.library' starting with Android Gradle Plugin 9.0.0.
+                        """.trimMargin()
+                    )
+                    .solution("Please use the 'com.android.kotlin.multiplatform.library' plugin instead of 'com.android.library'.")
+            } else {
+                titleStep
+                    .description(
+                        """
+                        |The 'org.jetbrains.kotlin.multiplatform' plugin will not be compatible with '$androidPluginId' starting with Android Gradle Plugin 9.0.0.
+                        |
+                        |Please change the structure of the your project and move the usage of '$androidPluginId' into a separate subproject. The new subproject should add a dependency on this KMP subproject.
+                        |
+                        |Read more: https://kotl.in/kmp-project-structure-migration
+                        """.trimMargin()
+                    )
+                    .solution("Please change the structure of your project and move the usage of '$androidPluginId' into a separate subproject.")
+            }
+            solutionStep.documentationLink(URI("https://kotl.in/gradle/agp-new-kmp"))
         }
     }
 
